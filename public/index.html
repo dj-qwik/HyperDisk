@@ -757,7 +757,7 @@ function makeBlockTexture() {
 function makeTickerTexture() {
   const W = 4096, Hh = 128, cv = cnv(W, Hh), x = cv.getContext('2d');
   x.fillStyle = '#05040c'; x.fillRect(0, 0, W, Hh);
-  const msg = ['HYPER DISC', 'SEASON 07', 'NEON DISTRICT ARENA', 'KEEP YOUR FEET', 'THREE DISCS · NO MERCY', 'ハイパー・ディスク', 'LIVE FROM SECTOR 9', 'BANK IT OFF THE CEILING'];
+  const msg = ['HYPER DISC', 'SEASON 07', 'NEON DISTRICT ARENA', 'LAST ONE STANDING', 'THREE DISCS · NO MERCY', 'ハイパー・ディスク', 'LIVE FROM SECTOR 9', 'BANK IT OFF THE CEILING'];
   x.font = `900 64px ${FONT_D}`; x.textBaseline = 'middle';
   let px = 30, i = 0; const cols = ['#1650ff', '#ff1414', '#ff6a00', '#ffffff'];
   while (px < W - 200) { const t = msg[i % msg.length]; x.fillStyle = cols[i % cols.length]; x.fillText(t, px, Hh / 2 + 4); px += x.measureText(t).width + 50; x.fillStyle = '#ffffff'; x.fillText('◆', px, Hh / 2); px += 110; i++; }
