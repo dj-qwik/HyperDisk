@@ -275,6 +275,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
       <div class="opt"><span class="k">CPU RIVALS</span><span class="pick"><button data-o="cpus" data-d="-1">◀</button><span class="v" id="vCpus"></span><button data-o="cpus" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">CPU SKILL</span><span class="pick"><button data-o="skill" data-d="-1">◀</button><span class="v" id="vSkill"></span><button data-o="skill" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">POWER-UPS</span><span class="pick"><button data-o="pu" data-d="-1">◀</button><span class="v" id="vPu"></span><button data-o="pu" data-d="1">▶</button></span></div>
+      <div class="opt"><span class="k">CAMERA</span><span class="pick"><button data-o="cam" data-d="-1">◀</button><span class="v" id="vCam"></span><button data-o="cam" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">GRAPHICS</span><span class="pick"><button data-o="quality" data-d="-1">◀</button><span class="v" id="vQuality"></span><button data-o="quality" data-d="1">▶</button></span></div>
     </div>
 
@@ -467,13 +468,13 @@ const ELEV_FLOOR = -1.0;                    // the aim line's lowest height on t
 const ELEV_WALL = YC - 0.3 - ELEV_FLOOR;    // above this the line runs out onto the ceiling
 const ELEV_LEVEL = 1.32 - ELEV_FLOOR;       // level throw: the line at chest height
 const ELEV_RATE = 7.5;                      // units per second when held
-const RS = 15;          // station distance from center
+let RS = 9;            // station distance from center (closer duels, like the original); 10 for 3-4 runners
 const HAND_Y = 1.38;    // throw height above feet
 const CHEST_Y = 1.3;
-const RB = 8.2;         // firewall ring radius
+const RB = 4.5;         // firewall ring radius
 
 // disc tuning
-const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.42, D_COOL = 0.3, D_CHARGE = 0.45;
+const D_SPEED = 22, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.42, D_COOL = 0.3, D_CHARGE = 0.45;
 // body tuning
 const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
@@ -481,7 +482,7 @@ const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, S
 const SPLIT_AT = 1.6, SPLIT_ANGLE = 0.26, SPLIT_MUL = 0.7;          // split once clear of your pad; each fragment hits at 70%
 const BOOM_MUL = 1.5, BOOM_BLOCKED = 0.15;                         // explosive: 1.5x, and 15% even through a shield
 const OC_DOWN = 3.0;                                               // overclock: shield offline this long
-const SEEK_SPEED = 19, SEEK_TURN = 2.6, SEEK_TIME = 3.2;           // seeker: slower than a normal disc so you can react
+const SEEK_SPEED = 15.5, SEEK_TURN = 2.6, SEEK_TIME = 3.2;           // seeker: slower than a normal disc so you can react
 const ANCHOR_MUL = 0.5, ANCHOR_TIME = 10;                          // anchor: half knockback and OVERLOAD for 10 s
 const PU_MAX = 2, PU_LIFE = 20, PU_FIRST = 7, PU_GAP = [8, 14];
 const MOD_LOOK = {
@@ -501,7 +502,7 @@ const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 /* ================= settings ================= */
 const S = {
   arena: store.get('arena', 0), lives: store.get('lives', 3), cpus: store.get('cpus', 1), skill: store.get('skill', 1),
-  guide: store.get('guide', true), pu: store.get('pu', true), quality: store.get('quality', IS_TOUCH ? 0 : 1), music: store.get('music', true)
+  guide: store.get('guide', true), pu: store.get('pu', true), cam: store.get('cam', 0), quality: store.get('quality', IS_TOUCH ? 0 : 1), music: store.get('music', true)
 };
 if (!(S.quality in QUALS)) S.quality = 1;
 
@@ -1432,7 +1433,7 @@ function buildBulwarks(on) {
   if (!on) return;
   const hw = 2.4, top = 2.5;
   for (const st of STATIONS) {
-    const fx = Math.sin(st.yaw), fz = Math.cos(st.yaw), cx = st.x + fx * 5.2, cz = st.z + fz * 5.2;
+    const fx = Math.sin(st.yaw), fz = Math.cos(st.yaw), cx = st.x + fx * 4.6, cz = st.z + fz * 4.6;
     BULWARKS.push({ st: st.i, x: cx, z: cz, fx, fz, rx: -fz, rz: fx, hw, top });
     const g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = st.yaw;
     const slab = new THREE.Mesh(rbox(hw * 2, top + 0.6, 0.5, 0.12), new THREE.MeshStandardMaterial({ color: 0x14161e, metalness: 0.85, roughness: 0.35, normalMap: HULLT.nrm, map: HULLT.map, emissiveMap: HULLT.em, emissive: new THREE.Color(st.color).multiplyScalar(0.9) }));
@@ -1447,7 +1448,8 @@ function buildBulwarks(on) {
 function buildStations(n, arena, colors) {
   clearStations(); LAYOUT = arena;
   // two runners face off down a long court; three or four share a square one
-  if (n <= 2) { BOX.hx = 11; BOX.hz = 23.5; } else { BOX.hx = 23; BOX.hz = 23; }
+  RS = n <= 2 ? 9 : 10;
+  if (n <= 2) { BOX.hx = 10.5; BOX.hz = RS + 8.5; } else { BOX.hx = BOX.hz = RS + 8.5; }
   buildCourt();
   const lay = stationLayout(n);
   lay.forEach((L, i) => {
@@ -1521,7 +1523,7 @@ function padUnder(x, z, extra) {
 
 /* ================= firewall: a spinning ring of energy blocks between the stations ================= */
 const WALLFW = {
-  on: false, rot: 0, cols: 20, rows: 3, rowY: [0.95, 2.6, 4.25], half: 0.78, blocks: [], im: null, glass: null,
+  on: false, rot: 0, cols: 20, rows: 2, rowY: [0.95, 2.6], half: 0.78, blocks: [], im: null, glass: null,
   init() {
     const n = this.cols * this.rows;
     const geo = new THREE.BoxGeometry(TAU * RB / this.cols - 0.22, this.half * 2 - 0.08, 0.55);
@@ -1533,7 +1535,7 @@ const WALLFW = {
     scene.add(this.glass, this.im);
     // hub + ring rails that carry the blocks
     this.rails = new THREE.Group();
-    for (const y of [0.1, 5.1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff2a0a, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
+    for (const y of [0.1, 3.45]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff2a0a, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
     scene.add(this.rails);
     this.setOn(false);
   },
@@ -2588,7 +2590,7 @@ const reticleGeo = new THREE.RingGeometry(0.55, 0.68, 40);
 const reticleInner = new THREE.RingGeometry(0.16, 0.22, 24);
 function makeGuide(p) {
   const layer = 1 + p.slot, col = new THREE.Color(p.color);
-  const dots = new THREE.InstancedMesh(guideDotGeo, new THREE.MeshBasicMaterial({ color: col.clone().multiplyScalar(1.6), transparent: true, opacity: 0.6, depthWrite: false }), GUIDE_N);
+  const dots = new THREE.InstancedMesh(guideDotGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x5aa8ff).multiplyScalar(2.2), transparent: true, opacity: 0.85, depthWrite: false }), GUIDE_N);
   dots.frustumCulled = false; dots.layers.set(layer); dots.count = 0;
   // the aim line: four glowing bars that run round the court at the aimed height (or across the ceiling)
   const lineMat = new THREE.MeshBasicMaterial({ color: col.clone().lerp(new THREE.Color(0x5aa8ff), 0.5).multiplyScalar(3.2), transparent: true, opacity: 0.95, depthWrite: false });
@@ -2604,10 +2606,12 @@ function makeGuide(p) {
   ret.add(up, dn, ring);
   for (const o of [dots, line, ret]) o.traverse(c => c.layers.set(layer));
   ret.renderOrder = 10; ret.children.forEach(c => c.renderOrder = 10);
-  scene.add(dots, line, ret);
-  return { dots, line, bars, ret, mat: xm, lineMat, arrows: [up, dn], ring };
+  const land = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, depthWrite: false }));
+  land.rotation.x = -Math.PI / 2; land.layers.set(layer); land.visible = false; land.renderOrder = 9;
+  scene.add(dots, line, ret, land);
+  return { dots, line, bars, ret, land, mat: xm, lineMat, arrows: [up, dn], ring };
 }
-function disposeGuide(g) { if (!g) return; scene.remove(g.dots, g.line, g.ret); }
+function disposeGuide(g) { if (!g) return; scene.remove(g.dots, g.line, g.ret, g.land); }
 const _gp = new THREE.Vector3(), _gv = new THREE.Vector3(), _ge = {}, _gm = new THREE.Matrix4(), _gq = new THREE.Quaternion(), _gs = new THREE.Vector3(), _ga = {};
 function setLine(g, hx, hz, y) {
   const b = g.bars;
@@ -2619,8 +2623,10 @@ function setLine(g, hx, hz, y) {
 function updateGuide(p, dt) {
   const g = p.guide; if (!g) return;
   const show = p.mode === 'play' && (state === 'play' || state === 'count');
-  g.dots.visible = false; g.ret.visible = show; g.line.visible = show; if (!show) return;
+  g.ret.visible = show; g.line.visible = show; if (!show) { g.dots.visible = false; g.land.visible = false; return; }
   const ap = aimPoint(p, p.aimYaw, p.aimElev, _ga);
+  const dots = ap.ceil;   // ceiling shots show where they'll come down; wall shots never do
+  g.dots.visible = dots;
   // the line: round the walls at the aimed height, or a rectangle across the ceiling through the crosshair
   if (!ap.ceil) setLine(g, BOX.hx - 0.06, BOX.hz - 0.06, ap.y);
   else { const inset = Math.min(BOX.hx - Math.abs(ap.x), BOX.hz - Math.abs(ap.z)); setLine(g, Math.max(0.3, BOX.hx - inset), Math.max(0.3, BOX.hz - inset), YC - 0.07); }
@@ -2636,11 +2642,15 @@ function updateGuide(p, dt) {
     const px = _gp.x, py = _gp.y, pz = _gp.z;
     discEnvStep(_gp, _gv, h, p.slot, _ge);
     dist += Math.hypot(_gp.x - px, _gp.y - py, _gp.z - pz);
+    if (dots && dist > 0.7 && n < GUIDE_N) { dist = 0; _gs.setScalar(0.8); _gm.compose(_gp, _gq, _gs); g.dots.setMatrixAt(n++, _gm); }
     let hitR = false; for (const o of players) if (o !== p && o.mode === 'play' && hitsBody(o, _gp.x, _gp.y, _gp.z, D_R * 0.8)) hitR = true;
     if (hitR) { lock = true; break; }
     if (_ge.kind === 'wall' || _ge.kind === 'ceil') { bounces++; if (bounces > 2) break; }
     if (_ge.kind === 'ring' || _ge.kind === 'block' || _ge.kind === 'bulwark' || _ge.kind === 'abyss') break;
   }
+  g.dots.count = n; g.dots.instanceMatrix.needsUpdate = true;
+  // where a ceiling shot comes down: a ring on the floor/podium (or on the rival it will hit)
+  g.land.visible = dots; if (dots) { g.land.position.set(_gp.x, _gp.y + 0.05, _gp.z); const s = 1 + Math.sin(uTime.value * 8) * 0.12; g.land.scale.set(s, s, s); g.land.material.color.copy(new THREE.Color(lock ? 0xffffff : 0x5aa8ff).multiplyScalar(3)); }
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);
@@ -2694,7 +2704,7 @@ function layoutViews() {
     const [x, y, w, h] = rects[i]; Object.assign(v, { x, y, w, h });
     Object.assign(v.el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     v.el.classList.toggle('solo', n === 1); v.el.classList.toggle('small', n > 2 || w < 700);
-    v.cam.aspect = w / Math.max(1, h); v.cam.fov = v.cam.aspect < 1 ? 80 : n > 2 ? 70 : 66; v.cam.updateProjectionMatrix();
+    v.cam.aspect = w / Math.max(1, h); v.cam.fov = S.cam ? (v.cam.aspect < 1 ? 80 : n > 2 ? 70 : 66) : (v.cam.aspect < 1 ? 74 : n > 2 ? 62 : 56); v.cam.updateProjectionMatrix();
   });
 }
 function viewFlash(p, colorHex, amt) { for (const v of views) if (v.p === p) { const c = new THREE.Color(colorHex); v.flash.set(c.r, c.g, c.b, amt); } }
@@ -2707,7 +2717,20 @@ function popFor(p, text, big) {
 
 // ---- camera rigs ----
 const _cp = new THREE.Vector3(), _cl = new THREE.Vector3();
+// ARCADE camera (default), like the original cabinet: high up behind your end of the court, looking down
+// the length of it, so your rival, their podium and every disc in flight are in clear view. It doesn't
+// swing round as you aim; the crosshair on the walls shows where you're throwing.
+function arcadeCam(p, outPos, outLook) {
+  const st = p.slot != null && STATIONS[p.slot] ? STATIONS[p.slot] : null;
+  const yaw = st ? st.yaw : 0, fx = Math.sin(yaw), fz = Math.cos(yaw), rx = -Math.cos(yaw), rz = Math.sin(yaw);
+  const sx = st ? st.x : p.x, sz = st ? st.z : p.z;
+  const lat = (p.x - sx) * rx + (p.z - sz) * rz;            // how far you've moved sideways on your podium(s)
+  const back = BOX.hz - RS - 0.6, d = RS * 2;               // camera sits just inside the back wall
+  outPos.set(sx - fx * back + rx * lat * 0.45, (p.y || 0) * 0.5 + 6.6, sz - fz * back + rz * lat * 0.45);
+  outLook.set(sx + fx * d * 0.5 + rx * lat * 0.2, (p.y || 0) * 0.3 + 0.4, sz + fz * d * 0.5 + rz * lat * 0.2);
+}
 function shoulderCam(p, outPos, outLook, aimYaw) {
+  if (!S.cam) { arcadeCam(p, outPos, outLook); return; }
   const a = aimYaw == null ? p.aimYaw : aimYaw, fx = Math.sin(a), fz = Math.cos(a), rx = -Math.cos(a), rz = Math.sin(a);
   const e = p.aimElev == null ? ELEV_LEVEL : p.aimElev, hi = e > ELEV_WALL ? 1 : clamp((e - ELEV_LEVEL) / (ELEV_WALL - ELEV_LEVEL), -0.3, 1);
   const lift = hi > 0 ? hi * 0.6 : -hi * 0.4;
@@ -2740,9 +2763,9 @@ function updateView(v, dt) {
     orbitCam(t, _cp, _cl, 4.6, 1.9, 0.35, 0, winner.x, winner.y, winner.z); _cl.y = winner.y + 1.35;
     // keep the winner left of the results card
     const rx = -Math.cos(t * 0.35 + Math.PI / 2), rz = -Math.sin(t * 0.35 + Math.PI / 2); _cl.x -= rx * 1.4; _cl.z -= rz * 1.4; k = 4;
-  } else if (p.mode === 'play' || p.mode === 'idle' || p.mode === 'win') { shoulderCam(p, _cp, _cl); k = 12; }
+  } else if (p.mode === 'play' || p.mode === 'idle' || p.mode === 'win') { shoulderCam(p, _cp, _cl); k = S.cam ? 12 : 5; }
   else if (p.mode === 'fall') { _cp.copy(v.pos); _cl.set(p.x, p.y + 0.8, p.z); k = 6; }
-  else if (p.mode === 'dead' && p.lives > 0) { const pad = homePad(p), st = stationOf(p); shoulderCam({ x: pad.x, y: pad.y, z: pad.z, lvl: 1 }, _cp, _cl, st.yaw); _cp.y += 1.5; k = 3; }
+  else if (p.mode === 'dead' && p.lives > 0) { const pad = homePad(p), st = stationOf(p); shoulderCam({ x: pad.x, y: pad.y, z: pad.z, lvl: 1, slot: p.slot, aimYaw: st.yaw }, _cp, _cl, st.yaw); if (S.cam) _cp.y += 1.5; k = 3; }
   else { // out: spectate from high up
     const a = t * 0.07 + p.slot * 1.6; _cp.set(Math.cos(a) * (BOX.hx - 1.5), 12, Math.sin(a) * (BOX.hz - 1.5)); _cl.set(0, 0, 0); k = 2.5;
   }
@@ -2898,7 +2921,7 @@ function renderLobby() {
   const ar = ARENAS[S.arena];
   $('#vArena').textContent = ar.name; $('#arenaDesc').textContent = ar.desc;
   $('#vLives').textContent = S.lives; $('#vCpus').textContent = S.cpus; $('#vSkill').textContent = SKILLS[S.skill].name;
-  $('#vPu').textContent = S.pu ? 'ON' : 'OFF'; $('#vQuality').textContent = QUALS[S.quality].name;
+  $('#vPu').textContent = S.pu ? 'ON' : 'OFF'; $('#vCam').textContent = S.cam ? 'CHASE' : 'ARCADE'; $('#vQuality').textContent = QUALS[S.quality].name;
   const canStart = online ? (NET.room && NET.role === 'host') : true;
   const st = $('#start'); st.disabled = !canStart;
   $('#startSub').textContent = online ? (NET.room ? (NET.role === 'host' ? 'PRESS ENTER OR START' : 'WAITING FOR HOST') : 'HOST OR JOIN A ROOM') : (LOBBY.humans.length ? 'PRESS ENTER OR START' : 'OR WATCH CPUS FIGHT');
@@ -2942,8 +2965,9 @@ function changeOpt(o, d) {
   if (o === 'skill') S.skill = clamp(S.skill + d, 0, SKILLS.length - 1);
   if (o === 'guide') S.guide = !S.guide;
   if (o === 'pu') S.pu = !S.pu;
+  if (o === 'cam') { S.cam = S.cam ? 0 : 1; layoutViews(); }
   if (o === 'quality') { S.quality = clamp(S.quality + d, 0, QUALS.length - 1); resize(); toast('GRAPHICS: ' + QUALS[S.quality].name + (S.quality !== store.get('quality', -1) ? ' · city density applies on reload' : '')); }
-  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality', 'pu']) store.set(k, S[k]);
+  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality', 'pu', 'cam']) store.set(k, S[k]);
   SFX.tick(); renderLobby();
   if ((o === 'arena' || o === 'pu') && state === 'lobby') startDemo();
 }

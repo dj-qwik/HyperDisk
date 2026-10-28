@@ -5,7 +5,7 @@ const reticleGeo = new THREE.RingGeometry(0.55, 0.68, 40);
 const reticleInner = new THREE.RingGeometry(0.16, 0.22, 24);
 function makeGuide(p) {
   const layer = 1 + p.slot, col = new THREE.Color(p.color);
-  const dots = new THREE.InstancedMesh(guideDotGeo, new THREE.MeshBasicMaterial({ color: col.clone().multiplyScalar(1.6), transparent: true, opacity: 0.6, depthWrite: false }), GUIDE_N);
+  const dots = new THREE.InstancedMesh(guideDotGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(0x5aa8ff).multiplyScalar(2.2), transparent: true, opacity: 0.85, depthWrite: false }), GUIDE_N);
   dots.frustumCulled = false; dots.layers.set(layer); dots.count = 0;
   // the aim line: four glowing bars that run round the court at the aimed height (or across the ceiling)
   const lineMat = new THREE.MeshBasicMaterial({ color: col.clone().lerp(new THREE.Color(0x5aa8ff), 0.5).multiplyScalar(3.2), transparent: true, opacity: 0.95, depthWrite: false });
@@ -21,10 +21,12 @@ function makeGuide(p) {
   ret.add(up, dn, ring);
   for (const o of [dots, line, ret]) o.traverse(c => c.layers.set(layer));
   ret.renderOrder = 10; ret.children.forEach(c => c.renderOrder = 10);
-  scene.add(dots, line, ret);
-  return { dots, line, bars, ret, mat: xm, lineMat, arrows: [up, dn], ring };
+  const land = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, depthWrite: false }));
+  land.rotation.x = -Math.PI / 2; land.layers.set(layer); land.visible = false; land.renderOrder = 9;
+  scene.add(dots, line, ret, land);
+  return { dots, line, bars, ret, land, mat: xm, lineMat, arrows: [up, dn], ring };
 }
-function disposeGuide(g) { if (!g) return; scene.remove(g.dots, g.line, g.ret); }
+function disposeGuide(g) { if (!g) return; scene.remove(g.dots, g.line, g.ret, g.land); }
 const _gp = new THREE.Vector3(), _gv = new THREE.Vector3(), _ge = {}, _gm = new THREE.Matrix4(), _gq = new THREE.Quaternion(), _gs = new THREE.Vector3(), _ga = {};
 function setLine(g, hx, hz, y) {
   const b = g.bars;
@@ -36,8 +38,10 @@ function setLine(g, hx, hz, y) {
 function updateGuide(p, dt) {
   const g = p.guide; if (!g) return;
   const show = p.mode === 'play' && (state === 'play' || state === 'count');
-  g.dots.visible = false; g.ret.visible = show; g.line.visible = show; if (!show) return;
+  g.ret.visible = show; g.line.visible = show; if (!show) { g.dots.visible = false; g.land.visible = false; return; }
   const ap = aimPoint(p, p.aimYaw, p.aimElev, _ga);
+  const dots = ap.ceil;   // ceiling shots show where they'll come down; wall shots never do
+  g.dots.visible = dots;
   // the line: round the walls at the aimed height, or a rectangle across the ceiling through the crosshair
   if (!ap.ceil) setLine(g, BOX.hx - 0.06, BOX.hz - 0.06, ap.y);
   else { const inset = Math.min(BOX.hx - Math.abs(ap.x), BOX.hz - Math.abs(ap.z)); setLine(g, Math.max(0.3, BOX.hx - inset), Math.max(0.3, BOX.hz - inset), YC - 0.07); }
@@ -53,11 +57,15 @@ function updateGuide(p, dt) {
     const px = _gp.x, py = _gp.y, pz = _gp.z;
     discEnvStep(_gp, _gv, h, p.slot, _ge);
     dist += Math.hypot(_gp.x - px, _gp.y - py, _gp.z - pz);
+    if (dots && dist > 0.7 && n < GUIDE_N) { dist = 0; _gs.setScalar(0.8); _gm.compose(_gp, _gq, _gs); g.dots.setMatrixAt(n++, _gm); }
     let hitR = false; for (const o of players) if (o !== p && o.mode === 'play' && hitsBody(o, _gp.x, _gp.y, _gp.z, D_R * 0.8)) hitR = true;
     if (hitR) { lock = true; break; }
     if (_ge.kind === 'wall' || _ge.kind === 'ceil') { bounces++; if (bounces > 2) break; }
     if (_ge.kind === 'ring' || _ge.kind === 'block' || _ge.kind === 'bulwark' || _ge.kind === 'abyss') break;
   }
+  g.dots.count = n; g.dots.instanceMatrix.needsUpdate = true;
+  // where a ceiling shot comes down: a ring on the floor/podium (or on the rival it will hit)
+  g.land.visible = dots; if (dots) { g.land.position.set(_gp.x, _gp.y + 0.05, _gp.z); const s = 1 + Math.sin(uTime.value * 8) * 0.12; g.land.scale.set(s, s, s); g.land.material.color.copy(new THREE.Color(lock ? 0xffffff : 0x5aa8ff).multiplyScalar(3)); }
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);
@@ -111,7 +119,7 @@ function layoutViews() {
     const [x, y, w, h] = rects[i]; Object.assign(v, { x, y, w, h });
     Object.assign(v.el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     v.el.classList.toggle('solo', n === 1); v.el.classList.toggle('small', n > 2 || w < 700);
-    v.cam.aspect = w / Math.max(1, h); v.cam.fov = v.cam.aspect < 1 ? 80 : n > 2 ? 70 : 66; v.cam.updateProjectionMatrix();
+    v.cam.aspect = w / Math.max(1, h); v.cam.fov = S.cam ? (v.cam.aspect < 1 ? 80 : n > 2 ? 70 : 66) : (v.cam.aspect < 1 ? 74 : n > 2 ? 62 : 56); v.cam.updateProjectionMatrix();
   });
 }
 function viewFlash(p, colorHex, amt) { for (const v of views) if (v.p === p) { const c = new THREE.Color(colorHex); v.flash.set(c.r, c.g, c.b, amt); } }
@@ -124,7 +132,20 @@ function popFor(p, text, big) {
 
 // ---- camera rigs ----
 const _cp = new THREE.Vector3(), _cl = new THREE.Vector3();
+// ARCADE camera (default), like the original cabinet: high up behind your end of the court, looking down
+// the length of it, so your rival, their podium and every disc in flight are in clear view. It doesn't
+// swing round as you aim; the crosshair on the walls shows where you're throwing.
+function arcadeCam(p, outPos, outLook) {
+  const st = p.slot != null && STATIONS[p.slot] ? STATIONS[p.slot] : null;
+  const yaw = st ? st.yaw : 0, fx = Math.sin(yaw), fz = Math.cos(yaw), rx = -Math.cos(yaw), rz = Math.sin(yaw);
+  const sx = st ? st.x : p.x, sz = st ? st.z : p.z;
+  const lat = (p.x - sx) * rx + (p.z - sz) * rz;            // how far you've moved sideways on your podium(s)
+  const back = BOX.hz - RS - 0.6, d = RS * 2;               // camera sits just inside the back wall
+  outPos.set(sx - fx * back + rx * lat * 0.45, (p.y || 0) * 0.5 + 6.6, sz - fz * back + rz * lat * 0.45);
+  outLook.set(sx + fx * d * 0.5 + rx * lat * 0.2, (p.y || 0) * 0.3 + 0.4, sz + fz * d * 0.5 + rz * lat * 0.2);
+}
 function shoulderCam(p, outPos, outLook, aimYaw) {
+  if (!S.cam) { arcadeCam(p, outPos, outLook); return; }
   const a = aimYaw == null ? p.aimYaw : aimYaw, fx = Math.sin(a), fz = Math.cos(a), rx = -Math.cos(a), rz = Math.sin(a);
   const e = p.aimElev == null ? ELEV_LEVEL : p.aimElev, hi = e > ELEV_WALL ? 1 : clamp((e - ELEV_LEVEL) / (ELEV_WALL - ELEV_LEVEL), -0.3, 1);
   const lift = hi > 0 ? hi * 0.6 : -hi * 0.4;
@@ -157,9 +178,9 @@ function updateView(v, dt) {
     orbitCam(t, _cp, _cl, 4.6, 1.9, 0.35, 0, winner.x, winner.y, winner.z); _cl.y = winner.y + 1.35;
     // keep the winner left of the results card
     const rx = -Math.cos(t * 0.35 + Math.PI / 2), rz = -Math.sin(t * 0.35 + Math.PI / 2); _cl.x -= rx * 1.4; _cl.z -= rz * 1.4; k = 4;
-  } else if (p.mode === 'play' || p.mode === 'idle' || p.mode === 'win') { shoulderCam(p, _cp, _cl); k = 12; }
+  } else if (p.mode === 'play' || p.mode === 'idle' || p.mode === 'win') { shoulderCam(p, _cp, _cl); k = S.cam ? 12 : 5; }
   else if (p.mode === 'fall') { _cp.copy(v.pos); _cl.set(p.x, p.y + 0.8, p.z); k = 6; }
-  else if (p.mode === 'dead' && p.lives > 0) { const pad = homePad(p), st = stationOf(p); shoulderCam({ x: pad.x, y: pad.y, z: pad.z, lvl: 1 }, _cp, _cl, st.yaw); _cp.y += 1.5; k = 3; }
+  else if (p.mode === 'dead' && p.lives > 0) { const pad = homePad(p), st = stationOf(p); shoulderCam({ x: pad.x, y: pad.y, z: pad.z, lvl: 1, slot: p.slot, aimYaw: st.yaw }, _cp, _cl, st.yaw); if (S.cam) _cp.y += 1.5; k = 3; }
   else { // out: spectate from high up
     const a = t * 0.07 + p.slot * 1.6; _cp.set(Math.cos(a) * (BOX.hx - 1.5), 12, Math.sin(a) * (BOX.hz - 1.5)); _cl.set(0, 0, 0); k = 2.5;
   }

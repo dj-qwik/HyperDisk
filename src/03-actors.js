@@ -99,7 +99,7 @@ function buildBulwarks(on) {
   if (!on) return;
   const hw = 2.4, top = 2.5;
   for (const st of STATIONS) {
-    const fx = Math.sin(st.yaw), fz = Math.cos(st.yaw), cx = st.x + fx * 5.2, cz = st.z + fz * 5.2;
+    const fx = Math.sin(st.yaw), fz = Math.cos(st.yaw), cx = st.x + fx * 4.6, cz = st.z + fz * 4.6;
     BULWARKS.push({ st: st.i, x: cx, z: cz, fx, fz, rx: -fz, rz: fx, hw, top });
     const g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = st.yaw;
     const slab = new THREE.Mesh(rbox(hw * 2, top + 0.6, 0.5, 0.12), new THREE.MeshStandardMaterial({ color: 0x14161e, metalness: 0.85, roughness: 0.35, normalMap: HULLT.nrm, map: HULLT.map, emissiveMap: HULLT.em, emissive: new THREE.Color(st.color).multiplyScalar(0.9) }));
@@ -114,7 +114,8 @@ function buildBulwarks(on) {
 function buildStations(n, arena, colors) {
   clearStations(); LAYOUT = arena;
   // two runners face off down a long court; three or four share a square one
-  if (n <= 2) { BOX.hx = 11; BOX.hz = 23.5; } else { BOX.hx = 23; BOX.hz = 23; }
+  RS = n <= 2 ? 9 : 10;
+  if (n <= 2) { BOX.hx = 10.5; BOX.hz = RS + 8.5; } else { BOX.hx = BOX.hz = RS + 8.5; }
   buildCourt();
   const lay = stationLayout(n);
   lay.forEach((L, i) => {
@@ -188,7 +189,7 @@ function padUnder(x, z, extra) {
 
 /* ================= firewall: a spinning ring of energy blocks between the stations ================= */
 const WALLFW = {
-  on: false, rot: 0, cols: 20, rows: 3, rowY: [0.95, 2.6, 4.25], half: 0.78, blocks: [], im: null, glass: null,
+  on: false, rot: 0, cols: 20, rows: 2, rowY: [0.95, 2.6], half: 0.78, blocks: [], im: null, glass: null,
   init() {
     const n = this.cols * this.rows;
     const geo = new THREE.BoxGeometry(TAU * RB / this.cols - 0.22, this.half * 2 - 0.08, 0.55);
@@ -200,7 +201,7 @@ const WALLFW = {
     scene.add(this.glass, this.im);
     // hub + ring rails that carry the blocks
     this.rails = new THREE.Group();
-    for (const y of [0.1, 5.1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff2a0a, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
+    for (const y of [0.1, 3.45]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff2a0a, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
     scene.add(this.rails);
     this.setOn(false);
   },

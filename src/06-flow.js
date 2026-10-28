@@ -65,7 +65,7 @@ function renderLobby() {
   const ar = ARENAS[S.arena];
   $('#vArena').textContent = ar.name; $('#arenaDesc').textContent = ar.desc;
   $('#vLives').textContent = S.lives; $('#vCpus').textContent = S.cpus; $('#vSkill').textContent = SKILLS[S.skill].name;
-  $('#vPu').textContent = S.pu ? 'ON' : 'OFF'; $('#vQuality').textContent = QUALS[S.quality].name;
+  $('#vPu').textContent = S.pu ? 'ON' : 'OFF'; $('#vCam').textContent = S.cam ? 'CHASE' : 'ARCADE'; $('#vQuality').textContent = QUALS[S.quality].name;
   const canStart = online ? (NET.room && NET.role === 'host') : true;
   const st = $('#start'); st.disabled = !canStart;
   $('#startSub').textContent = online ? (NET.room ? (NET.role === 'host' ? 'PRESS ENTER OR START' : 'WAITING FOR HOST') : 'HOST OR JOIN A ROOM') : (LOBBY.humans.length ? 'PRESS ENTER OR START' : 'OR WATCH CPUS FIGHT');
@@ -109,8 +109,9 @@ function changeOpt(o, d) {
   if (o === 'skill') S.skill = clamp(S.skill + d, 0, SKILLS.length - 1);
   if (o === 'guide') S.guide = !S.guide;
   if (o === 'pu') S.pu = !S.pu;
+  if (o === 'cam') { S.cam = S.cam ? 0 : 1; layoutViews(); }
   if (o === 'quality') { S.quality = clamp(S.quality + d, 0, QUALS.length - 1); resize(); toast('GRAPHICS: ' + QUALS[S.quality].name + (S.quality !== store.get('quality', -1) ? ' · city density applies on reload' : '')); }
-  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality', 'pu']) store.set(k, S[k]);
+  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality', 'pu', 'cam']) store.set(k, S[k]);
   SFX.tick(); renderLobby();
   if ((o === 'arena' || o === 'pu') && state === 'lobby') startDemo();
 }

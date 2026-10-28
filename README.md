@@ -11,7 +11,8 @@ Zero-g disc duels above a neon megacity. Stand on a floating podium of concentri
 | | |
 |---|---|
 | **Discs** | Three each. They bounce off the walls and ceiling up to three times, then fly home. |
-| **Aiming** | As in the original: a light blue line runs round all four walls at your throwing height, with a crosshair on it. Turn to slide the crosshair, raise or lower the line for elevation. The disc flies straight at the crosshair. Push the line past the top of the walls and it runs out across the ceiling. |
+| **Camera** | ARCADE (default): high behind your end of the court looking down its length, like the original cabinet, so your rival and every disc are in clear view. CHASE: the old over-the-shoulder view. Switch in the lobby. |
+| **Aiming** | As in the original: a light blue line runs round all four walls at your throwing height, with a crosshair on it. Turn to slide the crosshair, raise or lower the line for elevation. The disc flies straight at the crosshair. Push the line past the top of the walls and it runs out across the ceiling; ceiling shots show a dotted flight path and a ring where they'll come down (wall shots never do). |
 | **Banks** | Discs rebound off flat walls (angle in = angle out) and off the ceiling. Bank round deflectors and barriers. Missed discs come back off the far wall and can hit you from behind. |
 | **Rings** | A struck ring flashes for 1.6 s, then vanishes for 9 s. Anyone standing on it falls. Centre plates are armoured. |
 | **How to Play** | The lobby's HOW TO PLAY button (H, or X on a controller) explains all of this with diagrams. |
