@@ -70,6 +70,14 @@ const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.
 // body tuning
 const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
+const SHIELD_HOLD = 0.22;   // hold the throw button this long and the disc goes up as a shield instead
+const SHIELD_Y = 1.25;      // shield centre height (it forms from the disc held over your head)
+// where a disc lands decides how hard it hits: knockback multiplier and OVERLOAD added
+const ZONES = [
+  { name: 'HEADSHOT!', kb: 1.45, heat: 1.75 },
+  { name: 'CHEST HIT', kb: 1.0, heat: 1.0 },
+  { name: 'GLANCING BLOW', kb: 0.6, heat: 0.5 }
+];
 const AUTO_JUMP_HOLD = 0.5, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
 const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 

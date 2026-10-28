@@ -199,7 +199,7 @@ function netRecv(dt) {
 }
 function applyEvent(ev) {
   const k = ev[1];
-  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), !!ev[7]); }
+  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), clamp(num(ev[7], 1), 0, 2)); }
   else if (k === 'd') { const p = players[ev[2]]; if (p && p.local) shieldStruck(p, !!ev[3]); else if (p) p.rig.shieldMat.uniforms.uHit.value = 1; }
   else if (k === 'r') { ringBreak(num(ev[2]), num(ev[3]), num(ev[4])); }
   else if (k === 'b') { WALLFW.breakBlock(num(ev[2])); }

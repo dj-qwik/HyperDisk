@@ -43,18 +43,18 @@ with sync_playwright() as pw:
     for nm, pg, _ in pages: print(nm, 'after intro', pg.evaluate("[__hd.state, +__hd.matchT.toFixed(1), __hd.players.map(p => [p.name, p.local, p.mode, +p.x.toFixed(1), +p.z.toFixed(1)])]"))
     # guest walks right then throws
     guest.evaluate("__hd.press('KeyD')"); run(1.5); guest.evaluate("__hd.release('KeyD')")
-    guest.evaluate("__hd.press('Space')"); run(0.3); guest.evaluate("__hd.release('Space')"); run(0.6)
+    guest.evaluate("__hd.press('Space'); __hd.step(3, 1/60, false); __hd.release('Space')"); run(0.6)
     print('guest view of VEX (self):', guest.evaluate("(()=>{const p=__hd.players[1]; return [p.x.toFixed(2), p.z.toFixed(2), p.stats.thrown, p.discs.map(d=>d.state)]})()"))
     print('host view of VEX:', host.evaluate("(()=>{const p=__hd.players[1]; return [p.x.toFixed(2), p.z.toFixed(2), p.discs.map(d=>d.state)]})()"))
     host.evaluate("__hd.press('KeyA')"); run(1.0); host.evaluate("__hd.release('KeyA')"); run(0.5)
     print('NOVA host/guest:', host.evaluate("[__hd.players[0].x.toFixed(2), __hd.players[0].z.toFixed(2)]"), guest.evaluate("[__hd.players[0].x.toFixed(2), __hd.players[0].z.toFixed(2)]"))
     # guest throws a MID disc straight at the host until something lands
     for k in range(6):
-        guest.evaluate("__hd.press('Space')"); run(0.15); guest.evaluate("__hd.release('Space')"); run(1.4)
+        guest.evaluate("__hd.press('Space'); __hd.step(3, 1/60, false); __hd.release('Space')"); run(1.4)
     print('after volley host:', host.evaluate("[__hd.players[0].heat, __hd.players[0].lives, __hd.players[0].mode, __hd.players[1].discs.map(d=>d.state)]"), 'guest:', guest.evaluate("[__hd.players[1].stats, __hd.players[0].heat]"))
     host.evaluate("__hd.press('KeyF'); __hd.step(1); __hd.release('KeyF')")
     for k in range(4):
-        host.evaluate("__hd.press('Space')"); run(0.15); host.evaluate("__hd.release('Space')"); run(1.4)
+        host.evaluate("__hd.press('Space'); __hd.step(3, 1/60, false); __hd.release('Space')"); run(1.4)
     run(2)
     for nm, pg, _ in pages:
         print(nm, 'later', pg.evaluate("[__hd.state, +__hd.matchT.toFixed(1), __hd.players.map(p => [p.name, p.mode, p.lives, p.stats.hits, p.stats.rings])]"))

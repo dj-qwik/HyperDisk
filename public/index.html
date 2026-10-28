@@ -298,7 +298,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <ul>
           <li><b>Knock every rival off their podium.</b> Each fall costs a life (the pips by your name). Last runner standing wins.</li>
           <li>You carry <b>3 discs</b>. A thrown disc bounces off the walls and ceiling up to 3 times, then flies back to your hand. You can't throw when all 3 are out.</li>
-          <li><b>Hold throw</b> to charge a <b>power disc</b>: it shoves harder and costs a deflector 2 uses.</li>
+          <li><b>Where you hit matters.</b> A <b>headshot</b> hits hardest, a <b>chest</b> hit is solid, and a <b>glancing blow</b> to the arms or legs barely moves them.</li>
         </ul>
       </div>
       <div class="howpage" data-p="1" hidden>
@@ -318,7 +318,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <ul>
           <li><b>Every hit wears you down.</b> It shoves you toward the edge and charges your <b>OVERLOAD</b>, so the next hit shoves you even further. The first hit staggers you; keep eating them and one sends you flying.</li>
           <li><b>Watch your OVERLOAD bar.</b> The higher it climbs, the closer you are to going over. Get back to the middle of your podium after a hit to buy yourself room.</li>
-          <li>Losing a life resets your OVERLOAD. <b>Power discs</b> hit harder; <b>grazes</b> only nudge you.</li>
+          <li>Losing a life resets your OVERLOAD. <b>Headshots</b> charge it fastest; <b>glancing blows</b> to arms and legs barely move the needle.</li>
           <li>Shoved <b>just past the rim</b>, you teeter (<b>WHOA!</b>): push back toward the centre fast to save yourself.</li>
           <li><b>Shattered floor:</b> a disc that hits one of your rings makes it <b>flash</b> for a moment, then it drops away. Step off a flashing ring. The centre plate never breaks.</li>
         </ul>
@@ -343,7 +343,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
       </div>
       <div class="howpage" data-p="3" hidden>
         <ul>
-          <li><b>Deflector:</b> hold it to bounce discs away. It only covers <b>your front</b>, you can't throw while it's up, and you get <b>7 uses per life</b> (a power disc costs 2). Knock a rival out to refill it.</li>
+          <li><b>Shield:</b> <b>hold the throw button</b> and you raise a disc over your head; a shield opens from it and bounces discs away. Tap to throw, hold to shield. You need <b>at least one disc in hand</b> to shield, it only covers <b>your front</b>, and you get <b>7 blocks per life</b>. Knock a rival out to refill them.</li>
           <li><b>Smash their disc</b> out of the air with yours: both are destroyed and you get yours straight back.</li>
           <li><b>Missed discs come back</b> off the far wall and can hit you from behind, where the deflector can't help.</li>
           <li><b>You can't walk off a platform.</b> To cross to another of your platforms, or over a gap where a ring shattered, hold toward it at the edge for half a second and you leap over. Nobody can hit you mid-leap.</li>
@@ -358,8 +358,8 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><td>Aim (crosshair left/right)</td><td>Right stick ← →</td><td><kbd>Q</kbd> <kbd>E</kbd> or mouse</td><td><kbd>←</kbd> <kbd>→</kbd></td></tr>
         <tr><td>Aim line up/down (onto the ceiling)</td><td>Right stick ↑ ↓, RB / LB</td><td><kbd>R</kbd> <kbd>F</kbd>, mouse or wheel</td><td><kbd>↑</kbd> <kbd>↓</kbd></td></tr>
         <tr><td>Level the aim line</td><td>Click right stick</td><td><kbd>V</kbd></td><td><kbd>;</kbd></td></tr>
-        <tr><td>Throw (hold = power)</td><td>RT</td><td><kbd>Space</kbd> or click</td><td><kbd>/</kbd> <kbd>Enter</kbd></td></tr>
-        <tr><td>Deflector</td><td>LT or B</td><td><kbd>Shift</kbd> or right-click</td><td><kbd>.</kbd> <kbd>R-Shift</kbd></td></tr>
+        <tr><td>Throw (tap)</td><td>RT</td><td><kbd>Space</kbd> or click</td><td><kbd>/</kbd> <kbd>Enter</kbd></td></tr>
+        <tr><td>Shield (hold throw)</td><td>Hold RT (or LT / B)</td><td>Hold <kbd>Space</kbd> / click (or <kbd>Shift</kbd>)</td><td>Hold <kbd>/</kbd> (or <kbd>.</kbd>)</td></tr>
         <tr><td>Jump to next platform</td><td colspan="3">Hold toward it at the edge for half a second</td></tr>
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
@@ -462,6 +462,14 @@ const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.
 // body tuning
 const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
+const SHIELD_HOLD = 0.22;   // hold the throw button this long and the disc goes up as a shield instead
+const SHIELD_Y = 1.25;      // shield centre height (it forms from the disc held over your head)
+// where a disc lands decides how hard it hits: knockback multiplier and OVERLOAD added
+const ZONES = [
+  { name: 'HEADSHOT!', kb: 1.45, heat: 1.75 },
+  { name: 'CHEST HIT', kb: 1.0, heat: 1.0 },
+  { name: 'GLANCING BLOW', kb: 0.6, heat: 0.5 }
+];
 const AUTO_JUMP_HOLD = 0.5, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
 const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 
@@ -1561,7 +1569,7 @@ class Trail {
     this.mat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uC: { value: new THREE.Color(color) }, uA: { value: 1 } },
       vertexShader: 'attribute float aT; varying float vT; void main(){ vT = aT; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-      fragmentShader: 'uniform vec3 uC; uniform float uA; varying float vT; void main(){ float a = pow(1.-vT, 1.6)*uA; gl_FragColor = vec4((uC*1.5 + vec3(1.)*pow(1.-vT,8.)*0.5)*a*0.75, 1.); }'
+      fragmentShader: 'uniform vec3 uC; uniform float uA; varying float vT; void main(){ float a = pow(1.-vT, 1.6)*uA; gl_FragColor = vec4((uC*1.3 + vec3(1.)*pow(1.-vT,8.)*0.25)*a*0.5, 1.); }'
     });
     this.mesh = new THREE.Mesh(this.geo, this.mat); this.mesh.frustumCulled = false; scene.add(this.mesh);
   }
@@ -1672,12 +1680,13 @@ function makeRunner(color) {
         vec3 col = uC * (0.03 + fr*0.9 + e*(0.35+uHit*2.5) + scan*0.04) + vec3(1.)*uHit*0.6*fr;
         gl_FragColor = vec4(col*uA*0.8, 1.); }`
   });
-  const shield = new THREE.Mesh(new THREE.SphereGeometry(SHIELD_R * 0.86, 40, 20, Math.PI / 2 - SHIELD_ARC, SHIELD_ARC * 2, Math.PI * 0.18, Math.PI * 0.6), shieldMat);
-  shield.position.y = 1.05; shield.visible = false; shield.renderOrder = 4; root.add(shield);
+  const shield = new THREE.Mesh(new THREE.SphereGeometry(SHIELD_R * 0.86, 40, 20, Math.PI / 2 - SHIELD_ARC, SHIELD_ARC * 2, 0, Math.PI * 0.72), shieldMat);
+  shield.position.y = SHIELD_Y; shield.visible = false; shield.renderOrder = 4; root.add(shield);
+  const shieldCore = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.42, 0.5, 20, 1, true), glowMat(c, 2.2, 0.55)); shieldCore.position.set(0.06, 2.05, 0.12); shieldCore.visible = false; root.add(shieldCore);
   // player light: makes their podium glow in their colour
   const light = new THREE.PointLight(c, 0.7, 6, 1.8); light.position.set(0, 1.4, 0.4); root.add(light);
   root.traverse(o => { if (o.isMesh && o.material === glow) o.castShadow = false; });
-  return { root, body, pelvis, spine, chest, head, neck, legs, arms, dockDiscs, handDisc, shield, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, light, armor };
+  return { root, body, pelvis, spine, chest, head, neck, legs, arms, dockDiscs, handDisc, shield, shieldCore, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, light, armor };
 }
 
 // pose a runner: everything eases toward a target pose built from the player's state
@@ -1699,9 +1708,10 @@ function poseRunner(p, dt) {
     P.crouch = 0.05; P.legL = [0.08, -0.16]; P.legR = [-0.05, -0.12];
   }
   // throwing arm
-  if (p.charge > 0) { P.armR = [-2.1, 0.5, -0.6]; P.elbR = -1.4; P.twist = -0.45; P.lean += 0.05; }
+  if (p.charge > 0 && !p.shieldOn) { P.armR = [-1.2, 0.3, -0.5]; P.elbR = -1.1; P.twist = -0.2; }
   if (p.throwT > 0) { const q = 1 - p.throwT / 0.28; P.armR = [lerp(-2.1, 0.9, q), lerp(0.4, -0.9, q), -0.3]; P.elbR = lerp(-1.4, -0.15, q); P.twist = lerp(-0.45, 0.5, q); }
-  if (p.shieldOn) { P.armL = [-1.45, -0.4, 0.2]; P.elbL = -0.5; P.twist = Math.max(P.twist, 0.12); P.crouch = 0.12; }
+  // shield: the throwing arm goes straight up holding a disc flat over the head; the dome forms from it
+  if (p.shieldOn) { P.armR = [-3.05, 0, -0.12]; P.elbR = -0.05; P.armL = [-0.6, 0, 0.5]; P.elbL = -0.7; P.twist = 0; P.crouch = 0.1; P.head = 0.15; }
   if (!p.onGround && p.mode === 'play') { P.legL = [0.7, -1.2]; P.legR = [0.3, -0.7]; P.armL[2] = 0.6; P.armR[2] = -0.6; P.crouch = 0; }
   if (p.stun > 0) { P.lean = -0.45; P.armL = [-0.9, 0, 1.0]; P.armR = [-0.9, 0, -1.0]; P.head = -0.3; }
   if (p.teeter > 0) { const w = t * 16; P.lean = -0.35 + Math.sin(t * 5) * 0.12; P.armL = [-1.6 + Math.sin(w) * 1.3, 0, 1.3]; P.armR = [-1.6 - Math.sin(w) * 1.3, 0, -1.3]; P.legL = [0.4, -0.3]; P.head = -0.2; }
@@ -1719,9 +1729,14 @@ function poseRunner(p, dt) {
   const A = [[P.armL, P.elbL, R.arms[0]], [P.armR, P.elbR, R.arms[1]]];
   for (const [[ax, ay, az], el, arm] of A) { e(arm.sh.rotation, 'x', ax); e(arm.sh.rotation, 'y', ay); e(arm.sh.rotation, 'z', az); e(arm.elbow.rotation, 'x', el); }
   // spare discs on the back
-  for (let i = 0; i < 3; i++) R.dockDiscs[i].visible = i < p.discsHome - (p.charge > 0 ? 1 : 0);
-  R.handDisc.visible = p.charge > 0;
-  if (R.handDisc.visible) { R.handDisc.rotation.y += dt * (p.charge >= D_CHARGE ? 40 : 14); const s = p.charge >= D_CHARGE ? 1.15 + Math.sin(t * 40) * 0.08 : 1; R.handDisc.scale.setScalar(s); }
+  const inHand = (p.charge > 0 || p.shieldOn) && p.discsHome > 0;
+  for (let i = 0; i < 3; i++) R.dockDiscs[i].visible = i < p.discsHome - (inHand ? 1 : 0);
+  R.handDisc.visible = inHand;
+  if (inHand) {
+    R.handDisc.rotation.z = p.shieldOn ? 0 : Math.PI / 2; R.handDisc.position.set(0, p.shieldOn ? -0.14 : -0.06, p.shieldOn ? 0 : 0.06);
+    R.handDisc.rotation.y += dt * (p.shieldOn ? 38 : 14); R.handDisc.scale.setScalar(p.shieldOn ? 1.0 + Math.sin(t * 30) * 0.04 : 1);
+  }
+  R.shieldCore.visible = p.shieldOn; if (p.shieldOn) R.shieldCore.material.opacity = 0.35 + Math.sin(t * 22) * 0.15;
   // deflector
   const sa = R.shieldMat.uniforms.uA; sa.value = damp(sa.value, p.shieldOn ? 1 : 0, 18, dt);
   R.shield.visible = sa.value > 0.02; R.shieldMat.uniforms.uHit.value = Math.max(0, R.shieldMat.uniforms.uHit.value - dt * 3);
@@ -1817,7 +1832,7 @@ function makePlayer(slot, kind, ctl, name, color) {
   scene.add(p.rig.root);
   for (let k = 0; k < 3; k++) {
     const d = { id: slot * 10 + k, k, owner: p, state: 'home', pos: new THREE.Vector3(), vel: new THREE.Vector3(), bounces: 0, t: 0, power: false, deflected: false, immune: null, immuneT: 0,
-      mesh: makeDiscMesh(PCOL[slot], 1), trail: new Trail(PCOL[slot], 22, 0.13), spin: Math.random() * 6, clashT: 0, seen: false, ghostT: 0 };
+      mesh: makeDiscMesh(PCOL[slot], 1), trail: new Trail(PCOL[slot], 13, 0.07), spin: Math.random() * 6, clashT: 0, seen: false, ghostT: 0 };
     d.mesh.visible = false; d.trail.mesh.visible = false; scene.add(d.mesh); p.discs.push(d); DISCS.push(d);
   }
   if (kind === 'cpu') p.bot = { think: 0, plan: null, target: null, tgtT: 0, threat: null, react: 0, shieldT: 0, dodge: null, wander: null, wanderT: 0, noise: 0, noiseV: 0, holdFire: 0, decided: new Set() };
@@ -1965,8 +1980,17 @@ function hitsBody(o, x, y, z, rad) {
   const yy = clamp(y, o.y + 0.25, o.y + 1.8); const dx = x - o.x, dy = y - yy, dz = z - o.z;
   return dx * dx + dy * dy + dz * dz < (0.42 + rad) * (0.42 + rad);
 }
+// head, chest, or a glancing blow (legs, arms, or a disc that only clips the edge of the body)
+function hitZone(o, x, y, z, vx, vz) {
+  // how far off-centre the disc is passing, measured across its line of flight
+  const vl = Math.hypot(vx || 0, vz || 0) || 1, ox = x - o.x, oz = z - o.z;
+  const rel = y - o.y, lat = Math.abs(ox * (vz || 0) / vl - oz * (vx || 0) / vl);
+  if (rel >= 1.6) return 0;
+  if (rel >= 0.98 && lat < 0.36) return 1;
+  return 2;
+}
 function shieldFacing(o, x, z) { if (!o.shieldOn) return false; return Math.abs(angDiff(o.yaw, Math.atan2(x - o.x, z - o.z))) < SHIELD_ARC; }
-function inShield(o, x, y, z) { const dx = x - o.x, dy = y - (o.y + 1.05), dz = z - o.z; return dx * dx + dy * dy + dz * dz < SHIELD_R * SHIELD_R; }
+function inShield(o, x, y, z) { const dx = x - o.x, dy = y - (o.y + SHIELD_Y), dz = z - o.z; return dx * dx + dy * dy + dz * dz < SHIELD_R * SHIELD_R; }
 
 const _env = {}, _tmp = new THREE.Vector3(), _tmp2 = new THREE.Vector3();
 function throwDisc(p, power) {
@@ -2030,9 +2054,9 @@ function discVsBodies(d) {
     if (o === d.immune && d.immuneT > 0) continue;
     // deflector first: it is bigger than the body
     if (o.shieldOn && inShield(o, d.pos.x, d.pos.y, d.pos.z) && shieldFacing(o, d.pos.x, d.pos.z)) {
-      _n.set(d.pos.x - o.x, d.pos.y - (o.y + 1.05), d.pos.z - o.z).normalize();
+      _n.set(d.pos.x - o.x, d.pos.y - (o.y + SHIELD_Y), d.pos.z - o.z).normalize();
       const vn = d.vel.dot(_n); if (vn < 0) d.vel.addScaledVector(_n, -2 * vn);
-      d.vel.multiplyScalar(1.06); d.pos.copy(_n).multiplyScalar(SHIELD_R + 0.05).add(_tmp.set(o.x, o.y + 1.05, o.z));
+      d.vel.multiplyScalar(1.06); d.pos.copy(_n).multiplyScalar(SHIELD_R + 0.05).add(_tmp.set(o.x, o.y + SHIELD_Y, o.z));
       d.deflected = true; d.immune = o; d.immuneT = 0.4; d.state = 'fly'; d.bounces = Math.min(d.bounces, 1); d.t = Math.min(d.t, 1.5);
       if (o.local) shieldStruck(o, d.power); else netEvent(['d', o.slot, d.power ? 1 : 0]);
       sparks(d.pos.x, d.pos.y, d.pos.z, o.color, 26, 9, 0.5, 0.07); shockRing(d.pos.x, d.pos.y, d.pos.z, _n.x, _n.y, _n.z, o.color, 1.6, 0.35);
@@ -2040,10 +2064,9 @@ function discVsBodies(d) {
     }
     if (hitsBody(o, d.pos.x, d.pos.y, d.pos.z, D_R * 0.8)) {
       const hl = Math.hypot(d.vel.x, d.vel.z) || 1, dx = d.vel.x / hl, dz = d.vel.z / hl;
-      // a disc that only clips the edge of the body is a graze: a lighter shove
-      const yy = clamp(d.pos.y, o.y + 0.25, o.y + 1.8), dist = Math.hypot(d.pos.x - o.x, d.pos.y - yy, d.pos.z - o.z), graze = dist > (0.42 + D_R * 0.8) * 0.72;
-      if (o.local) applyHit(o, dx, dz, d.power, d.owner.slot, graze); else netEvent(['h', o.slot, +dx.toFixed(3), +dz.toFixed(3), d.power ? 1 : 0, d.owner.slot, graze ? 1 : 0]);
-      if (o !== d.owner) { d.owner.stats.hits++; popFor(d.owner, graze ? 'GRAZE' : d.power ? 'POWER HIT' : d.bounces ? 'BANK SHOT!' : 'DIRECT HIT'); }
+      const zone = hitZone(o, d.pos.x, d.pos.y, d.pos.z, d.vel.x, d.vel.z);
+      if (o.local) applyHit(o, dx, dz, d.power, d.owner.slot, zone); else netEvent(['h', o.slot, +dx.toFixed(3), +dz.toFixed(3), d.power ? 1 : 0, d.owner.slot, zone]);
+      if (o !== d.owner) { d.owner.stats.hits++; if (zone === 0) d.owner.stats.heads = (d.owner.stats.heads || 0) + 1; popFor(d.owner, (d.bounces && zone < 2 ? 'BANK ' : '') + ZONES[zone].name); }
       sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 40, 10, 0.7, 0.09); sparks(d.pos.x, d.pos.y, d.pos.z, 0xffffff, 12, 6, 0.4, 0.06);
       d.vel.set(-d.vel.x * 0.3, 5, -d.vel.z * 0.3); d.state = 'ret'; d.t = 0; d.immune = o; d.immuneT = 1;
       SFX.hit(d.pos, d.power); return;
@@ -2079,12 +2102,14 @@ function updateDiscVisual(d, dt) {
 const UP = new THREE.Vector3(0, 1, 0);
 
 /* ================= getting hit ================= */
-function applyHit(o, dx, dz, power, bySlot, graze) {
+function applyHit(o, dx, dz, power, bySlot, zone) {
   if (o.mode !== 'play' || o.invuln > 0) return;
-  const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * (graze ? 0.5 : 1);
-  o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + (graze ? 0.5 : power ? 2 : 1));
-  o.stun = 0.36; o.flash = 1; o.charge = 0; o.shieldOn = false; o.lastHitBy = bySlot; o.lastHitAt = matchT; o.shake = power ? 0.55 : 0.35;
-  viewFlash(o, 0xff1030, power ? 1 : 0.7);
+  const Z = ZONES[zone == null ? 1 : zone] || ZONES[1];
+  const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * Z.kb;
+  o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + Z.heat * (power ? 2 : 1));
+  o.stun = zone === 0 ? 0.5 : zone === 2 ? 0.22 : 0.36; o.flash = 1; o.charge = 0; o.shieldOn = false; o.lastHitBy = bySlot; o.lastHitAt = matchT; o.shake = zone === 0 ? 0.6 : zone === 2 ? 0.2 : 0.35;
+  viewFlash(o, 0xff1030, zone === 0 ? 1 : zone === 2 ? 0.45 : 0.7);
+  popFor(o, zone === 0 ? 'HEAD HIT' : zone === 2 ? 'GLANCED' : 'HIT');
   SFX.hurt(o);
 }
 // the deflector has DEFLECTS uses per life; a power disc costs two
@@ -2127,20 +2152,19 @@ function stepPlayer(p, inp, dt) {
   }
   p.yaw = dampAng(p.yaw, p.aimYaw, 14, dt);
 
-  // shield
-  const wantShield = ctl && inp.shield && p.shieldCD <= 0;
-  if (wantShield && !p.shieldOn && p.defl > 0) { p.shieldOn = true; p.charge = 0; SFX.shieldOn(p); }
+  // throw button: tap to throw; hold it and you raise a disc over your head and it opens into a shield.
+  // So you need at least one disc in hand to shield. (The old deflector button still works too.)
+  if (ctl && inp.fire && !p.fireWas) { if (p.discsHome > 0) p.charge = 0.001; else SFX.empty(p); }
+  if (inp.fire && p.charge > 0) p.charge += dt;
+  const holding = ctl && inp.fire && p.charge >= SHIELD_HOLD;
+  if (ctl && !inp.fire && p.fireWas && p.charge > 0 && p.charge < SHIELD_HOLD && p.discsHome > 0 && p.cool <= 0) throwDisc(p, false);
+  if (!inp.fire) p.charge = 0;
+  const wantShield = ctl && (holding || inp.shield) && p.shieldCD <= 0 && p.discsHome > 0;
+  if (wantShield && !p.shieldOn && p.defl > 0) { p.shieldOn = true; SFX.shieldOn(p); }
   else if (wantShield && !p.shieldOn && p.defl <= 0 && !p.emptyWarned) { p.emptyWarned = true; popFor(p, 'NO DEFLECTS LEFT'); SFX.empty(p); }
   if (!wantShield) p.emptyWarned = false;
   if (p.shieldOn && (!wantShield || p.defl <= 0)) p.shieldOn = false;
   p.shieldE = p.defl / DEFLECTS * 100;
-
-  // throw: hold to charge a power disc, release to throw
-  if (ctl && !p.shieldOn) {
-    if (inp.fire && !p.fireWas) { if (p.discsHome > 0 && p.cool <= 0) { p.charge = 0.001; SFX.charge(p); } else if (p.discsHome <= 0) SFX.empty(p); }
-    if (inp.fire && p.charge > 0) { const before = p.charge; p.charge += dt; if (before < D_CHARGE && p.charge >= D_CHARGE) SFX.charged(p); }
-    if (!inp.fire && p.charge > 0) { throwDisc(p, p.charge >= D_CHARGE); p.charge = 0; }
-  } else if (!inp.fire) p.charge = 0;
   p.fireWas = inp.fire;
   if (ctl && inp.recall) recallDiscs(p);
 
@@ -2148,7 +2172,7 @@ function stepPlayer(p, inp, dt) {
   const fx = Math.sin(p.aimYaw), fz = Math.cos(p.aimYaw), rx = -Math.cos(p.aimYaw), rz = Math.sin(p.aimYaw);
   let wx = 0, wz = 0;
   if (ctl) { wx = (fx * inp.mz + rx * inp.mx) * RUN; wz = (fz * inp.mz + rz * inp.mx) * RUN; }
-  const slow = p.shieldOn ? 0.55 : p.charge > 0 ? 0.75 : 1;
+  const slow = p.shieldOn ? 0.55 : 1;
   const acc = p.onGround ? 16 : 3;
   if (p.onGround || !p.leaping) { p.mvx = damp(p.mvx, wx * slow, acc, dt); p.mvz = damp(p.mvz, wz * slow, acc, dt); }
   p.kbx *= Math.exp(-FRICT * dt); p.kbz *= Math.exp(-FRICT * dt);
@@ -2304,7 +2328,7 @@ function botInput(p, dt) {
       if (!B.choice) {
         const front = Math.abs(angDiff(p.yaw, Math.atan2(threat.pos.x - p.x, threat.pos.z - p.z))) < SHIELD_ARC * 0.9;
         const r = Math.random();
-        B.choice = (front && p.defl > 0 && r < sk.block * (p.defl <= 2 ? (threat.power ? 1 : 0.4) : 1)) ? 'shield' : (Math.random() < sk.dodge ? 'dodge' : 'none');
+        B.choice = (front && p.defl > 0 && p.discsHome > 0 && r < sk.block * (p.defl <= 2 ? (threat.power ? 1 : 0.4) : 1)) ? 'shield' : (Math.random() < sk.dodge ? 'dodge' : 'none');
         if (B.choice === 'dodge') {
           const vx = threat.vel.x, vz = threat.vel.z, l = Math.hypot(vx, vz) || 1; let sx = -vz / l, sz = vx / l;
           if (!supportAt(p.x + sx * 1.2, p.z + sz * 1.2, 0)) { sx = -sx; sz = -sz; }
@@ -2393,7 +2417,7 @@ function botInput(p, dt) {
       }
     }
     for (const lvl of [1, 0, 2]) for (const [yw, bank] of yaws) {
-      const power = Math.random() < sk.power;
+      const power = false;
       const r = simShot(p, yw, lvl, T, power, sk.lead);
       if (r.blocked) continue;
       // a throw that connects beats one that only chips a ring; a ring is only worth it when they're standing on it
@@ -2419,7 +2443,7 @@ function botInput(p, dt) {
     B.steady = err < 0.05 + sk.spread ? (B.steady || 0) + dt : 0;
     const out = 3 - p.discsHome;
     if (B.nextShot <= 0 && B.steady >= sk.settle && p.discsHome > 0 && out < sk.maxOut && p.cool <= 0 && !inp.shield && plan.score > sk.minScore) {
-      inp.fire = true; B.holdFire = plan.power ? D_CHARGE + 0.05 : 0.02; B.plan = null; B.steady = 0;
+      inp.fire = true; B.holdFire = 0.05; B.plan = null; B.steady = 0;
       B.nextShot = sk.gap * (0.75 + Math.random() * 0.6);
     } else if (B.nextShot <= -2.5 && plan.score <= sk.minScore) { B.plan = null; B.think = 0; }   // no clean shot for a while: re-plan
   }
@@ -2509,7 +2533,7 @@ function makeView(p, kind) {
       <div class="who"><span class="n">${p.name}</span><span class="lives"></span></div>
       <div class="chg"></div><div class="msg"></div>
       <div class="bot">
-        <div class="meter shield"><div class="t"><span>DEFLECTS</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
+        <div class="meter shield"><div class="t"><span>SHIELD</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
         <div class="discs"><i></i><i></i><i></i></div>
         <div class="elev"><div class="eg"><b></b><u></u></div><i class="el">LEVEL</i></div>
         <div class="meter heat"><div class="t"><span>OVERLOAD</span><span class="hv">100%</span></div><div class="bar"><div class="fill"></div></div></div>
@@ -2614,12 +2638,12 @@ function updateHud(v) {
     if (L.lives !== p.lives) { L.lives = p.lives; H.lives.innerHTML = Array.from({ length: Math.max(S.lives, p.lives) }, (_, i) => `<i class="${i < p.lives ? '' : 'gone'}"></i>`).join(''); }
     if (L.sh !== p.defl) { L.sh = p.defl; H.shield.style.width = (p.defl / DEFLECTS * 100) + '%'; H.dv.textContent = p.defl; H.shield.style.opacity = p.defl > 0 ? 1 : 0.3; }
     const hv = Math.round(p.heat / 8 * 100); if (L.hv !== hv) { L.hv = hv; H.heat.style.width = hv + '%'; H.hv.textContent = Math.round(100 + p.heat * KB_HEAT * 100) + '%'; }
-    const dh = p.discsHome - (p.charge > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
+    const dh = p.discsHome - (p.shieldOn && p.discsHome > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
     // elevation gauge: where the aim line sits between the bottom of the walls and the ceiling
     const ev = Math.round(p.aimElev * 10); if (L.ev !== ev) { L.ev = ev; const ceil = p.aimElev > ELEV_WALL, y = ELEV_FLOOR + p.aimElev;
       H.eg.style.bottom = (ceil ? 100 : clamp(p.aimElev / ELEV_WALL * 100, 0, 100)) + '%'; H.eg.parentNode.classList.toggle('ceil', ceil);
       H.el.textContent = ceil ? 'CEILING' : Math.abs(y - 1.32) < 0.45 ? 'LEVEL' : y > 1.32 ? 'HIGH ' + y.toFixed(0) + 'm' : 'LOW'; }
-    const cq = p.charge > 0 ? Math.min(1, p.charge / D_CHARGE) : 0; if (L.cq !== cq) { L.cq = cq; H.chg.style.opacity = cq > 0 ? 1 : 0; H.chg.style.setProperty('--p', cq); }
+    const cq = 0; if (L.cq !== cq) { L.cq = cq; H.chg.style.opacity = cq > 0 ? 1 : 0; H.chg.style.setProperty('--p', cq); }
     let msg = '';
     if (p.mode === 'dead' && p.lives > 0) msg = `<div class="big">FLATLINED</div><div class="sm">REBOOTING IN ${Math.max(0, Math.ceil(2.2 - p.deadT))}</div>`;
     else if (p.mode === 'fall' && p.lives <= 0) msg = `<div class="big">ELIMINATED</div>`;
@@ -3091,7 +3115,7 @@ function netRecv(dt) {
 }
 function applyEvent(ev) {
   const k = ev[1];
-  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), !!ev[7]); }
+  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), clamp(num(ev[7], 1), 0, 2)); }
   else if (k === 'd') { const p = players[ev[2]]; if (p && p.local) shieldStruck(p, !!ev[3]); else if (p) p.rig.shieldMat.uniforms.uHit.value = 1; }
   else if (k === 'r') { ringBreak(num(ev[2]), num(ev[3]), num(ev[4])); }
   else if (k === 'b') { WALLFW.breakBlock(num(ev[2])); }

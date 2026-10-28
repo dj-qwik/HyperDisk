@@ -79,7 +79,7 @@ function makeView(p, kind) {
       <div class="who"><span class="n">${p.name}</span><span class="lives"></span></div>
       <div class="chg"></div><div class="msg"></div>
       <div class="bot">
-        <div class="meter shield"><div class="t"><span>DEFLECTS</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
+        <div class="meter shield"><div class="t"><span>SHIELD</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
         <div class="discs"><i></i><i></i><i></i></div>
         <div class="elev"><div class="eg"><b></b><u></u></div><i class="el">LEVEL</i></div>
         <div class="meter heat"><div class="t"><span>OVERLOAD</span><span class="hv">100%</span></div><div class="bar"><div class="fill"></div></div></div>
@@ -184,12 +184,12 @@ function updateHud(v) {
     if (L.lives !== p.lives) { L.lives = p.lives; H.lives.innerHTML = Array.from({ length: Math.max(S.lives, p.lives) }, (_, i) => `<i class="${i < p.lives ? '' : 'gone'}"></i>`).join(''); }
     if (L.sh !== p.defl) { L.sh = p.defl; H.shield.style.width = (p.defl / DEFLECTS * 100) + '%'; H.dv.textContent = p.defl; H.shield.style.opacity = p.defl > 0 ? 1 : 0.3; }
     const hv = Math.round(p.heat / 8 * 100); if (L.hv !== hv) { L.hv = hv; H.heat.style.width = hv + '%'; H.hv.textContent = Math.round(100 + p.heat * KB_HEAT * 100) + '%'; }
-    const dh = p.discsHome - (p.charge > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
+    const dh = p.discsHome - (p.shieldOn && p.discsHome > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
     // elevation gauge: where the aim line sits between the bottom of the walls and the ceiling
     const ev = Math.round(p.aimElev * 10); if (L.ev !== ev) { L.ev = ev; const ceil = p.aimElev > ELEV_WALL, y = ELEV_FLOOR + p.aimElev;
       H.eg.style.bottom = (ceil ? 100 : clamp(p.aimElev / ELEV_WALL * 100, 0, 100)) + '%'; H.eg.parentNode.classList.toggle('ceil', ceil);
       H.el.textContent = ceil ? 'CEILING' : Math.abs(y - 1.32) < 0.45 ? 'LEVEL' : y > 1.32 ? 'HIGH ' + y.toFixed(0) + 'm' : 'LOW'; }
-    const cq = p.charge > 0 ? Math.min(1, p.charge / D_CHARGE) : 0; if (L.cq !== cq) { L.cq = cq; H.chg.style.opacity = cq > 0 ? 1 : 0; H.chg.style.setProperty('--p', cq); }
+    const cq = 0; if (L.cq !== cq) { L.cq = cq; H.chg.style.opacity = cq > 0 ? 1 : 0; H.chg.style.setProperty('--p', cq); }
     let msg = '';
     if (p.mode === 'dead' && p.lives > 0) msg = `<div class="big">FLATLINED</div><div class="sm">REBOOTING IN ${Math.max(0, Math.ceil(2.2 - p.deadT))}</div>`;
     else if (p.mode === 'fall' && p.lives <= 0) msg = `<div class="big">ELIMINATED</div>`;

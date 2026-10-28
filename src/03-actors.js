@@ -263,7 +263,7 @@ class Trail {
     this.mat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uC: { value: new THREE.Color(color) }, uA: { value: 1 } },
       vertexShader: 'attribute float aT; varying float vT; void main(){ vT = aT; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-      fragmentShader: 'uniform vec3 uC; uniform float uA; varying float vT; void main(){ float a = pow(1.-vT, 1.6)*uA; gl_FragColor = vec4((uC*1.5 + vec3(1.)*pow(1.-vT,8.)*0.5)*a*0.75, 1.); }'
+      fragmentShader: 'uniform vec3 uC; uniform float uA; varying float vT; void main(){ float a = pow(1.-vT, 1.6)*uA; gl_FragColor = vec4((uC*1.3 + vec3(1.)*pow(1.-vT,8.)*0.25)*a*0.5, 1.); }'
     });
     this.mesh = new THREE.Mesh(this.geo, this.mat); this.mesh.frustumCulled = false; scene.add(this.mesh);
   }
@@ -374,12 +374,13 @@ function makeRunner(color) {
         vec3 col = uC * (0.03 + fr*0.9 + e*(0.35+uHit*2.5) + scan*0.04) + vec3(1.)*uHit*0.6*fr;
         gl_FragColor = vec4(col*uA*0.8, 1.); }`
   });
-  const shield = new THREE.Mesh(new THREE.SphereGeometry(SHIELD_R * 0.86, 40, 20, Math.PI / 2 - SHIELD_ARC, SHIELD_ARC * 2, Math.PI * 0.18, Math.PI * 0.6), shieldMat);
-  shield.position.y = 1.05; shield.visible = false; shield.renderOrder = 4; root.add(shield);
+  const shield = new THREE.Mesh(new THREE.SphereGeometry(SHIELD_R * 0.86, 40, 20, Math.PI / 2 - SHIELD_ARC, SHIELD_ARC * 2, 0, Math.PI * 0.72), shieldMat);
+  shield.position.y = SHIELD_Y; shield.visible = false; shield.renderOrder = 4; root.add(shield);
+  const shieldCore = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.42, 0.5, 20, 1, true), glowMat(c, 2.2, 0.55)); shieldCore.position.set(0.06, 2.05, 0.12); shieldCore.visible = false; root.add(shieldCore);
   // player light: makes their podium glow in their colour
   const light = new THREE.PointLight(c, 0.7, 6, 1.8); light.position.set(0, 1.4, 0.4); root.add(light);
   root.traverse(o => { if (o.isMesh && o.material === glow) o.castShadow = false; });
-  return { root, body, pelvis, spine, chest, head, neck, legs, arms, dockDiscs, handDisc, shield, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, light, armor };
+  return { root, body, pelvis, spine, chest, head, neck, legs, arms, dockDiscs, handDisc, shield, shieldCore, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, light, armor };
 }
 
 // pose a runner: everything eases toward a target pose built from the player's state
@@ -401,9 +402,10 @@ function poseRunner(p, dt) {
     P.crouch = 0.05; P.legL = [0.08, -0.16]; P.legR = [-0.05, -0.12];
   }
   // throwing arm
-  if (p.charge > 0) { P.armR = [-2.1, 0.5, -0.6]; P.elbR = -1.4; P.twist = -0.45; P.lean += 0.05; }
+  if (p.charge > 0 && !p.shieldOn) { P.armR = [-1.2, 0.3, -0.5]; P.elbR = -1.1; P.twist = -0.2; }
   if (p.throwT > 0) { const q = 1 - p.throwT / 0.28; P.armR = [lerp(-2.1, 0.9, q), lerp(0.4, -0.9, q), -0.3]; P.elbR = lerp(-1.4, -0.15, q); P.twist = lerp(-0.45, 0.5, q); }
-  if (p.shieldOn) { P.armL = [-1.45, -0.4, 0.2]; P.elbL = -0.5; P.twist = Math.max(P.twist, 0.12); P.crouch = 0.12; }
+  // shield: the throwing arm goes straight up holding a disc flat over the head; the dome forms from it
+  if (p.shieldOn) { P.armR = [-3.05, 0, -0.12]; P.elbR = -0.05; P.armL = [-0.6, 0, 0.5]; P.elbL = -0.7; P.twist = 0; P.crouch = 0.1; P.head = 0.15; }
   if (!p.onGround && p.mode === 'play') { P.legL = [0.7, -1.2]; P.legR = [0.3, -0.7]; P.armL[2] = 0.6; P.armR[2] = -0.6; P.crouch = 0; }
   if (p.stun > 0) { P.lean = -0.45; P.armL = [-0.9, 0, 1.0]; P.armR = [-0.9, 0, -1.0]; P.head = -0.3; }
   if (p.teeter > 0) { const w = t * 16; P.lean = -0.35 + Math.sin(t * 5) * 0.12; P.armL = [-1.6 + Math.sin(w) * 1.3, 0, 1.3]; P.armR = [-1.6 - Math.sin(w) * 1.3, 0, -1.3]; P.legL = [0.4, -0.3]; P.head = -0.2; }
@@ -421,9 +423,14 @@ function poseRunner(p, dt) {
   const A = [[P.armL, P.elbL, R.arms[0]], [P.armR, P.elbR, R.arms[1]]];
   for (const [[ax, ay, az], el, arm] of A) { e(arm.sh.rotation, 'x', ax); e(arm.sh.rotation, 'y', ay); e(arm.sh.rotation, 'z', az); e(arm.elbow.rotation, 'x', el); }
   // spare discs on the back
-  for (let i = 0; i < 3; i++) R.dockDiscs[i].visible = i < p.discsHome - (p.charge > 0 ? 1 : 0);
-  R.handDisc.visible = p.charge > 0;
-  if (R.handDisc.visible) { R.handDisc.rotation.y += dt * (p.charge >= D_CHARGE ? 40 : 14); const s = p.charge >= D_CHARGE ? 1.15 + Math.sin(t * 40) * 0.08 : 1; R.handDisc.scale.setScalar(s); }
+  const inHand = (p.charge > 0 || p.shieldOn) && p.discsHome > 0;
+  for (let i = 0; i < 3; i++) R.dockDiscs[i].visible = i < p.discsHome - (inHand ? 1 : 0);
+  R.handDisc.visible = inHand;
+  if (inHand) {
+    R.handDisc.rotation.z = p.shieldOn ? 0 : Math.PI / 2; R.handDisc.position.set(0, p.shieldOn ? -0.14 : -0.06, p.shieldOn ? 0 : 0.06);
+    R.handDisc.rotation.y += dt * (p.shieldOn ? 38 : 14); R.handDisc.scale.setScalar(p.shieldOn ? 1.0 + Math.sin(t * 30) * 0.04 : 1);
+  }
+  R.shieldCore.visible = p.shieldOn; if (p.shieldOn) R.shieldCore.material.opacity = 0.35 + Math.sin(t * 22) * 0.15;
   // deflector
   const sa = R.shieldMat.uniforms.uA; sa.value = damp(sa.value, p.shieldOn ? 1 : 0, 18, dt);
   R.shield.visible = sa.value > 0.02; R.shieldMat.uniforms.uHit.value = Math.max(0, R.shieldMat.uniforms.uHit.value - dt * 3);
