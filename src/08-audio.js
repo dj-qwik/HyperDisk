@@ -71,6 +71,7 @@ const SFX = {
   recall() { tone({ f0: 1200, f1: 400, dur: 0.25, vol: 0.06, type: 'sawtooth', lp: 2000 }); },
   catchDisc() { tone({ f0: 2000, dur: 0.05, vol: 0.05, type: 'square', lp: 5000 }); tone({ f0: 120, dur: 0.06, vol: 0.12 }); },
   fall() { tone({ f0: 900, f1: 60, dur: 1.3, vol: 0.14, type: 'sawtooth', lp: 1600, verb: 0.5 }); noise({ f0: 1500, f1: 200, dur: 1.2, vol: 0.12, verb: 0.4 }); },
+  derez() { noise({ f0: 5000, f1: 1800, dur: 0.3, vol: 0.28, q: 2.5, verb: 0.3 }); for (let i = 0; i < 16; i++) tone({ f0: 2200 - i * 115 + Math.random() * 400, dur: 0.035, vol: 0.06, type: 'square', delay: 0.04 + i * 0.06 }); tone({ f0: 700, f1: 45, dur: 1.1, vol: 0.16, type: 'sawtooth', lp: 2600, delay: 0.05 }); noise({ f0: 3200, f1: 400, dur: 1.0, vol: 0.12, q: 0.8, verb: 0.5, delay: 0.1 }); },
   shatter() { noise({ f0: 2500, f1: 300, dur: 0.9, vol: 0.32, q: 0.6, verb: 0.6 }); tone({ f0: 80, f1: 30, dur: 0.9, vol: 0.35, type: 'sine' }); for (let i = 0; i < 6; i++) tone({ f0: 1200 + Math.random() * 2000, dur: 0.05, vol: 0.05, type: 'square', delay: Math.random() * 0.3 }); },
   powerup() { [523, 784, 1046, 1568].forEach((f, i) => tone({ f0: f, dur: 0.18, vol: 0.08, type: 'square', lp: 5000, delay: i * 0.05, verb: 0.3 })); },
   puSpawn() { tone({ f0: 1200, f1: 2400, dur: 0.25, vol: 0.05, type: 'sine', verb: 0.5 }); tone({ f0: 1800, f1: 3600, dur: 0.25, vol: 0.03, type: 'sine', delay: 0.08, verb: 0.5 }); },

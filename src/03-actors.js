@@ -439,5 +439,8 @@ function poseRunner(p, dt) {
   const fl = Math.max(0, p.flash); R.glow.color.copy(R.glowBase).lerp(new THREE.Color(5, 5, 5), Math.min(1, fl * 3));
   R.visorM.emissiveIntensity = 1 + fl * 4;
   // invulnerability flicker
-  R.root.visible = p.mode !== 'dead' && p.mode !== 'out' && !(p.invuln > 0 && Math.floor(p.invuln * 14) % 2 === 0);
+  const dz = p.derezAt != null ? uTime.value - p.derezAt : 99, derezing = p.mode === 'dead' && dz < 1.05;
+  if (derezing) { R.glow.color.setRGB(0.5, 3.5, 0.9); const j = Math.random() < 0.25 ? 1 + Math.random() * 0.25 : 1; R.root.scale.set(j, 1 - dz * 0.35, j); }
+  else R.root.scale.set(1, 1, 1);
+  R.root.visible = derezing ? Math.random() > dz * 0.85 : p.mode !== 'dead' && p.mode !== 'out' && !(p.invuln > 0 && Math.floor(p.invuln * 14) % 2 === 0);
 }

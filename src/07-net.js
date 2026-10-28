@@ -219,7 +219,7 @@ function applyRemote(p, b, d, st, at) {
   const mode = MODES[num(b[6])] || 'play';
   if (mode !== p.mode) {
     if (mode === 'fall' && p.mode === 'play') { SFX.fall(p); p.fallT = 0; }
-    if (mode === 'dead' && p.mode === 'fall') { shatter(p.x, p.y, p.z, p.color, n.vx, n.vz); SFX.shatter(p); }
+    if (mode === 'dead' && p.mode === 'fall') { derez(p); SFX.derez(p); }
     if (mode === 'play' && (p.mode === 'dead' || p.mode === 'fall')) { restoreStation(stationOf(p)); p.x = n.x; p.y = n.y; p.z = n.z; sparks(p.x, p.y + 1, p.z, p.color, 50, 6, 0.8, 0.08); shockRing(p.x, p.y + 0.05, p.z, 0, 1, 0, p.color, 4, 0.6); SFX.respawn(p); }
     if (!(state === 'end' && p === winner)) p.mode = mode;
   }

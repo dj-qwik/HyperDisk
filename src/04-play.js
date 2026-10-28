@@ -476,7 +476,7 @@ function stepPlayer(p, inp, dt) {
   if (p.mode === 'fall') {
     p.fallT += dt; p.vy -= GRAV * dt; p.y += p.vy * dt; p.x += p.kbx * dt; p.z += p.kbz * dt; p.kbx *= Math.exp(-0.6 * dt); p.kbz *= Math.exp(-0.6 * dt);
     p.yaw += dt * 2.2;
-    if (p.fallT > 1.25) { shatter(p.x, p.y, p.z, p.color, p.kbx, p.kbz); SFX.shatter(p); p.mode = 'dead'; p.deadT = 0; }
+    if (p.y <= SHAFT.grid || p.fallT > 4) { derez(p); SFX.derez(p); p.mode = 'dead'; p.deadT = 0; }
     return;
   }
   if (p.mode === 'dead') {

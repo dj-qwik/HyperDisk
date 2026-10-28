@@ -179,7 +179,8 @@ function updateView(v, dt) {
     // keep the winner left of the results card
     const rx = -Math.cos(t * 0.35 + Math.PI / 2), rz = -Math.sin(t * 0.35 + Math.PI / 2); _cl.x -= rx * 1.4; _cl.z -= rz * 1.4; k = 4;
   } else if (p.mode === 'play' || p.mode === 'idle' || p.mode === 'win') { shoulderCam(p, _cp, _cl); k = S.cam ? 12 : 5; }
-  else if (p.mode === 'fall') { _cp.copy(v.pos); _cl.set(p.x, p.y + 0.8, p.z); k = 6; }
+  else if (p.mode === 'fall') { _cp.set(p.x * 0.8, p.y + 5.5 + Math.max(0, 0.5 - p.fallT) * 6, p.z * 0.8); _cl.set(p.x, p.y - 1.2, p.z); k = p.fallT < 0.4 ? 2.5 : 5; }
+  else if (p.mode === 'dead' && p.derezAt != null && uTime.value - p.derezAt < 1.4) { _cp.set(p.x * 0.5, p.y + 2.8, p.z * 0.5 + 0.01); _cl.set(p.x, p.y + 0.8, p.z); k = 3.5; }
   else if (p.mode === 'dead' && p.lives > 0) { const pad = homePad(p), st = stationOf(p); shoulderCam({ x: pad.x, y: pad.y, z: pad.z, lvl: 1, slot: p.slot, aimYaw: st.yaw }, _cp, _cl, st.yaw); if (S.cam) _cp.y += 1.5; k = 3; }
   else { // out: spectate from high up
     const a = t * 0.07 + p.slot * 1.6; _cp.set(Math.cos(a) * (BOX.hx - 1.5), 12, Math.sin(a) * (BOX.hz - 1.5)); _cl.set(0, 0, 0); k = 2.5;
@@ -250,7 +251,8 @@ function updateHud(v) {
       H.el.textContent = ceil ? 'CEILING' : Math.abs(y - 1.32) < 0.45 ? 'LEVEL' : y > 1.32 ? 'HIGH ' + y.toFixed(0) + 'm' : 'LOW'; }
     const cq = 0; if (L.cq !== cq) { L.cq = cq; H.chg.style.opacity = cq > 0 ? 1 : 0; H.chg.style.setProperty('--p', cq); }
     let msg = '';
-    if (p.mode === 'dead' && p.lives > 0) msg = `<div class="big">FLATLINED</div><div class="sm">REBOOTING IN ${Math.max(0, Math.ceil(2.2 - p.deadT))}</div>`;
+    if (p.mode === 'dead' && p.derezAt != null && uTime.value - p.derezAt < 1.1) msg = '';
+    else if (p.mode === 'dead' && p.lives > 0) msg = `<div class="big">FLATLINED</div><div class="sm">REBOOTING IN ${Math.max(0, Math.ceil(2.2 - p.deadT))}</div>`;
     else if (p.mode === 'fall' && p.lives <= 0) msg = `<div class="big">ELIMINATED</div>`;
     else if (p.mode === 'out' && state === 'play') msg = `<div class="big" style="font-size:28px">ELIMINATED</div><div class="sm">SPECTATING</div>`;
     else if (state === 'end' && winner === p) msg = '';

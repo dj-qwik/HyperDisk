@@ -193,7 +193,7 @@ function tick(dt, doRender) {
     for (const d of DISCS) updateDiscVisual(d, sdt);
     for (const p of players) { poseRunner(p, sdt); p.rig.root.position.set(p.x, p.y, p.z); p.rig.root.rotation.y = p.yaw; if (p.guide) updateGuide(p, sdt); }
     updatePowerups(sdt);
-    updateSparks(sdt); updateRings(sdt); updateShards(sdt);
+    updateSparks(sdt); updateRings(sdt); updateDerez(sdt); updateShards(sdt);
     for (const f of anim) f(uTime.value, sdt);
     if (state === 'lobby' && Math.floor(uTime.value / 8) !== Math.floor((uTime.value - sdt) / 8)) renderLobby();
   }
@@ -210,7 +210,7 @@ function frame(now) {
 }
 
 // debug/test hook
-window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, MUSIC, PU, grantPowerup, spawnPowerup, addPowerup, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
+window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, render, startFall, MUSIC, PU, grantPowerup, spawnPowerup, addPowerup, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
 
 resize();
 toLobby();
