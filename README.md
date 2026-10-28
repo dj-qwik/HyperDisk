@@ -43,7 +43,7 @@ Arenas (all available from the start): **Halo Rings** (one podium, three rings),
 ### Rebinding and the debug menu
 Every keyboard key and controller button can be rebound under **CONTROLS** (lobby `C`, or pause menu). Bindings are saved per device.
 
-The **debug menu** (`F2`, or X in the pause menu) is hidden from players. Unlock it on your own device by opening the game once with `?dev` on the end of the address (for example `https://your-app.onrender.com/?dev`); `?dev=off` locks it again. It never works in online matches. It's a client-side lock, so it keeps casual players out but isn't a security boundary.
+The **debug menu** opens with `F2`, or X / the DEBUG button in the pause menu. It only affects your own local game and is always off in online matches.
 
 ## Project layout
 

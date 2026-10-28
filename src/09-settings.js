@@ -113,16 +113,9 @@ function ctlInput() {
 
 /* ---------------- debug menu (F2, or Debug in the pause menu) ---------------- */
 const DEBUG = { on: false, god: false, cpuFreeze: false, cpuHold: false, ts: 1, hud: true, fps: 60, _acc: 0, _n: 0, allowed: false };
-// The debug menu is a developer tool: it only exists on a device that has been unlocked by opening the
-// game once with ?dev in the address (?dev=off locks it again). It is always off in online matches,
-// so nobody can use it to cheat a room.
-(function () {
-  try {
-    const q = new URLSearchParams(location.search);
-    if (q.has('dev')) store.set('dev', q.get('dev') !== 'off');
-    DEBUG.allowed = !!store.get('dev', false) || q.has('test');
-  } catch (e) {}
-})();
+// Open any time offline with F2 or from the pause menu. It only ever affects your own local game, and it
+// is always off in online matches, so nobody can use it to cheat a room.
+DEBUG.allowed = true;
 function dbgMe() { return players.find(p => p.local && p.kind === 'human') || players[0]; }
 function dbgRivals() { const me = dbgMe(); return players.filter(p => p !== me); }
 function dbgOpen(on) {
