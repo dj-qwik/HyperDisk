@@ -100,12 +100,12 @@ readHuman = function (p, dt) {
   if (!p.ctl || p.ctl.type !== 'any') return _readHumanBase(p, dt);
   const parts = [_readHumanBase({ ctl: { type: 'kb1' } }, dt), _readHumanBase({ ctl: { type: 'kb2' } }, dt), IS_TOUCH ? _readHumanBase({ ctl: { type: 'touch' } }, dt) : null];
   for (let i = 0; i < pads.length; i++) if (pads[i]) parts.push(_readHumanBase({ ctl: { type: 'pad', idx: i } }, dt));
-  const o = { mx: 0, mz: 0, aim: 0, aimAbs: 0, elev: 0, level: false, fire: false, shield: false, hop: false, recall: false, analog: false };
+  const o = { mx: 0, mz: 0, aim: 0, aimAbs: 0, elev: 0, elevAbs: 0, level: false, fire: false, shield: false, hop: false, recall: false, analog: false };
   for (const q of parts) {
     if (!q) continue;
     if (Math.abs(q.mx) + Math.abs(q.mz) > Math.abs(o.mx) + Math.abs(o.mz)) { o.mx = q.mx; o.mz = q.mz; }
     if (Math.abs(q.aim) > Math.abs(o.aim)) { o.aim = q.aim; o.analog = q.analog; }
-    o.aimAbs += q.aimAbs; o.elev += q.elev; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.recall = o.recall || q.recall;
+    o.aimAbs += q.aimAbs; o.elev += q.elev; o.elevAbs += q.elevAbs || 0; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.recall = o.recall || q.recall;
   }
   return o;
 };

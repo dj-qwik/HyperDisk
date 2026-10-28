@@ -59,7 +59,8 @@ const YC = 17;          // ceiling height (bounce plane)
 const ELEV_FLOOR = -1.0;                    // the aim line's lowest height on the walls
 const ELEV_WALL = YC - 0.3 - ELEV_FLOOR;    // above this the line runs out onto the ceiling
 const ELEV_LEVEL = 1.32 - ELEV_FLOOR;       // level throw: the line at chest height
-const ELEV_RATE = 7.5;                      // units per second when held
+const ELEV_RATE = 7.5;
+const ELEV_RAMP_DELAY = 0.3, ELEV_RAMP_TIME = 0.15, ELEV_FAST = 2;   // hold past 0.3 s and it ramps to double speed within 0.15 s                      // units per second when held
 let RS = 9;            // station distance from center (closer duels, like the original); 10 for 3-4 runners
 const HAND_Y = 1.38;    // throw height above feet
 const CHEST_Y = 1.3;

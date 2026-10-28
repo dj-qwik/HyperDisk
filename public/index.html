@@ -467,7 +467,8 @@ const YC = 17;          // ceiling height (bounce plane)
 const ELEV_FLOOR = -1.0;                    // the aim line's lowest height on the walls
 const ELEV_WALL = YC - 0.3 - ELEV_FLOOR;    // above this the line runs out onto the ceiling
 const ELEV_LEVEL = 1.32 - ELEV_FLOOR;       // level throw: the line at chest height
-const ELEV_RATE = 7.5;                      // units per second when held
+const ELEV_RATE = 7.5;
+const ELEV_RAMP_DELAY = 0.3, ELEV_RAMP_TIME = 0.15, ELEV_FAST = 2;   // hold past 0.3 s and it ramps to double speed within 0.15 s                      // units per second when held
 let RS = 9;            // station distance from center (closer duels, like the original); 10 for 3-4 runners
 const HAND_Y = 1.38;    // throw height above feet
 const CHEST_Y = 1.3;
@@ -1816,7 +1817,7 @@ const KEYS = {
 const held = list => list.some(k => K[k]);
 const hit = list => list.some(k => KP.has(k));
 function readHuman(p, dt) {
-  const i = { mx: 0, mz: 0, aim: 0, aimAbs: 0, elev: 0, level: false, fire: false, shield: false, hop: false, recall: false, analog: false };
+  const i = { mx: 0, mz: 0, aim: 0, aimAbs: 0, elev: 0, elevAbs: 0, level: false, fire: false, shield: false, hop: false, recall: false, analog: false };
   const ER = ELEV_RATE * dt;   // how far one frame of 'up' moves the aim line
   const c = p.ctl;
   if (c.type === 'kb1' || c.type === 'kb2') {
@@ -1827,8 +1828,8 @@ function readHuman(p, dt) {
     i.fire = held(m.fire); i.shield = held(m.shield); i.recall = hit(m.recall);
     if (c.type === 'kb1') {
       if (MOUSE.locked) { i.aimAbs = MOUSE.dx * 0.0026; i.fire = i.fire || MOUSE.l; i.shield = i.shield || MOUSE.r; }
-      if (MOUSE.wheel) { i.elev += (MOUSE.wheel < 0 ? 1 : -1) * 0.8; }
-      if (MOUSE.locked && MOUSE.dy) i.elev -= MOUSE.dy * 0.03;
+      if (MOUSE.wheel) { i.elevAbs += (MOUSE.wheel < 0 ? 1 : -1) * 0.8; }
+      if (MOUSE.locked && MOUSE.dy) i.elevAbs -= MOUSE.dy * 0.03;
     }
   } else if (c.type === 'pad') {
     const gp = pads[c.idx];
@@ -1855,7 +1856,7 @@ function makePlayer(slot, kind, ctl, name, color) {
     slot, kind, ctl, name, color: PCOL[slot], css: PCSS[slot], local: true, peer: null,
     rig: makeRunner(PCOL[slot]), x: 0, y: 0, z: 0, vx: 0, vz: 0, mvx: 0, mvz: 0, kbx: 0, kbz: 0, vy: 0, onGround: true, airT: 0,
     yaw: 0, aimYaw: 0, lvl: 1, aimElev: ELEV_LEVEL, mode: 'idle', lives: S.lives, heat: 0, stun: 0, invuln: 0, flash: 0,
-    shieldE: 100, defl: DEFLECTS, teeter: 0, edgePush: 0, edgeDx: 0, edgeDz: 0, leaping: false, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
+    elevHold: 0, elevDir: 0, shieldE: 100, defl: DEFLECTS, teeter: 0, edgePush: 0, edgeDx: 0, edgeDz: 0, leaping: false, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
     fallT: 0, deadT: 0, lastHitBy: -1, lastHitAt: -99, stride: 0, animT: Math.random() * 10,
     stats: { hits: 0, rings: 0, kos: 0, defl: 0, thrown: 0 }, bot: null, skill: S.skill, weapon: null, anchorT: 0,
     net: null, shake: 0, popQ: []
@@ -2278,7 +2279,12 @@ function stepPlayer(p, inp, dt) {
       const t = aimTarget(p, p.aimYaw); if (t) { const a = Math.atan2(t.x - p.x, t.z - p.z), dd = angDiff(p.aimYaw, a); if (Math.abs(dd) < 0.22) p.aimYaw += dd * Math.min(1, dt * 2.2); }
     }
     if (inp.level) { p.aimElev = ELEV_LEVEL; SFX.tick(p); }
-    if (inp.elev) { const before = p.aimElev <= ELEV_WALL; p.aimElev += inp.elev; if (before !== (p.aimElev <= ELEV_WALL)) SFX.tick(p); }
+    // holding raise/lower: normal speed for fine aiming, then after ELEV_RAMP_DELAY it ramps up to double
+    const dir = Math.sign(inp.elev || 0);
+    if (dir && dir === p.elevDir) p.elevHold += dt; else { p.elevHold = 0; p.elevDir = dir; }
+    const ramp = 1 + (ELEV_FAST - 1) * clamp((p.elevHold - ELEV_RAMP_DELAY) / ELEV_RAMP_TIME, 0, 1);
+    const de = (inp.elev || 0) * ramp + (inp.elevAbs || 0);
+    if (de) { const before = p.aimElev <= ELEV_WALL; p.aimElev += de; if (before !== (p.aimElev <= ELEV_WALL)) SFX.tick(p); }
     aimPoint(p, p.aimYaw, p.aimElev, _ap); p.aimElev = clamp(p.aimElev, 0, _ap.maxElev);
   }
   p.yaw = dampAng(p.yaw, p.aimYaw, 14, dt);
@@ -3785,12 +3791,12 @@ readHuman = function (p, dt) {
   if (!p.ctl || p.ctl.type !== 'any') return _readHumanBase(p, dt);
   const parts = [_readHumanBase({ ctl: { type: 'kb1' } }, dt), _readHumanBase({ ctl: { type: 'kb2' } }, dt), IS_TOUCH ? _readHumanBase({ ctl: { type: 'touch' } }, dt) : null];
   for (let i = 0; i < pads.length; i++) if (pads[i]) parts.push(_readHumanBase({ ctl: { type: 'pad', idx: i } }, dt));
-  const o = { mx: 0, mz: 0, aim: 0, aimAbs: 0, elev: 0, level: false, fire: false, shield: false, hop: false, recall: false, analog: false };
+  const o = { mx: 0, mz: 0, aim: 0, aimAbs: 0, elev: 0, elevAbs: 0, level: false, fire: false, shield: false, hop: false, recall: false, analog: false };
   for (const q of parts) {
     if (!q) continue;
     if (Math.abs(q.mx) + Math.abs(q.mz) > Math.abs(o.mx) + Math.abs(o.mz)) { o.mx = q.mx; o.mz = q.mz; }
     if (Math.abs(q.aim) > Math.abs(o.aim)) { o.aim = q.aim; o.analog = q.analog; }
-    o.aimAbs += q.aimAbs; o.elev += q.elev; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.recall = o.recall || q.recall;
+    o.aimAbs += q.aimAbs; o.elev += q.elev; o.elevAbs += q.elevAbs || 0; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.recall = o.recall || q.recall;
   }
   return o;
 };
