@@ -78,20 +78,40 @@ const SFX = {
 /* ================= music ================= */
 // Soundtrack slots: drop mp3s in /music and list them here (THEME loops in menus, TRACKS shuffle in matches).
 // Until then a built-in darksynth sequencer plays: a slow pad in menus, a driving 4/4 in matches.
-const THEME = null;
-const TRACKS = [];
+const THEME = { file: 'hyper_disc.mp3', name: 'Hyper Disc' };
+const TRACKS = [
+  { file: 'heads_up.mp3', name: 'Heads Up' },
+  { file: 'life_on_the_grid.mp3', name: 'Life on the Grid' },
+  { file: 'showdown.mp3', name: 'Showdown' },
+  { file: 'synergies.mp3', name: 'Synergies' }
+];
 const MUSIC = {
   mode: 'menu', on: S.music, step: 0, next: 0, timer: null, bar: 0, audio: null, ducked: false,
-  boot() { if (this.timer) return; this.next = AC.currentTime + 0.1; this.timer = setInterval(() => this.schedule(), 60); this.apply(); },
+  boot() { if (this.timer) return; this.next = AC.currentTime + 0.1; this.timer = setInterval(() => this.schedule(), 60); this.apply(); if (THEME || TRACKS.length) this.playFile(); },
   setOn(on) { this.on = on; S.music = on; store.set('music', on); this.apply(); $('#bMusic').classList.toggle('off', !on); },
   duck(on) { this.ducked = on; this.apply(); },
-  apply() { if (!AC) return; const v = this.on ? (this.ducked ? 0.15 : 0.5) : 0; MUSBUS.gain.setTargetAtTime(v, AC.currentTime, 0.3); if (this.audio) this.audio.volume = v * 1.4; },
+  apply() { if (!AC) return; const v = this.on ? (this.ducked ? 0.15 : 0.5) : 0; MUSBUS.gain.setTargetAtTime(v, AC.currentTime, 0.3); },
   setMode(m) { if (this.mode === m) return; this.mode = m; this.step = 0; this.bar = 0; if (THEME || TRACKS.length) this.playFile(); },
+  // match tracks come from a shuffled deck, so none repeats until every one has played
+  deck: [], lastName: null,
+  nextTrack() { if (!this.deck.length) { this.deck = shuffle(TRACKS.slice()); if (this.deck.length > 1 && this.deck[0].name === this.lastName) this.deck.push(this.deck.shift()); } return this.deck.shift(); },
+  // songs stream through the same music bus as the synth, so mute, pause-duck and volume all apply; tracks crossfade
+  cur: null,
   playFile() {
-    const src = this.mode === 'menu' ? THEME : TRACKS.length ? TRACKS[Math.floor(Math.random() * TRACKS.length)] : null;
-    if (this.audio) { this.audio.pause(); this.audio = null; }
-    if (!src) return;
-    try { this.audio = new Audio('music/' + src.file); this.audio.loop = this.mode === 'menu'; this.audio.volume = this.on ? 0.7 : 0; this.audio.play().catch(() => {}); this.audio.addEventListener('ended', () => this.playFile()); toast('♪ ' + src.name); } catch (e) {}
+    if (!AC) return;
+    const src = this.mode === 'menu' ? THEME : this.nextTrack(); if (!src) return;
+    if (this.cur && this.cur.src === src && this.mode === 'menu') return;
+    const now = AC.currentTime, old = this.cur;
+    if (old) { old.g.gain.cancelScheduledValues(now); old.g.gain.setValueAtTime(old.g.gain.value, now); old.g.gain.linearRampToValueAtTime(0, now + 1.4); setTimeout(() => { try { old.el.pause(); old.node.disconnect(); } catch (e) {} }, 1600); }
+    try {
+      const el = new Audio('music/' + src.file); el.loop = this.mode === 'menu'; el.preload = 'auto';
+      const node = AC.createMediaElementSource(el), g = AC.createGain(); g.gain.value = 0; node.connect(g); g.connect(MUSBUS);
+      g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.85, now + (old ? 1.2 : 0.4));
+      const entry = { el, node, g, src }; this.cur = entry; this.lastName = src.name;
+      el.addEventListener('ended', () => { if (this.cur === entry) this.playFile(); });
+      el.play().catch(() => {});
+      if (this.mode === 'match' && this.on) toast('♪ ' + src.name);
+    } catch (e) {}
   },
   schedule() {
     if (!AC || THEME || TRACKS.length) return;
