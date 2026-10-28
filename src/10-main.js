@@ -48,6 +48,7 @@ $('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHo
 $('#bCtl').onclick = () => { audioInit(); ctlOpen(true); };
 $('#bPCtl').onclick = () => ctlOpen(true);
 $('#bPDbg').onclick = () => dbgOpen(true);
+$('#bPDbg').hidden = !DEBUG.allowed;
 $('#ctlClose').onclick = () => ctlOpen(false);
 $('#controls').addEventListener('click', e => { if (e.target.id === 'controls') { ctlOpen(false); return; } CTLUI.padNav = false; const b = e.target.closest('.cbtn'); if (b) ctlClick(b); });
 document.querySelectorAll('#ctlTabs button').forEach(b => b.onclick = () => { CTLUI.tab = b.dataset.s; CTLUI.listen = null; CTLUI.focus = 0; renderControls(); SFX.tick(); });

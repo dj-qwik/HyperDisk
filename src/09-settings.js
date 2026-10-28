@@ -112,10 +112,22 @@ function ctlInput() {
 }
 
 /* ---------------- debug menu (F2, or Debug in the pause menu) ---------------- */
-const DEBUG = { on: false, god: false, cpuFreeze: false, cpuHold: false, ts: 1, hud: true, fps: 60, _acc: 0, _n: 0 };
+const DEBUG = { on: false, god: false, cpuFreeze: false, cpuHold: false, ts: 1, hud: true, fps: 60, _acc: 0, _n: 0, allowed: false };
+// The debug menu is a developer tool: it only exists on a device that has been unlocked by opening the
+// game once with ?dev in the address (?dev=off locks it again). It is always off in online matches,
+// so nobody can use it to cheat a room.
+(function () {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has('dev')) store.set('dev', q.get('dev') !== 'off');
+    DEBUG.allowed = !!store.get('dev', false) || q.has('test');
+  } catch (e) {}
+})();
 function dbgMe() { return players.find(p => p.local && p.kind === 'human') || players[0]; }
 function dbgRivals() { const me = dbgMe(); return players.filter(p => p !== me); }
 function dbgOpen(on) {
+  if (!DEBUG.allowed) return;
+  if (NET.room && on !== false) { toast('DEBUG IS OFF IN ONLINE MATCHES', 1600); return; }
   DEBUG.on = on == null ? !DEBUG.on : on; show('#debug', DEBUG.on);
   if (DEBUG.on) renderDebug();
 }
@@ -163,6 +175,7 @@ function dbgAct(k) {
   SFX.tick();
 }
 function debugTick(dt) {
+  if (NET.room && (DEBUG.on || DEBUG.god || DEBUG.cpuFreeze || DEBUG.cpuHold || DEBUG.ts !== 1)) { DEBUG.god = DEBUG.cpuFreeze = DEBUG.cpuHold = false; DEBUG.ts = 1; if (DEBUG.on) dbgOpen(false); }
   if (!DEBUG.on) return;
   DEBUG._acc += dt; DEBUG._n++;
   if (DEBUG._acc < 0.25) return;

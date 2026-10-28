@@ -410,7 +410,6 @@ table.ctl td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.06); fo
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>
-        <tr><td>Debug menu</td><td>X in the pause menu</td><td colspan="2"><kbd>F2</kbd></td></tr>
       </table>
       <p class="small" style="margin-top:8px">These are the defaults. Rebind anything under <b>CONTROLS</b> in the lobby (<kbd>C</kbd>) or the pause menu.</p>
       </div>
@@ -432,7 +431,7 @@ table.ctl td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.06); fo
   <div id="pause" class="modal live" hidden>
     <div class="panel"><h2>PAUSED</h2><div class="small">Press Start, Esc or P to resume.</div>
       <div class="row"><button class="btn" id="bResume">RESUME</button><button class="btn mag" id="bQuit">QUIT TO LOBBY</button></div>
-      <div class="row"><button class="btn ghost" id="bPCtl">CONTROLS · Y</button><button class="btn ghost" id="bPDbg">DEBUG · X / F2</button></div></div>
+      <div class="row"><button class="btn ghost" id="bPCtl">CONTROLS · Y</button><button class="btn ghost" id="bPDbg" hidden>DEBUG · X / F2</button></div></div>
   </div>
   <div id="results" class="modal live" hidden>
     <div class="panel"><div class="label">MATCH OVER</div><div class="win" id="winName"></div><div class="small" id="winSub"></div>
@@ -1392,49 +1391,42 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   inst(new THREE.BoxGeometry(0.9, H, 0.8), darkSteel, colM);
   inst(new THREE.BoxGeometry(1, 0.22, 0.14), steel, braceM);
 
-  // pipe runs: clusters of vertical pipes with flanges and wall brackets
-  const pipeSets = { steel: [], copper: [], hazard: [], rust: [] }, flanges = [], brackets = [];
-  const kinds = ['steel', 'steel', 'steel', 'steel', 'copper', 'rust', 'hazard'];
-  for (let c = 0; c < 13; c++) {
-    const a0 = (c + rnd() * 0.6) / 13 * TAU, n = 2 + (rnd() * 4 | 0);
+  // ---- everything on the walls is laid out bay by bay (the bays are the gaps between the 20 columns),
+  // so it reads as engineered plant rather than clutter ----
+  const bayA = i => (i + 0.5) / cols * TAU, alongWall = (a, off, d) => a + off / d;
+  const RISERS = [1, 4, 8, 11, 14, 18], TRAYS = [2, 6, 12, 16];
+  // pipe risers: neat bundles of four matching pipes running the full depth, flanged at the same heights
+  const pipeSets = { steel: [], copper: [] }, flanges = [], straps = [], standoffs = [];
+  RISERS.forEach((bay, k) => {
+    const a = bayA(bay), kind = k === 1 || k === 4 ? 'copper' : 'steel', r0 = 0.2, d = R - 1.45, n = 4, sp = 0.62;
+    const ytop = SHAFT.top - 0.4, ybot = SHAFT.bottom, len = ytop - ybot;
     for (let j = 0; j < n; j++) {
-      const a = a0 + j * (0.022 + rnd() * 0.012), r0 = 0.12 + rnd() * 0.26, d = R - 1.3 - rnd() * 1.1, kind = kinds[rnd() * kinds.length | 0];
-      const ytop = SHAFT.top - rnd() * 6, ybot = SHAFT.bottom + rnd() * 4, len = ytop - ybot;
-      onWall(a, d, (ytop + ybot) / 2); Q.identity(); Sc.set(r0, len, r0); M4.compose(P, Q, Sc); pipeSets[kind].push(M4.clone());
-      Sc.set(1, 1, 1);
-      for (let y = ytop - 1.5 - rnd() * 3; y > ybot; y -= 3.5 + rnd() * 3) { onWall(a, d, y); Sc.setScalar(r0 * 1.35); E.set(Math.PI / 2, 0, 0); Q.setFromEuler(E); M4.compose(P, Q, Sc); flanges.push(M4.clone()); }
-      for (const y of ringYs) if (y < ytop && y > ybot && rnd() < 0.7) { facing(a); onWall(a, (d + R - 0.95) / 2, y + 1.1); Sc.set(0.16, 0.16, R - 0.95 - d + 0.2); M4.compose(P, Q, Sc); brackets.push(M4.clone()); }
-      Sc.set(1, 1, 1);
+      const aa = alongWall(a, (j - (n - 1) / 2) * sp, d);
+      onWall(aa, d, (ytop + ybot) / 2); Q.identity(); Sc.set(r0, len, r0); M4.compose(P, Q, Sc); pipeSets[kind].push(M4.clone());
+      for (const y of ringYs) { onWall(aa, d, y - 5); E.set(Math.PI / 2, 0, 0); Q.setFromEuler(E); Sc.setScalar(r0 * 1.3); M4.compose(P, Q, Sc); flanges.push(M4.clone()); }
     }
-  }
-  const pipeGeo = new THREE.CylinderGeometry(1, 1, 1, 14, 1);
-  inst(pipeGeo, pipeSteel, pipeSets.steel); inst(pipeGeo, pipeCopper, pipeSets.copper); inst(pipeGeo, pipeHazard, pipeSets.hazard); inst(pipeGeo, pipeRust, pipeSets.rust);
-  inst(new THREE.TorusGeometry(1, 0.28, 6, 16), steel, flanges);
-  inst(new THREE.BoxGeometry(1, 1, 1), darkSteel, brackets);
-  // a few horizontal pipe runs bending round the wall
-  for (let k = 0; k < 7; k++) {
-    const y = -9 - rnd() * 34, r0 = 0.15 + rnd() * 0.2, arc = 0.5 + rnd() * 1.1, st = rnd() * TAU;
-    const m = new THREE.Mesh(new THREE.TorusGeometry(R - 1.7 - rnd() * 0.8, r0, 10, 80, arc), rnd() < 0.5 ? pipeSteel : pipeCopper);
-    m.rotation.x = Math.PI / 2; m.rotation.z = st; m.position.y = y; ARENA.add(m);
-  }
-
-  // hoses and cable bundles: sagging across the shaft and draped down the walls
-  for (let k = 0; k < 16; k++) {
-    const a1 = rnd() * TAU, a2 = a1 + Math.PI * (0.35 + rnd() * 0.6), y = -8 - rnd() * 30, sag = 3 + rnd() * 9, rr = R - 1.6;
-    const p1 = new THREE.Vector3(Math.cos(a1) * rr, y, Math.sin(a1) * rr), p2 = new THREE.Vector3(Math.cos(a2) * rr, y + (rnd() - 0.5) * 6, Math.sin(a2) * rr);
-    const pts = []; for (let i = 0; i <= 16; i++) { const t = i / 16; pts.push(new THREE.Vector3().lerpVectors(p1, p2, t).add(new THREE.Vector3(0, -sag * 4 * t * (1 - t), 0))); }
-    const n = 1 + (rnd() * 3 | 0);
-    for (let j = 0; j < n; j++) {
-      const off = new THREE.Vector3((rnd() - 0.5) * 0.4, (rnd() - 0.5) * 0.3, (rnd() - 0.5) * 0.4);
-      const curve = new THREE.CatmullRomCurve3(pts.map(q => q.clone().add(off)));
-      const m = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.07 + rnd() * 0.1, 8, false), rnd() < 0.8 ? rubber : pipeHazard); ARENA.add(m);
+    // a clamp strap across the bundle under every girder, stood off from the wall
+    for (const y of ringYs) {
+      facing(a); onWall(a, d, y - 2.9); Sc.set(n * sp + 0.3, 0.16, 0.5); M4.compose(P, Q, Sc); straps.push(M4.clone());
+      for (const off of [-(n * sp) / 2, (n * sp) / 2]) { const aa = alongWall(a, off, d); facing(aa); onWall(aa, (d + R - 0.95) / 2, y - 2.9); Sc.set(0.12, 0.12, R - 0.95 - d); M4.compose(P, Q, Sc); standoffs.push(M4.clone()); }
     }
-  }
-  for (let k = 0; k < 18; k++) {
-    const a = rnd() * TAU, d = R - 1.0 - rnd() * 0.6, y0 = SHAFT.top - 1 - rnd() * 20, len = Math.min(10 + rnd() * 30, y0 - SHAFT.grid - 1), pts = [];
-    for (let i = 0; i <= 12; i++) { const t = i / 12, aa = a + Math.sin(t * 7 + k) * 0.012; pts.push(new THREE.Vector3(Math.cos(aa) * (d - Math.sin(t * Math.PI) * 0.6), y0 - t * len, Math.sin(aa) * (d - Math.sin(t * Math.PI) * 0.6))); }
-    ARENA.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.05 + rnd() * 0.07, 6, false), rubber));
-  }
+  });
+  Sc.set(1, 1, 1);
+  const pipeGeo = new THREE.CylinderGeometry(1, 1, 1, 16, 1);
+  inst(pipeGeo, pipeSteel, pipeSets.steel); inst(pipeGeo, pipeCopper, pipeSets.copper);
+  inst(new THREE.TorusGeometry(1, 0.28, 6, 18), steel, flanges);
+  inst(new THREE.BoxGeometry(1, 1, 1), darkSteel, straps); inst(new THREE.BoxGeometry(1, 1, 1), darkSteel, standoffs);
+  // cable trays: flat channels with straight cable runs, clipped at each girder
+  const trays = [], cables = [], clips = [];
+  TRAYS.forEach(bay => {
+    const a = bayA(bay), d = R - 1.05, ytop = SHAFT.top - 0.4, ybot = SHAFT.grid - 1, len = ytop - ybot;
+    facing(a); onWall(a, d + 0.05, (ytop + ybot) / 2); Sc.set(1.0, len, 0.1); M4.compose(P, Q, Sc); trays.push(M4.clone());
+    for (const s2 of [-0.48, 0.48]) { const aa = alongWall(a, s2, d); facing(aa); onWall(aa, d - 0.1, (ytop + ybot) / 2); Sc.set(0.05, len, 0.25); M4.compose(P, Q, Sc); trays.push(M4.clone()); }
+    for (let j = 0; j < 6; j++) { const aa = alongWall(a, -0.35 + j * 0.14, d); facing(aa); onWall(aa, d - 0.1, (ytop + ybot) / 2); Sc.set(0.09, len, 0.09); M4.compose(P, Q, Sc); cables.push(M4.clone()); }
+    for (const y of ringYs) { facing(a); onWall(a, d - 0.2, y - 3.2); Sc.set(1.1, 0.12, 0.08); M4.compose(P, Q, Sc); clips.push(M4.clone()); }
+  });
+  Sc.set(1, 1, 1);
+  inst(new THREE.BoxGeometry(1, 1, 1), grate, trays); inst(new THREE.BoxGeometry(1, 1, 1), rubber, cables); inst(new THREE.BoxGeometry(1, 1, 1), steel, clips);
 
   // gantries: grated walkways spanning the shaft, with handrails and truss underneath
   const gantries = [[-14, 0.4], [-31, 1.9]];
@@ -1458,24 +1450,22 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
     const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.26, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd8a8).multiplyScalar(2.2) })); bulb.rotation.x = Math.PI / 2; bulb.position.set(len * 0.15, -1.36, 0); g.add(bulb);
     g.position.y = y; g.rotation.y = ang; ARENA.add(g);
   }
-  // wall-mounted catwalk segments with railings
-  for (let k = 0; k < 6; k++) {
-    const y = -10 - rnd() * 30, st = rnd() * TAU, arc = 0.4 + rnd() * 0.7;
-    const prof = [[R - 0.1, 0.06], [R - 1.9, 0.06], [R - 1.9, -0.06], [R - 0.1, -0.06]].map(q => new THREE.Vector2(q[0], q[1]));
-    const w = new THREE.Mesh(new THREE.LatheGeometry(prof, 40, st, arc), grate); w.position.y = y; ARENA.add(w);
-    const rl = new THREE.Mesh(new THREE.TorusGeometry(R - 1.85, 0.03, 4, 60, arc), steel); rl.rotation.x = -Math.PI / 2; rl.rotation.z = -st - arc + Math.PI / 2 - Math.PI / 2; rl.position.y = y + 1.0;
-    rl.rotation.set(Math.PI / 2, 0, st - Math.PI / 2 + Math.PI / 2); ARENA.add(rl);
-  }
-
-  // junction boxes, valves and gauges with small status lights
+  // junction boxes: tidy banks of matching cabinets in the remaining bays, each with a row of status lights
   const boxes = [], leds = [], ledCols = [], valves = [];
   const ledPalette = [new THREE.Color(0xffa020).multiplyScalar(2.2), new THREE.Color(0x30ff60).multiplyScalar(1.6), new THREE.Color(0xff2a10).multiplyScalar(2), new THREE.Color(0xffffff).multiplyScalar(1.4)];
-  for (let i = 0; i < 120; i++) {
-    const a = rnd() * TAU, y = SHAFT.top - 2 - rnd() * 40, w = 0.5 + rnd() * 0.9, h = 0.6 + rnd() * 1.1, dpt = 0.25 + rnd() * 0.3;
-    facing(a); onWall(a, R - 0.95 - dpt / 2, y); Sc.set(w, h, dpt); M4.compose(P, Q, Sc); boxes.push(M4.clone());
-    const nL = 1 + (rnd() * 3 | 0);
-    for (let j = 0; j < nL; j++) { const tx = (j - (nL - 1) / 2) * 0.12; const ta = a + tx / R; facing(ta); onWall(ta, R - 0.97 - dpt, y + h * 0.3); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); leds.push(M4.clone()); ledCols.push(ledPalette[rnd() < 0.55 ? 0 : rnd() < 0.6 ? 1 : rnd() < 0.7 ? 2 : 3]); }
-    if (rnd() < 0.35) { facing(a); onWall(a + 0.03, R - 1.0 - dpt, y - h * 0.2); E.set(0, Math.PI / 2 - a, 0); M4.compose(P, Q, Sc.set(1, 1, 1)); valves.push(M4.clone()); }
+  for (let bay = 0; bay < cols; bay++) {
+    if (RISERS.includes(bay) || TRAYS.includes(bay)) continue;
+    const a = bayA(bay);
+    ringYs.forEach((ry, k) => {
+      if ((bay + k) % 2) return;                          // alternate levels so the walls breathe
+      const n = 2 + ((bay * 7 + k) % 2), w = 0.9, h = 1.3, dpt = 0.4, gap = 0.18, y = ry - 4.6;
+      for (let j = 0; j < n; j++) {
+        const off = (j - (n - 1) / 2) * (w + gap), aa = alongWall(a, off, R - 1);
+        facing(aa); onWall(aa, R - 0.95 - dpt / 2, y); Sc.set(w, h, dpt); M4.compose(P, Q, Sc); boxes.push(M4.clone());
+        for (let l = 0; l < 3; l++) { const la = alongWall(aa, (l - 1) * 0.13, R - 1); facing(la); onWall(la, R - 0.97 - dpt, y + h * 0.32); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); leds.push(M4.clone()); ledCols.push(ledPalette[(bay + j + l + k) % 7 === 0 ? 2 : (l === 0 ? 1 : 0)]); }
+        if (j === 0 && k % 2 === 0) { facing(aa); onWall(aa, R - 1.0 - dpt, y - h * 0.18); M4.compose(P, Q, Sc.set(1, 1, 1)); valves.push(M4.clone()); }
+      }
+    });
   }
   Sc.set(1, 1, 1);
   inst(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x2a2e35, metalness: 0.6, roughness: 0.6, envMapIntensity: 0.35, normalMap: ARMN, normalScale: new THREE.Vector2(0.3, 0.3) }), boxes);
@@ -4414,10 +4404,22 @@ function ctlInput() {
 }
 
 /* ---------------- debug menu (F2, or Debug in the pause menu) ---------------- */
-const DEBUG = { on: false, god: false, cpuFreeze: false, cpuHold: false, ts: 1, hud: true, fps: 60, _acc: 0, _n: 0 };
+const DEBUG = { on: false, god: false, cpuFreeze: false, cpuHold: false, ts: 1, hud: true, fps: 60, _acc: 0, _n: 0, allowed: false };
+// The debug menu is a developer tool: it only exists on a device that has been unlocked by opening the
+// game once with ?dev in the address (?dev=off locks it again). It is always off in online matches,
+// so nobody can use it to cheat a room.
+(function () {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has('dev')) store.set('dev', q.get('dev') !== 'off');
+    DEBUG.allowed = !!store.get('dev', false) || q.has('test');
+  } catch (e) {}
+})();
 function dbgMe() { return players.find(p => p.local && p.kind === 'human') || players[0]; }
 function dbgRivals() { const me = dbgMe(); return players.filter(p => p !== me); }
 function dbgOpen(on) {
+  if (!DEBUG.allowed) return;
+  if (NET.room && on !== false) { toast('DEBUG IS OFF IN ONLINE MATCHES', 1600); return; }
   DEBUG.on = on == null ? !DEBUG.on : on; show('#debug', DEBUG.on);
   if (DEBUG.on) renderDebug();
 }
@@ -4465,6 +4467,7 @@ function dbgAct(k) {
   SFX.tick();
 }
 function debugTick(dt) {
+  if (NET.room && (DEBUG.on || DEBUG.god || DEBUG.cpuFreeze || DEBUG.cpuHold || DEBUG.ts !== 1)) { DEBUG.god = DEBUG.cpuFreeze = DEBUG.cpuHold = false; DEBUG.ts = 1; if (DEBUG.on) dbgOpen(false); }
   if (!DEBUG.on) return;
   DEBUG._acc += dt; DEBUG._n++;
   if (DEBUG._acc < 0.25) return;
@@ -4527,6 +4530,7 @@ $('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHo
 $('#bCtl').onclick = () => { audioInit(); ctlOpen(true); };
 $('#bPCtl').onclick = () => ctlOpen(true);
 $('#bPDbg').onclick = () => dbgOpen(true);
+$('#bPDbg').hidden = !DEBUG.allowed;
 $('#ctlClose').onclick = () => ctlOpen(false);
 $('#controls').addEventListener('click', e => { if (e.target.id === 'controls') { ctlOpen(false); return; } CTLUI.padNav = false; const b = e.target.closest('.cbtn'); if (b) ctlClick(b); });
 document.querySelectorAll('#ctlTabs button').forEach(b => b.onclick = () => { CTLUI.tab = b.dataset.s; CTLUI.listen = null; CTLUI.focus = 0; renderControls(); SFX.tick(); });
