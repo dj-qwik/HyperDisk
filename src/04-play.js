@@ -312,7 +312,7 @@ function stepPlayer(p, inp, dt) {
   // aim
   if (ctl || state === 'count') {
     if (inp.aimTo != null) p.aimYaw = dampAng(p.aimYaw, inp.aimTo, inp.turn || 6, dt);
-    p.aimYaw += inp.aim * 2.5 * dt + inp.aimAbs;
+    p.aimYaw -= inp.aim * 2.5 * dt + inp.aimAbs;   // yaw grows toward the runner's left, so right input subtracts
     if (inp.analog && Math.abs(inp.aim) < 0.25) { // gentle aim assist for sticks and touch
       const t = aimTarget(p, p.aimYaw); if (t) { const a = Math.atan2(t.x - p.x, t.z - p.z), dd = angDiff(p.aimYaw, a); if (Math.abs(dd) < 0.22) p.aimYaw += dd * Math.min(1, dt * 2.2); }
     }
@@ -542,9 +542,17 @@ function botInput(p, dt) {
   inp.aimTo = plan.yaw + B.noise * sk.noise; p.lvl = plan.lvl;
   const err = Math.abs(angDiff(p.aimYaw, inp.aimTo));
   if (B.holdFire > 0) { B.holdFire -= dt; inp.fire = true; if (B.holdFire <= 0) inp.fire = false; }
-  else if (p.discsHome > 0 && p.cool <= 0 && err < 0.03 + sk.spread && !inp.shield && plan.score > -2.5) {
-    inp.fire = true; B.holdFire = plan.power ? D_CHARGE + 0.05 : 0.02; B.plan = null; B.think = Math.min(B.think, sk.think * 0.4);
+  else {
+    // a real opponent: line the shot up, hold the aim steady for a beat, keep a disc in reserve,
+    // and only let go when the shot looks like it will land
+    B.nextShot = (B.nextShot == null ? sk.gap * (0.5 + Math.random() * 0.5) : B.nextShot) - dt;
+    B.steady = err < 0.05 + sk.spread ? (B.steady || 0) + dt : 0;
+    const out = 3 - p.discsHome;
+    if (B.nextShot <= 0 && B.steady >= sk.settle && p.discsHome > 0 && out < sk.maxOut && p.cool <= 0 && !inp.shield && plan.score > sk.minScore) {
+      inp.fire = true; B.holdFire = plan.power ? D_CHARGE + 0.05 : 0.02; B.plan = null; B.steady = 0;
+      B.nextShot = sk.gap * (0.75 + Math.random() * 0.6);
+    } else if (B.nextShot <= -2.5 && plan.score <= sk.minScore) { B.plan = null; B.think = 0; }   // no clean shot for a while: re-plan
   }
-  if (p.discsHome === 0 && p.discs.every(d => d.state !== 'fly' || d.t > 1.8) && Math.random() < dt * 2) inp.recall = true;
+  if (3 - p.discsHome >= sk.maxOut && p.discs.some(d => d.state === 'fly') && p.discs.every(d => d.state !== 'fly' || d.t > 1.8) && Math.random() < dt * 2) inp.recall = true;
   return inp;
 }
