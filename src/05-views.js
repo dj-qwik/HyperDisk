@@ -92,7 +92,7 @@ function updateGuide(p, dt) {
 let views = [];
 const viewsEl = $('#views');
 function makeView(p, kind) {
-  const cam = new THREE.PerspectiveCamera(62, 1, 0.1, 1200);
+  const cam = new THREE.PerspectiveCamera(62, 1, 0.2, 1200);
   cam.layers.enable(0); if (p) cam.layers.enable(1 + p.slot);
   const v = { p, kind, cam, x: 0, y: 0, w: 1, h: 1, el: null, pos: new THREE.Vector3(0, 12, 30), look: new THREE.Vector3(), flash: new THREE.Vector4(), tags: [], last: {} };
   const el = document.createElement('div'); el.className = 'view';

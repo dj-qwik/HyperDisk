@@ -40,7 +40,7 @@ function buildPad(st, idx, lx, phase, rings, color) {
       const rep = Math.max(2, Math.round(TAU * rOut / 3.2));
       top = new THREE.Mesh(annulusGeo(rIn + 0.03, rOut - 0.03, 96, rep), m); ring.mats.push(m);
     }
-    top.position.y = 0.001; top.receiveShadow = true;
+    top.position.y = 0.006; top.receiveShadow = true;   // clear of the side lip beneath it
     const side = new THREE.Mesh(ringSideGeo(rIn + 0.03, rOut - 0.03), sideMat); side.receiveShadow = true;
     const trimMat = new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(2.6) }); ring.mats.push(trimMat); ring.trim = trimMat;
     const to = new THREE.Mesh(new THREE.TorusGeometry(rOut - 0.05, 0.035, 6, 128), trimMat); to.rotation.x = Math.PI / 2; to.position.y = 0.012;

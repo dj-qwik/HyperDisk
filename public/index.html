@@ -617,7 +617,8 @@ function resize() {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   DW = Math.max(1, Math.floor(window.innerWidth * pixelRatio)); DH = Math.max(1, Math.floor(window.innerHeight * pixelRatio));
   if (sceneRT) sceneRT.dispose();
-  sceneRT = new THREE.WebGLRenderTarget(DW, DH, { type: THREE.HalfFloatType, samples: q.samples, depthBuffer: true });
+  // stencilBuffer gives a 24-bit depth buffer (three.js otherwise allocates 16-bit for render targets, which z-fights badly at range)
+  sceneRT = new THREE.WebGLRenderTarget(DW, DH, { type: THREE.HalfFloatType, samples: q.samples, depthBuffer: true, stencilBuffer: true });
   const bw = Math.max(2, Math.floor(DW * q.bloomScale)), bh = Math.max(2, Math.floor(DH * q.bloomScale));
   if (THREE.UnrealBloomPass) {
     if (!bloomPass) bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(bw, bh), 0.62, 0.5, 1.05);
@@ -952,16 +953,21 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
         bool cyl = vKind.y > 0.5; float style = floor(vKind.x + 0.5);
         vec3 col;
         bool side = abs(n.y) < 0.5;
+        // facade coordinates and every screen-space derivative are computed outside the branch:
+        // derivatives taken inside non-uniform control flow are undefined on some GPUs (and flicker)
+        bool xf = abs(n.x) > abs(n.z);
+        float faceW = cyl ? 3.14159 * vScale.x : (xf ? vScale.z : vScale.x);
+        float u = cyl ? (atan(vLocal.z, vLocal.x) + 3.14159) * 0.5 * vScale.x : (xf ? vLocal.z * vScale.z : vLocal.x * vScale.x) + faceW * 0.5;
+        float faceId = cyl ? 0. : (n.x + n.z * 3.);
+        float wy = vWP.y + 200.;
+        float floorH = 3.3 + fract(seed * 13.) * 0.9;
+        float bay = style < 0.5 ? 1.5 : style < 1.5 ? 2.2 : style < 2.5 ? 3.2 : 1.1;
+        vec2 g = vec2(u / bay, wy / floorH), id = floor(g), f = fract(g);
+        vec2 fw = fwidth(g); float lod = smoothstep(0.22, 0.6, max(fw.x, fw.y));
+        float fromTop = (0.5 - vLocal.y) * vScale.y, fwT = fwidth(fromTop) + 1e-4;
+        float edge = cyl ? 99. : (xf ? (0.5 - abs(vLocal.z)) * vScale.z : (0.5 - abs(vLocal.x)) * vScale.x), fwE = fwidth(edge) + 1e-4;
+        float fw9 = fwidth(u / 9.) + 1e-4;
         if (side) {
-          bool xf = abs(n.x) > abs(n.z);
-          float faceW = cyl ? 3.14159 * vScale.x : (xf ? vScale.z : vScale.x);
-          float u = cyl ? (atan(vLocal.z, vLocal.x) + 3.14159) * 0.5 * vScale.x : (xf ? vLocal.z * vScale.z : vLocal.x * vScale.x) + faceW * 0.5;
-          float faceId = cyl ? 0. : (n.x + n.z * 3.);
-          float wy = vWP.y + 200.;
-          float floorH = 3.3 + fract(seed * 13.) * 0.9;
-          float bay = style < 0.5 ? 1.5 : style < 1.5 ? 2.2 : style < 2.5 ? 3.2 : 1.1;
-          vec2 g = vec2(u / bay, wy / floorH), id = floor(g), f = fract(g);
-          vec2 fw = fwidth(g); float lod = smoothstep(0.22, 0.6, max(fw.x, fw.y));
           vec4 bx = style < 0.5 ? vec4(0.06, 0.94, 0.16, 0.95) : style < 1.5 ? vec4(0.22, 0.78, 0.3, 0.8) : style < 2.5 ? vec4(0.0, 1.0, 0.38, 0.8) : vec4(0.25, 0.75, 0.42, 0.62);
           float aa = 0.04;
           float occ = 0.16 + 0.42 * fract(seed * 7.3);
@@ -991,13 +997,11 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
           col = mix(detailed, avg, lod);
           }
           // megablock: thin vertical light strips
-          if (style > 2.5) col += vec3(0.5, 0.7, 1.0) * 0.5 * smoothstep(0.03, 0.0, abs(fract(u / 9.) - 0.5) - 0.0) * step(0.5, fract(seed * 17.));
+          if (style > 2.5) { col += vec3(0.5, 0.7, 1.0) * 0.5 * smoothstep(0.03 + fw9, 0.0, abs(fract(u / 9.) - 0.5)) * min(1., 0.03 / fw9) * step(0.5, fract(seed * 17.)); }
           // neon accents
-          float fromTop = (0.5 - vLocal.y) * vScale.y;
-          col += vNeon * 2.2 * step(0.3, fromTop) * step(fromTop, 0.55);
+          col += vNeon * 2.2 * smoothstep(0.3 - fwT, 0.3 + fwT, fromTop) * (1. - smoothstep(0.55 - fwT, 0.55 + fwT, fromTop));
           col += vNeon * 0.05 * exp(-fromTop / 3.) * step(0.5, fract(seed * 23.)) * step(20., vScale.y);        // crown wash (towers only, not bridges)
-          float edge = cyl ? 99. : (xf ? (0.5 - abs(vLocal.z)) * vScale.z : (0.5 - abs(vLocal.x)) * vScale.x);
-          col += vNeon * 1.5 * step(fract(seed * 3.1), 0.22) * step(edge, 0.12);
+          col += vNeon * 1.5 * step(fract(seed * 3.1), 0.22) * (1. - smoothstep(0.12 - fwE, 0.12 + fwE, edge)) * min(1., 0.12 / fwE);
           // vertical signboard near one corner, with blocky glyphs
           if (!cyl && fract(seed * 5.7) < 0.32 && fract(faceId * 0.37 + seed * 2.) < 0.5) {
             float sw = 2.4 + fract(seed * 4.1) * 1.4, sl = 12. + fract(seed * 9.1) * 22., s0 = 3. + fract(seed * 6.3) * 10.;
@@ -1123,7 +1127,7 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
   const deckMat = new THREE.MeshStandardMaterial({ color: 0x17181f, metalness: 0.35, roughness: 0.75, envMapIntensity: 0.4, normalMap: HULLT.nrm });
   const pyl = [];
   const streamMat = (R) => new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
     uniforms: { uTime, uR: { value: R } },
     vertexShader: 'varying vec2 vL; varying float vD; void main(){ vL = position.xy; vec4 mv = modelViewMatrix * vec4(position, 1.); vD = -mv.z; gl_Position = projectionMatrix * mv; }',
     fragmentShader: `uniform float uTime, uR; varying vec2 vL; varying float vD;
@@ -1152,12 +1156,12 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
   for (const [R, y] of HIGHWAYS) {
     const prof = [[R - 6.3, y + 0.9], [R - 6.0, y + 0.9], [R - 6.0, y], [R + 6.0, y], [R + 6.0, y + 0.9], [R + 6.3, y + 0.9], [R + 6.3, y - 0.5], [R + 4.5, y - 1.6], [R - 4.5, y - 1.6], [R - 6.3, y - 0.5], [R - 6.3, y + 0.9]].map(p => new THREE.Vector2(p[0], p[1]));
     const deck = new THREE.Mesh(new THREE.LatheGeometry(prof, 240), deckMat); deck.receiveShadow = false; world.add(deck);
-    const st = new THREE.Mesh(new THREE.RingGeometry(R - 5.6, R + 5.6, 300, 1), streamMat(R)); st.rotation.x = -Math.PI / 2; st.position.y = y + 0.06; world.add(st);
+    const st = new THREE.Mesh(new THREE.RingGeometry(R - 5.6, R + 5.6, 300, 1), streamMat(R)); st.rotation.x = -Math.PI / 2; st.position.y = y + 0.18; st.renderOrder = 3; world.add(st);
     const n = Math.round(TAU * R / 26);
     for (let i = 0; i < n; i++) {
-      const a = (i + 0.5) / n * TAU, h = y - 1.6 + 110;
-      pyl.push(new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * R, y - 1.6 - h / 2, Math.sin(a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a), new THREE.Vector3(2.2, h, 3.6)));
-      pyl.push(new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * R, y - 2.4, Math.sin(a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a), new THREE.Vector3(10, 1.6, 2.6)));
+      const a = (i + 0.5) / n * TAU, h = y - 1.68 + 110;
+      pyl.push(new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * R, y - 1.68 - h / 2, Math.sin(a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a), new THREE.Vector3(2.2, h, 3.6)));
+      pyl.push(new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * R, y - 2.5, Math.sin(a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a), new THREE.Vector3(10, 1.6, 2.6)));
     }
   }
   const pm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), deckMat, pyl.length); pyl.forEach((m, i) => pm.setMatrixAt(i, m)); pm.frustumCulled = false; world.add(pm);
@@ -1174,10 +1178,10 @@ function buildBillboards() {
     const w = vertical ? 4 + rnd() * 2 : 10 + rnd() * 6, h = vertical ? w * 2 : w / 2;
     const m = new THREE.MeshBasicMaterial({ map: makeAdTexture(ad, vertical), color: new THREE.Color(1.5, 1.5, 1.5), side: THREE.DoubleSide, fog: true });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
-    const rr = sp.r - sp.d / 2 - 0.4, y = Math.min(sp.top - h / 2 - 2, 4 + rnd() * 34);
+    const rr = sp.r - Math.hypot(sp.w, sp.d) / 2 - 0.8, y = Math.min(sp.top - h / 2 - 2, 4 + rnd() * 34);
     mesh.position.set(Math.cos(sp.a) * rr, y, Math.sin(sp.a) * rr);
     mesh.lookAt(0, y, 0);
-    mesh.userData.flick = rnd() < 0.3 ? rnd() * 10 : -1;
+    mesh.userData.flick = rnd() < 0.15 ? rnd() * 10 : -1;
     world.add(mesh); BILLBOARDS.push(mesh);
   });
 }
@@ -1529,7 +1533,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   const amber = () => new THREE.Color(0xffb020).multiplyScalar(1.4 + rnd() * 1.6);
   for (const y of ringYs) {
     for (let i = 0; i < 180; i++) { const a = i / 180 * TAU; if ((i % 22) > 18 || rnd() < 0.18) continue;
-      for (const [rr, dy] of [[R - 2.0, -1.45], [R - 2.3, -1.75]]) { onWall(a, rr, y + dy); M4.makeTranslation(P.x, P.y, P.z); dots.push(M4.clone()); dotCols.push(amber()); } }
+      for (const [rr, dy] of [[R - 1.9, -1.0], [R - 2.3, -1.49]]) { onWall(a, rr, y + dy); M4.makeTranslation(P.x, P.y, P.z); dots.push(M4.clone()); dotCols.push(amber()); } }
   }
   for (let i = 0; i < cols; i++) {
     const a = i / cols * TAU;
@@ -1541,7 +1545,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
 
   // ---- the laser grid: crackling green beams strung across the shaft floor ----
   const gridMat = (cell, rot, bright, speed) => new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+    extensions: { derivatives: true }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
     uniforms: { uTime, uCell: { value: cell }, uRot: { value: rot }, uB: { value: bright }, uSp: { value: speed } },
     vertexShader: 'varying vec2 vP; void main(){ vec4 w = modelMatrix*vec4(position,1.); vP = w.xz; gl_Position = projectionMatrix*viewMatrix*w; }',
     fragmentShader: `uniform float uTime, uCell, uRot, uB, uSp; varying vec2 vP;
@@ -1550,18 +1554,20 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
       float beam(float across, float along, float idx){
         float d = abs(fract(across/uCell + 0.5) - 0.5) * uCell;
         float id = floor(across/uCell + 0.5) + idx * 17.;
-        float flick = step(0.12, h1(id + floor(uTime*22.)*0.37));                       // lines drop out for a frame now and then
+        float flick = step(0.04, h1(id + floor(uTime*8.)*0.37));                        // the odd line drops out briefly
         float crack = 0.55 + 0.9 * n1(along*2.3 + uTime*uSp*9. + id*3.1) * n1(along*7. - uTime*uSp*17. + id);
         float pulse = pow(max(0., 1. - abs(fract(along*0.045 - uTime*uSp*0.6 + h1(id)) - 0.5)*14.), 3.) * 2.5;  // energy running down the beam
-        float wob = (n1(along*5. + uTime*30. + id) - 0.5) * 0.02;
+        float wob = (n1(along*3. + uTime*6. + id) - 0.5) * 0.008;
         d = abs(d + wob);
-        return flick * (exp(-d*55.) * (crack + pulse) * 1.3 + exp(-d*7.) * 0.16 * crack);
+        // anti-aliased core: never thinner than about a pixel, and dimmer in proportion when it would be
+        float px = max(fwidth(across), 1e-4), w = max(0.018, px * 0.8);
+        return flick * (exp(-pow(d / w, 2.)) * (0.018 / w) * (crack + pulse) * 1.3 + exp(-d*7.) * 0.16 * crack);
       }
       void main(){
         vec2 p = mat2(cos(uRot), -sin(uRot), sin(uRot), cos(uRot)) * vP;
         float g = beam(p.x, p.y, 0.) + beam(p.y, p.x, 1.);
         float r = length(vP) / ${(SHAFT.R).toFixed(1)};
-        float node = 0.; { vec2 q = abs(fract(p/uCell + 0.5) - 0.5) * uCell; node = exp(-length(q)*14.) * (0.7 + 0.6*h1(floor(uTime*12.) + floor(p.x/uCell)*7. + floor(p.y/uCell))); }
+        float node = 0.; { vec2 q = abs(fract(p/uCell + 0.5) - 0.5) * uCell; node = exp(-length(q)*14.) * (0.85 + 0.3*h1(floor(uTime*3.) + floor(p.x/uCell)*7. + floor(p.y/uCell))); }
         g = (g + node * 1.5) * smoothstep(1.0, 0.94, r) * uB;
         gl_FragColor = vec4(vec3(0.18, 1.0, 0.32) * g * 2.2 + vec3(0.6,1.,0.7) * max(0., g - 1.6) * 0.5, 1.);
       }`
@@ -1573,7 +1579,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   const emit = [];
   for (let i = 0; i < 64; i++) { const a = i / 64 * TAU; facing(a); onWall(a, R - 0.35, SHAFT.grid); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); emit.push(M4.clone()); }
   inst(new THREE.BoxGeometry(0.5, 0.35, 0.6), darkSteel, emit);
-  const emG = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 0.12, 0.62), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x30ff60).multiplyScalar(2.6) }), emit.length);
+  const emG = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 0.12, 0.72), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x30ff60).multiplyScalar(2.6) }), emit.length);
   emit.forEach((m, i) => emG.setMatrixAt(i, m)); ARENA.add(emG);
   // jagged electric arcs that crackle between grid nodes
   const ARCS = 14, SEG = 9, apos = new Float32Array(ARCS * SEG * 2 * 3), agl = new THREE.BufferGeometry();
@@ -1585,7 +1591,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
     arcT -= dt; if (arcT > 0) return; arcT = 0.05 + Math.random() * 0.07;
     let o = 0;
     for (let k = 0; k < ARCS; k++) {
-      const live = Math.random() < 0.6, cell = 1.6;
+      const live = Math.random() < 0.4, cell = 1.6;
       const x0 = Math.round((Math.random() - 0.5) * 30 / cell) * cell, z0 = Math.round((Math.random() - 0.5) * 30 / cell) * cell;
       const dir = Math.random() * TAU, len = 0.8 + Math.random() * 2.2, x1 = x0 + Math.cos(dir) * len, z1 = z0 + Math.sin(dir) * len;
       let px = x0, py = SHAFT.grid, pz = z0;
@@ -1957,7 +1963,7 @@ function buildPad(st, idx, lx, phase, rings, color) {
       const rep = Math.max(2, Math.round(TAU * rOut / 3.2));
       top = new THREE.Mesh(annulusGeo(rIn + 0.03, rOut - 0.03, 96, rep), m); ring.mats.push(m);
     }
-    top.position.y = 0.001; top.receiveShadow = true;
+    top.position.y = 0.006; top.receiveShadow = true;   // clear of the side lip beneath it
     const side = new THREE.Mesh(ringSideGeo(rIn + 0.03, rOut - 0.03), sideMat); side.receiveShadow = true;
     const trimMat = new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(2.6) }); ring.mats.push(trimMat); ring.trim = trimMat;
     const to = new THREE.Mesh(new THREE.TorusGeometry(rOut - 0.05, 0.035, 6, 128), trimMat); to.rotation.x = Math.PI / 2; to.position.y = 0.012;
@@ -3480,7 +3486,7 @@ function updateGuide(p, dt) {
 let views = [];
 const viewsEl = $('#views');
 function makeView(p, kind) {
-  const cam = new THREE.PerspectiveCamera(62, 1, 0.1, 1200);
+  const cam = new THREE.PerspectiveCamera(62, 1, 0.2, 1200);
   cam.layers.enable(0); if (p) cam.layers.enable(1 + p.slot);
   const v = { p, kind, cam, x: 0, y: 0, w: 1, h: 1, el: null, pos: new THREE.Vector3(0, 12, 30), look: new THREE.Vector3(), flash: new THREE.Vector4(), tags: [], last: {} };
   const el = document.createElement('div'); el.className = 'view';
@@ -4878,7 +4884,7 @@ function handleSystemInput() {
 let SHADOW_TICK = 0;
 function render(dt) {
   // shadows only come from the runners and discs over the court: refreshing them every other frame halves that pass
-  SHADOW_TICK = (SHADOW_TICK + 1) % 2; renderer.shadowMap.needsUpdate = SHADOW_TICK === 0;
+  renderer.shadowMap.needsUpdate = true;
   const W = window.innerWidth, H = window.innerHeight;
   const postOK = sceneRT && bloomPass && finalQuad;
   for (let i = 0; i < views.length; i++) {

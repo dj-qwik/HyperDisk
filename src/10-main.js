@@ -169,7 +169,7 @@ function handleSystemInput() {
 let SHADOW_TICK = 0;
 function render(dt) {
   // shadows only come from the runners and discs over the court: refreshing them every other frame halves that pass
-  SHADOW_TICK = (SHADOW_TICK + 1) % 2; renderer.shadowMap.needsUpdate = SHADOW_TICK === 0;
+  renderer.shadowMap.needsUpdate = true;
   const W = window.innerWidth, H = window.innerHeight;
   const postOK = sceneRT && bloomPass && finalQuad;
   for (let i = 0; i < views.length; i++) {

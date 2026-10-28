@@ -164,7 +164,8 @@ function resize() {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   DW = Math.max(1, Math.floor(window.innerWidth * pixelRatio)); DH = Math.max(1, Math.floor(window.innerHeight * pixelRatio));
   if (sceneRT) sceneRT.dispose();
-  sceneRT = new THREE.WebGLRenderTarget(DW, DH, { type: THREE.HalfFloatType, samples: q.samples, depthBuffer: true });
+  // stencilBuffer gives a 24-bit depth buffer (three.js otherwise allocates 16-bit for render targets, which z-fights badly at range)
+  sceneRT = new THREE.WebGLRenderTarget(DW, DH, { type: THREE.HalfFloatType, samples: q.samples, depthBuffer: true, stencilBuffer: true });
   const bw = Math.max(2, Math.floor(DW * q.bloomScale)), bh = Math.max(2, Math.floor(DH * q.bloomScale));
   if (THREE.UnrealBloomPass) {
     if (!bloomPass) bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(bw, bh), 0.62, 0.5, 1.05);
