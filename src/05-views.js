@@ -82,13 +82,13 @@ function makeView(p, kind) {
         <div class="meter shield"><div class="t"><span>DEFLECTS</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
         <div class="discs"><i></i><i></i><i></i></div>
         <div class="elev"><div class="eg"><b></b><u></u></div><i class="el">LEVEL</i></div>
-        <div class="meter heat"><div class="t"><span>OVERLOAD</span><span class="hv">0%</span></div><div class="bar"><div class="fill"></div></div></div>
+        <div class="meter heat"><div class="t"><span>NEXT SHOVE</span><span class="hv">1.9m</span></div><div class="bar"><div class="fill"></div></div></div>
       </div>`;
   } else el.innerHTML = '<div class="frame"></div><div class="tags"></div>';
   viewsEl.appendChild(el); v.el = el;
   v.q = s => el.querySelector(s);
   if (p && kind === 'player') {
-    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg') };
+    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg') };
   }
   v.tagLayer = v.q('.tags');
   return v;
@@ -183,7 +183,10 @@ function updateHud(v) {
     const H = v.hud;
     if (L.lives !== p.lives) { L.lives = p.lives; H.lives.innerHTML = Array.from({ length: Math.max(S.lives, p.lives) }, (_, i) => `<i class="${i < p.lives ? '' : 'gone'}"></i>`).join(''); }
     if (L.sh !== p.defl) { L.sh = p.defl; H.shield.style.width = (p.defl / DEFLECTS * 100) + '%'; H.dv.textContent = p.defl; H.shield.style.opacity = p.defl > 0 ? 1 : 0.3; }
-    const hv = Math.round(p.heat / 8 * 100); if (L.hv !== hv) { L.hv = hv; H.heat.style.width = hv + '%'; H.hv.textContent = Math.round(100 + p.heat * KB_HEAT * 100) + '%'; }
+    // how far the next hit will shove you, against the room you have left on this podium
+    { const shove = nextShove(p), pad = p.padRef || (STATIONS.length ? homePad(p) : null), R = pad ? pad.R : 3.7, d = pad ? Math.hypot(p.x - pad.x, p.z - pad.z) : 0;
+      const key = Math.round(shove * 10) + '|' + (d + shove > R + 0.5 ? 1 : 0) + '|' + Math.round(R * 10);
+      if (L.hv !== key) { L.hv = key; H.heat.style.width = Math.min(100, shove / R * 100) + '%'; H.hv.textContent = shove.toFixed(1) + 'm'; H.heatM.classList.toggle('danger', d + shove > R + 0.5 && p.mode === 'play'); } }
     const dh = p.discsHome - (p.charge > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
     // elevation gauge: where the aim line sits between the bottom of the walls and the ceiling
     const ev = Math.round(p.aimElev * 10); if (L.ev !== ev) { L.ev = ev; const ceil = p.aimElev > ELEV_WALL, y = ELEV_FLOOR + p.aimElev;

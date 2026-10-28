@@ -186,6 +186,27 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .view.small .who .n { font-size: 12px; } .view.small .meter { width: 84px; } .view.small .discs i { width: 15px; height: 15px; } .view.small .discs i::after { inset: 3.5px; }
 .view.small .bot { gap: 10px; bottom: 8px; } .view.small .elev i { font-size: 7.5px; min-width: 44px; } .view.small .elev .eg { height: 34px; }
 
+/* ---------- how to play ---------- */
+.howbtn { width: 100%; padding: 11px; font-size: 12px; }
+.how { width: min(720px, 94vw) !important; max-height: 88vh; display: flex; flex-direction: column; text-align: left !important; padding: 18px 20px 14px !important; }
+.howhead { display: flex; align-items: center; justify-content: space-between; }
+.howhead h2 { margin: 0; font-size: 24px; }
+.howhead .x { width: 30px; height: 30px; border: 1px solid var(--line); background: transparent; color: var(--dim); font-size: 18px; padding: 0; }
+.howhead .x:hover { color: var(--mag); border-color: var(--mag); }
+.howtabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 10px; }
+.howtabs button { padding: 7px 10px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--dim); font-family: 'Orbitron'; font-weight: 700; font-size: 10px; letter-spacing: .14em; }
+.howtabs button.on { color: #fff; background: var(--cyan); border-color: var(--cyan); }
+.howpage { overflow-y: auto; min-height: 0; flex: 1; padding-right: 4px; }
+.howpage ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; font-size: 15px; line-height: 1.4; color: var(--ink); }
+.howpage b { color: #fff; }
+.howpage .lead { margin: 0 0 6px; font-size: 16px; }
+.ill { width: 100%; max-width: 560px; height: auto; display: block; margin: 2px auto 4px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.06); }
+.ill .t { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: .08em; fill: #c9d3ff; font-weight: 700; }
+.ill .t.r { fill: #ff6b6b; }
+.howfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
+.meter.heat.danger .fill { animation: blink .35s infinite; background: #ff1414; }
+.meter.heat.danger .t { color: #ff4d4d; }
+
 /* ---------- modals ---------- */
 .modal { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2,1,8,.45); }
 .modal .panel { width: min(440px, 92vw); padding: 24px 24px 20px; text-align: center; }
@@ -252,9 +273,89 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
     <button id="start" class="live">START<span class="sub" id="startSub">PRESS ENTER OR START</span></button>
     <div class="tip" id="tip"></div>
 
-    <details class="panel ctrl">
-      <summary class="label">CONTROLS</summary>
-      <table class="keys">
+    <button id="bHow" class="btn live howbtn">HOW TO PLAY · H</button>
+  </div>
+
+  <div id="banner" class="panel" hidden><span class="dot"></span><span id="bannerText"></span></div>
+  <div id="count" hidden></div>
+  <div id="intro" hidden><div class="a" id="introA"></div><div class="b" id="introB"></div><div class="vs" id="introVs"></div></div>
+
+  <div id="corner" class="live">
+    <button id="bMusic" title="Music (M)">♪</button>
+    <button id="bFull" title="Fullscreen (`)">⛶</button>
+  </div>
+
+  <div id="howto" class="modal live" hidden>
+    <div class="panel how">
+      <div class="howhead"><h2>HOW TO PLAY</h2><button class="x live" id="howClose" title="Close (Esc / B)">×</button></div>
+      <div class="howtabs" id="howTabs"><button data-t="0" class="on">GOAL</button><button data-t="1">WHAT KNOCKS YOU OUT</button><button data-t="2">AIM &amp; THROW</button><button data-t="3">DEFEND</button><button data-t="4">CONTROLS</button></div>
+      <div class="howpage" data-p="0">
+        <svg viewBox="0 0 320 120" class="ill" aria-hidden="true">
+          <ellipse cx="60" cy="88" rx="44" ry="13" fill="none" stroke="#1650ff" stroke-width="3"/><ellipse cx="60" cy="88" rx="28" ry="8" fill="none" stroke="#1650ff" stroke-width="2"/><ellipse cx="60" cy="88" rx="12" ry="3.5" fill="#1650ff"/>
+          <ellipse cx="260" cy="88" rx="44" ry="13" fill="none" stroke="#ff1414" stroke-width="3"/><ellipse cx="260" cy="88" rx="28" ry="8" fill="none" stroke="#ff1414" stroke-width="2"/><ellipse cx="260" cy="88" rx="12" ry="3.5" fill="#ff1414"/>
+          <rect x="54" y="54" width="12" height="32" rx="5" fill="#1650ff"/><circle cx="60" cy="48" r="7" fill="#1650ff"/>
+          <rect x="254" y="54" width="12" height="32" rx="5" fill="#ff1414"/><circle cx="260" cy="48" r="7" fill="#ff1414"/>
+          <path d="M72 60 Q160 10 246 62" fill="none" stroke="#5aa8ff" stroke-width="2" stroke-dasharray="5 5"/><ellipse cx="160" cy="34" rx="9" ry="3" fill="#5aa8ff"/>
+        </svg>
+        <ul>
+          <li><b>Knock every rival off their podium.</b> Each fall costs a life (the pips by your name). Last runner standing wins.</li>
+          <li>You carry <b>3 discs</b>. A thrown disc bounces off the walls and ceiling up to 3 times, then flies back to your hand. You can't throw when all 3 are out.</li>
+          <li><b>Hold throw</b> to charge a <b>power disc</b>: it shoves harder and costs a deflector 2 uses.</li>
+        </ul>
+      </div>
+      <div class="howpage" data-p="1" hidden>
+        <p class="lead">Only two things put you down: <b>getting shoved off the edge</b>, or <b>the ring under your feet shattering</b>.</p>
+        <svg viewBox="0 0 340 132" class="ill" aria-hidden="true">
+          <circle cx="92" cy="66" r="60" fill="none" stroke="#1650ff" stroke-width="3"/><circle cx="92" cy="66" r="40" fill="none" stroke="#1650ff" stroke-width="1.5" opacity=".6"/><circle cx="92" cy="66" r="21" fill="none" stroke="#1650ff" stroke-width="1.5" opacity=".6"/>
+          <circle cx="92" cy="66" r="5" fill="#fff"/>
+          <path d="M92 66 H123" stroke="#5aa8ff" stroke-width="3"/><path d="M123 66 l-6 -4 v8 z" fill="#5aa8ff"/><text x="99" y="60" class="t">1st</text>
+          <circle cx="123" cy="66" r="4" fill="#5aa8ff"/>
+          <path d="M123 66 H170" stroke="#ff1414" stroke-width="3" stroke-dasharray="4 3"/><path d="M170 66 l-7 -5 v10 z" fill="#ff1414"/><text x="134" y="60" class="t r">2nd</text>
+          <text x="140" y="16" class="t">EDGE 3.7 m</text>
+          <g transform="translate(210 14)"><text x="0" y="12" class="t">SHOVE PER HIT</text>
+            <rect x="0" y="20" width="31" height="12" fill="#5aa8ff"/><text x="36" y="30" class="t">1st  1.9 m</text>
+            <rect x="0" y="38" width="44" height="12" fill="#5aa8ff"/><text x="49" y="48" class="t">2nd  2.7 m</text>
+            <rect x="0" y="56" width="58" height="12" fill="#ff6a00"/><text x="63" y="66" class="t">3rd  3.6 m</text>
+            <rect x="0" y="74" width="71" height="12" fill="#ff1414"/><text x="76" y="84" class="t r">4th  4.4 m</text></g>
+        </svg>
+        <ul>
+          <li><b>Every hit shoves you, and each hit you've taken makes the next shove 42% bigger</b> (that's your OVERLOAD). The <b>NEXT SHOVE</b> meter on your HUD shows exactly how far the next hit will push you, and flashes red when one more hit from where you stand puts you over.</li>
+          <li><b>Halo Rings podium (3.7 m to the edge):</b> stay where the 1st hit leaves you and the <b>2nd hit</b> takes you over. Get back to the centre after every hit and you survive 3; the <b>4th</b> takes you over.</li>
+          <li><b>Triad and Pistons podiums (2.3 m):</b> the 2nd hit puts you on the edge, the 3rd takes you over. Leap to another of your podiums when one gets crowded.</li>
+          <li>A <b>power disc</b> shoves 45% harder and counts as 2 hits of OVERLOAD. A <b>graze</b> shoves half as far. OVERLOAD resets when you lose a life.</li>
+          <li>Shoved <b>just past the rim</b>, you teeter (<b>WHOA!</b>): push back toward the centre within ¾ of a second to save yourself.</li>
+          <li><b>Shattered floor:</b> a disc that hits one of your rings makes it <b>flash for 1.6 s</b>, then it's gone for 9 s. Step off a flashing ring. The centre plate never breaks.</li>
+        </ul>
+      </div>
+      <div class="howpage" data-p="2" hidden>
+        <svg viewBox="0 0 320 128" class="ill" aria-hidden="true">
+          <rect x="8" y="8" width="140" height="112" fill="none" stroke="#1650ff" stroke-width="2"/><text x="14" y="22" class="t">FROM ABOVE: BANK SHOT</text>
+          <circle cx="40" cy="104" r="6" fill="#1650ff"/><circle cx="116" cy="30" r="6" fill="#ff1414"/><rect x="96" y="44" width="40" height="5" fill="#8d99c8"/>
+          <path d="M40 104 L148 70 L116 30" fill="none" stroke="#5aa8ff" stroke-width="2.5" stroke-dasharray="5 4"/><circle cx="148" cy="70" r="4" fill="#2f7dff"/>
+          <rect x="172" y="8" width="140" height="112" fill="none" stroke="#1650ff" stroke-width="2"/><text x="178" y="22" class="t">THE WALL YOU AIM AT</text>
+          <path d="M172 76 H312" stroke="#5aa8ff" stroke-width="3"/><text x="178" y="72" class="t">aim line (height)</text>
+          <path d="M252 68 l-7 -10 l7 4 l7 -4 z M252 84 l-7 10 l7 -4 l7 4 z" fill="#2f7dff"/><text x="262" y="96" class="t">crosshair</text>
+          <path d="M172 34 H312" stroke="#5aa8ff" stroke-width="1.5" stroke-dasharray="3 4" opacity=".6"/><text x="178" y="30" class="t">raise it → onto the ceiling</text>
+        </svg>
+        <ul>
+          <li>As in the original arcade game, a <b>light blue line runs round all four walls</b> at your throwing height, with a <b>blue crosshair</b> on it. Turn to slide the crosshair left and right; move the line up and down for elevation. <b>The disc flies straight at the crosshair.</b></li>
+          <li>Put the crosshair on a <b>side wall</b> and the disc banks off it, angle in = angle out. That's how you get round a deflector or a barrier.</li>
+          <li>Raise the line past the top of the walls and it <b>runs out across the ceiling</b>: the disc bounces off the ceiling and comes down on them.</li>
+          <li>Lower the line to throw <b>low</b> and smash the rings at their feet.</li>
+          <li>The crosshair turns <b>white</b> when the throw is lined up to hit someone.</li>
+        </ul>
+      </div>
+      <div class="howpage" data-p="3" hidden>
+        <ul>
+          <li><b>Deflector:</b> hold it to bounce discs away. It only covers <b>your front</b>, you can't throw while it's up, and you get <b>7 uses per life</b> (a power disc costs 2). Knock a rival out to refill it.</li>
+          <li><b>Smash their disc</b> out of the air with yours: both are destroyed and you get yours straight back.</li>
+          <li><b>Missed discs come back</b> off the far wall and can hit you from behind, where the deflector can't help.</li>
+          <li><b>You can't walk off a platform.</b> To cross to another of your platforms, or over a gap where a ring shattered, hold toward it at the edge for half a second and you leap over. Nobody can hit you mid-leap.</li>
+          <li><b>Recall</b> calls all your discs home at once.</li>
+        </ul>
+      </div>
+      <div class="howpage" data-p="4" hidden>
+        <table class="keys">
         <tr><th></th><th>CONTROLLER</th><th>KEYS 1</th><th>KEYS 2</th></tr>
         <tr><td>Join</td><td>A</td><td><kbd>Space</kbd></td><td><kbd>/</kbd></td></tr>
         <tr><td>Move</td><td>Left stick</td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td><kbd>I</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></td></tr>
@@ -268,18 +369,10 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>
       </table>
-    </details>
+      </div>
+      <div class="howfoot"><span class="small">← → or LB / RB to change page · Esc or B to close</span><button class="btn live" id="howNext">NEXT ›</button></div>
+    </div>
   </div>
-
-  <div id="banner" class="panel" hidden><span class="dot"></span><span id="bannerText"></span></div>
-  <div id="count" hidden></div>
-  <div id="intro" hidden><div class="a" id="introA"></div><div class="b" id="introB"></div><div class="vs" id="introVs"></div></div>
-
-  <div id="corner" class="live">
-    <button id="bMusic" title="Music (M)">♪</button>
-    <button id="bFull" title="Fullscreen (`)">⛶</button>
-  </div>
-
   <div id="pause" class="modal live" hidden>
     <div class="panel"><h2>PAUSED</h2><div class="small">Press Start, Esc or P to resume.</div>
       <div class="row"><button class="btn" id="bResume">RESUME</button><button class="btn mag" id="bQuit">QUIT TO LOBBY</button></div></div>
@@ -1990,6 +2083,8 @@ function updateDiscVisual(d, dt) {
 const UP = new THREE.Vector3(0, 1, 0);
 
 /* ================= getting hit ================= */
+// how far a normal hit would shove this runner right now (the slide after a hit is speed / friction)
+function nextShove(p) { return KB_BASE * (1 + KB_HEAT * p.heat) / FRICT * 0.965; }
 function applyHit(o, dx, dz, power, bySlot, graze) {
   if (o.mode !== 'play' || o.invuln > 0) return;
   const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * (graze ? 0.5 : 1);
@@ -2423,13 +2518,13 @@ function makeView(p, kind) {
         <div class="meter shield"><div class="t"><span>DEFLECTS</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
         <div class="discs"><i></i><i></i><i></i></div>
         <div class="elev"><div class="eg"><b></b><u></u></div><i class="el">LEVEL</i></div>
-        <div class="meter heat"><div class="t"><span>OVERLOAD</span><span class="hv">0%</span></div><div class="bar"><div class="fill"></div></div></div>
+        <div class="meter heat"><div class="t"><span>NEXT SHOVE</span><span class="hv">1.9m</span></div><div class="bar"><div class="fill"></div></div></div>
       </div>`;
   } else el.innerHTML = '<div class="frame"></div><div class="tags"></div>';
   viewsEl.appendChild(el); v.el = el;
   v.q = s => el.querySelector(s);
   if (p && kind === 'player') {
-    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg') };
+    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg') };
   }
   v.tagLayer = v.q('.tags');
   return v;
@@ -2524,7 +2619,10 @@ function updateHud(v) {
     const H = v.hud;
     if (L.lives !== p.lives) { L.lives = p.lives; H.lives.innerHTML = Array.from({ length: Math.max(S.lives, p.lives) }, (_, i) => `<i class="${i < p.lives ? '' : 'gone'}"></i>`).join(''); }
     if (L.sh !== p.defl) { L.sh = p.defl; H.shield.style.width = (p.defl / DEFLECTS * 100) + '%'; H.dv.textContent = p.defl; H.shield.style.opacity = p.defl > 0 ? 1 : 0.3; }
-    const hv = Math.round(p.heat / 8 * 100); if (L.hv !== hv) { L.hv = hv; H.heat.style.width = hv + '%'; H.hv.textContent = Math.round(100 + p.heat * KB_HEAT * 100) + '%'; }
+    // how far the next hit will shove you, against the room you have left on this podium
+    { const shove = nextShove(p), pad = p.padRef || (STATIONS.length ? homePad(p) : null), R = pad ? pad.R : 3.7, d = pad ? Math.hypot(p.x - pad.x, p.z - pad.z) : 0;
+      const key = Math.round(shove * 10) + '|' + (d + shove > R + 0.5 ? 1 : 0) + '|' + Math.round(R * 10);
+      if (L.hv !== key) { L.hv = key; H.heat.style.width = Math.min(100, shove / R * 100) + '%'; H.hv.textContent = shove.toFixed(1) + 'm'; H.heatM.classList.toggle('danger', d + shove > R + 0.5 && p.mode === 'play'); } }
     const dh = p.discsHome - (p.charge > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
     // elevation gauge: where the aim line sits between the bottom of the walls and the ceiling
     const ev = Math.round(p.aimElev * 10); if (L.ev !== ev) { L.ev = ev; const ceil = p.aimElev > ELEV_WALL, y = ELEV_FLOOR + p.aimElev;
@@ -2788,6 +2886,16 @@ function updateFlow(dt) {
 function countTick() {
   const n = 3 - Math.floor(phaseT);
   if (n !== countN && n > 0) { countN = n; const c = $('#count'); c.textContent = n; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true); SFX.beep(); }
+}
+
+/* ================= how to play ================= */
+let howPage = 0;
+function showHow(on) { show('#howto', on); if (on) { setHowPage(0); SFX.tick(); } }
+function setHowPage(i) {
+  const pages = document.querySelectorAll('.howpage'); howPage = (i + pages.length) % pages.length;
+  pages.forEach((e, k) => e.hidden = k !== howPage);
+  document.querySelectorAll('#howTabs button').forEach((b, k) => b.classList.toggle('on', k === howPage));
+  $('#howNext').textContent = howPage === pages.length - 1 ? 'DONE' : 'NEXT ›';
 }
 
 /* ---------- 07-net.js ---------- */
@@ -3229,6 +3337,11 @@ $('#bMusic').onclick = () => { audioInit(); MUSIC.setOn(!MUSIC.on); };
 $('#bMusic').classList.toggle('off', !S.music);
 $('#start').onclick = () => { audioInit(); if (state === 'lobby') startLocal(); };
 $('#bResume').onclick = () => setPaused(false);
+$('#bHow').onclick = () => { audioInit(); showHow(true); };
+$('#howClose').onclick = () => showHow(false);
+$('#howNext').onclick = () => { if (howPage === document.querySelectorAll('.howpage').length - 1) showHow(false); else setHowPage(howPage + 1); };
+document.querySelectorAll('#howTabs button').forEach(b => b.onclick = () => setHowPage(+b.dataset.t));
+$('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHow(false); });
 $('#bQuit').onclick = () => { setPaused(false); quitToLobby(); };
 $('#bAgain').onclick = () => rematch();
 $('#bLobby').onclick = () => quitToLobby();
@@ -3300,6 +3413,13 @@ function handleSystemInput() {
   if (KP.has('Backquote')) toggleFull();
   if (KP.has('KeyM') && !(state === 'lobby' && document.activeElement && document.activeElement.id === 'codeIn')) MUSIC.setOn(!MUSIC.on);
   const back = anyPadHit(8); if (back >= 0) toggleFull();
+  if (!$('#howto').hidden) {
+    if (KP.has('Escape') || KP.has('KeyH') || anyPadHit(1) >= 0 || anyPadHit(9) >= 0) showHow(false);
+    else if (KP.has('ArrowRight') || KP.has('KeyD') || anyPadHit(5) >= 0 || anyPadHit(15) >= 0 || anyPadHit(0) >= 0) setHowPage(howPage + 1);
+    else if (KP.has('ArrowLeft') || KP.has('KeyA') || anyPadHit(4) >= 0 || anyPadHit(14) >= 0) setHowPage(howPage - 1);
+    return;
+  }
+  if (state === 'lobby' && (KP.has('KeyH') || anyPadHit(2) >= 0)) { showHow(true); return; }
   if (state === 'lobby') {
     if (LOBBY.mode === 'local') {
       if (KP.has('Space')) lobbyJoin('kb1');

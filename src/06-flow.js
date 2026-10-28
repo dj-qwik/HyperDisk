@@ -236,3 +236,13 @@ function countTick() {
   const n = 3 - Math.floor(phaseT);
   if (n !== countN && n > 0) { countN = n; const c = $('#count'); c.textContent = n; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true); SFX.beep(); }
 }
+
+/* ================= how to play ================= */
+let howPage = 0;
+function showHow(on) { show('#howto', on); if (on) { setHowPage(0); SFX.tick(); } }
+function setHowPage(i) {
+  const pages = document.querySelectorAll('.howpage'); howPage = (i + pages.length) % pages.length;
+  pages.forEach((e, k) => e.hidden = k !== howPage);
+  document.querySelectorAll('#howTabs button').forEach((b, k) => b.classList.toggle('on', k === howPage));
+  $('#howNext').textContent = howPage === pages.length - 1 ? 'DONE' : 'NEXT ›';
+}

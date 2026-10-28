@@ -14,7 +14,8 @@ Zero-g disc duels above a neon megacity. Stand on a floating podium of concentri
 | **Aiming** | As in the original: a light blue line runs round all four walls at your throwing height, with a crosshair on it. Turn to slide the crosshair, raise or lower the line for elevation. The disc flies straight at the crosshair. Push the line past the top of the walls and it runs out across the ceiling. |
 | **Banks** | Discs rebound off flat walls (angle in = angle out) and off the ceiling. Bank round deflectors and barriers. Missed discs come back off the far wall and can hit you from behind. |
 | **Rings** | A struck ring flashes for 1.6 s, then vanishes for 9 s. Anyone standing on it falls. Centre plates are armoured. |
-| **Hits** | Knock you back. Each hit raises OVERLOAD, so the next one sends you further. |
+| **How to Play** | The lobby's HOW TO PLAY button (H, or X on a controller) explains all of this with diagrams. |
+| **Hits** | Shove you: 1.9 m, then 2.7 m, 3.6 m, 4.4 m (each hit taken makes the next 42% bigger; resets when you lose a life). On a Halo Rings podium (3.7 m to the edge) the 2nd hit takes you over if you stay put, the 4th if you get back to the centre each time. On Triad/Pistons podiums (2.3 m) it's the 3rd. Power discs shove 45% harder; grazes half as far. The HUD's NEXT SHOVE meter flashes red when one more hit puts you over. |
 | **Deflector** | Covers your front. 7 deflects per life (a power disc costs 2); knock a rival out to refill. Bank shots go around it. |
 | **Edges** | You can't walk off a platform. To cross to another of your platforms (or over a hole in your rings), hold toward it at the edge for half a second and you leap over; nobody can hit you mid-leap. Shoved just past the rim by a hit, you teeter: push back toward your podium to save yourself. |
 | **Disc vs disc** | Smash a rival's disc out of the air and yours is straight back in your hand. |

@@ -40,6 +40,11 @@ $('#bMusic').onclick = () => { audioInit(); MUSIC.setOn(!MUSIC.on); };
 $('#bMusic').classList.toggle('off', !S.music);
 $('#start').onclick = () => { audioInit(); if (state === 'lobby') startLocal(); };
 $('#bResume').onclick = () => setPaused(false);
+$('#bHow').onclick = () => { audioInit(); showHow(true); };
+$('#howClose').onclick = () => showHow(false);
+$('#howNext').onclick = () => { if (howPage === document.querySelectorAll('.howpage').length - 1) showHow(false); else setHowPage(howPage + 1); };
+document.querySelectorAll('#howTabs button').forEach(b => b.onclick = () => setHowPage(+b.dataset.t));
+$('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHow(false); });
 $('#bQuit').onclick = () => { setPaused(false); quitToLobby(); };
 $('#bAgain').onclick = () => rematch();
 $('#bLobby').onclick = () => quitToLobby();
@@ -111,6 +116,13 @@ function handleSystemInput() {
   if (KP.has('Backquote')) toggleFull();
   if (KP.has('KeyM') && !(state === 'lobby' && document.activeElement && document.activeElement.id === 'codeIn')) MUSIC.setOn(!MUSIC.on);
   const back = anyPadHit(8); if (back >= 0) toggleFull();
+  if (!$('#howto').hidden) {
+    if (KP.has('Escape') || KP.has('KeyH') || anyPadHit(1) >= 0 || anyPadHit(9) >= 0) showHow(false);
+    else if (KP.has('ArrowRight') || KP.has('KeyD') || anyPadHit(5) >= 0 || anyPadHit(15) >= 0 || anyPadHit(0) >= 0) setHowPage(howPage + 1);
+    else if (KP.has('ArrowLeft') || KP.has('KeyA') || anyPadHit(4) >= 0 || anyPadHit(14) >= 0) setHowPage(howPage - 1);
+    return;
+  }
+  if (state === 'lobby' && (KP.has('KeyH') || anyPadHit(2) >= 0)) { showHow(true); return; }
   if (state === 'lobby') {
     if (LOBBY.mode === 'local') {
       if (KP.has('Space')) lobbyJoin('kb1');
