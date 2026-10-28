@@ -16,7 +16,7 @@ function annulusGeo(rIn, rOut, segs, rep) {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); return g;
 }
-const sideMat = new THREE.MeshStandardMaterial({ color: 0x1c1f29, metalness: 0.9, roughness: 0.3, normalMap: HULLT.nrm, side: THREE.DoubleSide });
+const sideMat = new THREE.MeshStandardMaterial({ color: 0x1c1f29, metalness: 0.85, roughness: 0.36, envMapIntensity: 0.5, normalMap: HULLT.nrm, side: THREE.DoubleSide });
 const hullMatBase = new THREE.MeshStandardMaterial({ color: 0x1b1e28, metalness: 0.85, roughness: 0.34, map: HULLT.map, normalMap: HULLT.nrm, emissiveMap: HULLT.em });
 
 function ringSideGeo(rIn, rOut) {
@@ -33,10 +33,12 @@ function buildPad(st, idx, lx, phase, rings, color) {
     const ring = { rIn, rOut, state: 0, t: 0, g: new THREE.Group(), mats: [] };
     let top;
     if (rIn < 0.01) {
-      const m = new THREE.MeshStandardMaterial({ map: CT.map, normalMap: CT.nrm, emissiveMap: CT.em, emissive: c.clone().multiplyScalar(0.85), metalness: 0.85, roughness: 0.3 });
+      const m = new THREE.MeshStandardMaterial({ map: CT.map, normalMap: CT.nrm, emissiveMap: CT.em, emissive: c.clone().multiplyScalar(0.85), metalness: 0.7, roughness: 0.42, envMapIntensity: 0.4 });
       top = new THREE.Mesh(new THREE.CircleGeometry(rOut - 0.03, 72), m); top.rotation.x = -Math.PI / 2; ring.mats.push(m);
     } else {
-      const m = new THREE.MeshStandardMaterial({ map: RT.map, normalMap: RT.nrm, roughnessMap: RT.orm, metalnessMap: RT.orm, emissiveMap: RT.em, emissive: c.clone().multiplyScalar(0.95), metalness: 1, roughness: 1 });
+      // slightly less mirror-like than bare chrome, so grazing angles don't flood the top with reflected colour
+      const m = new THREE.MeshStandardMaterial({ map: RT.map, normalMap: RT.nrm, roughnessMap: RT.orm, metalnessMap: RT.orm, emissiveMap: RT.em, emissive: c.clone().multiplyScalar(0.95), metalness: 0.75, roughness: 1, envMapIntensity: 0.4 });
+      m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n  roughnessFactor = max(roughnessFactor, 0.38);'); };
       const rep = Math.max(2, Math.round(TAU * rOut / 3.2));
       top = new THREE.Mesh(annulusGeo(rIn + 0.03, rOut - 0.03, 96, rep), m); ring.mats.push(m);
     }

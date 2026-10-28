@@ -973,7 +973,7 @@ scene.add(sunLight, sunLight.target);
 const RIMS = [];
 // two rim lights on opposite corners (every point light costs on every lit pixel, so they're kept few)
 [[0x1650ff, 1, 1], [0xff1414, -1, -1]].forEach(([c, sx, sz]) => {
-  const l = new THREE.PointLight(c, 1.7, 60, 1.5); l.userData.sx = sx; l.userData.sz = sz; l.position.set(sx * 18, 7, sz * 18); scene.add(l); RIMS.push(l);
+  const l = new THREE.PointLight(c, 1.35, 60, 1.5); l.userData.sx = sx; l.userData.sz = sz; l.position.set(sx * 18, 7, sz * 18); scene.add(l); RIMS.push(l);
 });
 // warm work light down the shaft (no coloured neon in there)
 const under = new THREE.PointLight(0xffd2a0, 1.6, 70, 1.3); under.position.set(0, -16, 0); scene.add(under);
