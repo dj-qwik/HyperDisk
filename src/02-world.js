@@ -277,7 +277,7 @@ const membraneMat = new THREE.ShaderMaterial({
       vec4 hx = hexCoords(p);
       float edge = smoothstep(0.06, 0.0, hx.z);
       float yy = (vWP.y + 2.4) / ${(YC + 2.4).toFixed(1)};
-      vec3 base = mix(uTint, vec3(0.1,0.25,1.0), yy * 0.6);
+      vec3 base = mix(uTint, vec3(0.32,0.04,0.9), yy * 0.5);
       float scan = smoothstep(0.08, 0., abs(fract(yy*1.5 - uTime*0.12) - 0.5) - 0.42);
       // the original arena's horizontal wall lines
       float lines = smoothstep(0.06, 0.0, abs(fract((vWP.y + 2.4) / 1.9) - 0.5) - 0.44);
@@ -304,12 +304,13 @@ function buildCourt() {
     const m = membraneMat.clone(); m.uniforms = Object.assign({}, membraneMat.uniforms, { uAxis: { value: axis }, uTint: { value: new THREE.Color(tint) } });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, H, 1, 1), m); mesh.position.set(x, yMid, z); mesh.rotation.y = ry; mesh.renderOrder = 2; g.add(mesh);
   };
-  wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0xff1414); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0xff1414);
-  wall(2 * hx, 0, hz, Math.PI, 1, 0x1650ff); wall(2 * hx, 0, -hz, 0, 1, 0x1650ff);
+  // all four walls and the roof share one deep purple, so red and blue belong to the runners
+  wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0x5a12ff); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0x5a12ff);
+  wall(2 * hx, 0, hz, Math.PI, 1, 0x5a12ff); wall(2 * hx, 0, -hz, 0, 1, 0x5a12ff);
   // frame beams along every edge of the box
   const beam = (len, x, y, z, axis, color, k) => { const s = [0.14, 0.14, 0.14]; s[axis] = len; const m = new THREE.Mesh(new THREE.BoxGeometry(s[0], s[1], s[2]), emissiveMat(color, k)); m.position.set(x, y, z); g.add(m); };
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x1650ff, 3);
-  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x1650ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0xff1414, 2.6); }
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x5a12ff, 3);
+  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x5a12ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0x5a12ff, 2.6); }
   ARENA.add(g); COURT.g = g;
   for (let i = 0; i < RIMS.length; i++) { const sx = i === 0 || i === 3 ? 1 : -1, sz = i < 2 ? 1 : -1; RIMS[i].position.set(sx * (hx - 1.5), 7, sz * (hz - 1.5)); }
   buildCeiling();
@@ -354,12 +355,12 @@ function buildCeiling() {
 }
 {
   const rOcc = 7.5;
-  const occ = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 0.4, 0.22, 10, 120), emissiveMat(0xff1414, 3.5)); occ.rotation.x = Math.PI / 2; occ.position.y = YC; ARENA.add(occ);
-  const occ2 = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 1.1, 0.06, 6, 120), emissiveMat(0x1650ff, 3.5)); occ2.rotation.x = Math.PI / 2; occ2.position.y = YC - 0.1; ARENA.add(occ2);
+  const occ = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 0.4, 0.22, 10, 120), emissiveMat(0x5a12ff, 3.5)); occ.rotation.x = Math.PI / 2; occ.position.y = YC; ARENA.add(occ);
+  const occ2 = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 1.1, 0.06, 6, 120), emissiveMat(0xb46bff, 3)); occ2.rotation.x = Math.PI / 2; occ2.position.y = YC - 0.1; ARENA.add(occ2);
   // hanging emblem under the oculus
   const emb = new THREE.Group(); emb.position.y = YC + 2;
-  const e1 = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.12, 8, 120), emissiveMat(0x1650ff, 3)); e1.rotation.x = Math.PI / 2;
-  const e2 = new THREE.Mesh(new THREE.TorusGeometry(3.3, 0.07, 8, 120, Math.PI * 1.6), emissiveMat(0xff1414, 3));
+  const e1 = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.12, 8, 120), emissiveMat(0x5a12ff, 3)); e1.rotation.x = Math.PI / 2;
+  const e2 = new THREE.Mesh(new THREE.TorusGeometry(3.3, 0.07, 8, 120, Math.PI * 1.6), emissiveMat(0xb46bff, 3));
   const e3 = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.07, 8, 120, Math.PI * 1.2), emissiveMat(0xffffff, 2.5));
   emb.add(e1, e2, e3); ARENA.add(emb);
   anim.push((t) => { e2.rotation.x = t * 0.6; e2.rotation.y = t * 0.3; e3.rotation.y = -t * 0.9; e3.rotation.z = t * 0.4; emb.rotation.y = t * 0.15; });
@@ -367,7 +368,7 @@ function buildCeiling() {
   const shaftMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uTime },
     vertexShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }',
-    fragmentShader: 'uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 3.); float a = f * smoothstep(0.,0.6,vUv.y) * 0.022 * (0.85+0.15*sin(vUv.y*30.+uTime)); gl_FragColor = vec4(vec3(0.3,0.4,1.)*a,1.); }'
+    fragmentShader: 'uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 3.); float a = f * smoothstep(0.,0.6,vUv.y) * 0.022 * (0.85+0.15*sin(vUv.y*30.+uTime)); gl_FragColor = vec4(vec3(0.55,0.15,1.)*a,1.); }'
   });
   const ls = new THREE.Mesh(new THREE.CylinderGeometry(rOcc, rOcc + 3, 40, 48, 1, true), shaftMat); ls.position.y = YC - 20; ARENA.add(ls);
 }
@@ -381,7 +382,7 @@ function ceilFlash(x, z, colorHex) { CEIL.pulses.push({ x, z, t: uTime.value, c:
     for (let i = 0; i < plates.length; i++) {
       const [x, z, d] = plates[i];
       const wave = 0.5 + 0.5 * Math.sin(d * 0.35 - t * 1.4);
-      base.setRGB(0.01 + 0.05 * wave * wave, 0.03 + 0.16 * wave * wave, 0.18 + 0.9 * wave * wave);
+      base.setRGB(0.08 + 0.42 * wave * wave, 0.01 + 0.04 * wave * wave, 0.2 + 0.85 * wave * wave);
       col.copy(base);
       for (const p of pulses) { const age = t - p.t; if (age < 0 || age > 1.4) continue; const dd = Math.hypot(x - p.x, z - p.z); const w = Math.max(0, 1 - Math.abs(dd - age * 14) / 2.2) * (1 - age / 1.4) * 5; if (w > 0) col.r += p.c.r * w, col.g += p.c.g * w, col.b += p.c.b * w; }
       seams.setColorAt(i, col);

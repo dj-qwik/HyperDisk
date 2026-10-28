@@ -181,6 +181,9 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .view .chg { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; opacity: 0;
   background: conic-gradient(var(--c) calc(var(--p, 0) * 1turn), transparent 0); -webkit-mask: radial-gradient(circle, transparent 23px, #000 24px, #000 27px, transparent 28px); mask: radial-gradient(circle, transparent 23px, #000 24px, #000 27px, transparent 28px); }
 .view .tags { position: absolute; inset: 0; }
+.view .warn i { display: none; position: absolute; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-bottom: 30px solid var(--wc, #ff1414);
+  filter: drop-shadow(0 0 8px var(--wc, #ff1414)) drop-shadow(0 0 2px #fff); animation: blink .25s infinite; }
+.view .warn i::after { content: ''; position: absolute; left: -7px; top: 12px; width: 14px; height: 6px; background: #fff; }
 .ntag { position: absolute; transform: translate(-50%, -100%); font-family: 'Orbitron'; font-weight: 700; font-size: 11px; letter-spacing: .16em; color: var(--c);
   text-shadow: 0 0 8px var(--c), 0 0 2px #000; white-space: nowrap; text-align: center; }
 .ntag .l { display: flex; gap: 3px; justify-content: center; margin-top: 3px; }

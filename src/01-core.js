@@ -138,7 +138,8 @@ finalMat = new THREE.ShaderMaterial({
       // hue-preserving tone map so neon stays saturated instead of bleaching to white
       float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
       vec3 keep = col * (aces(vec3(lum)).x / max(lum, 1e-4));
-      col = mix(aces(col), clamp(keep, 0., 1.), 0.85);   // mostly hue-preserving, so bright red stays red and blue stays blue
+      keep /= max(1., max(keep.r, max(keep.g, keep.b)));   // scale bright colours down instead of clipping, so purple stays purple
+      col = mix(aces(col), keep, 0.85);   // mostly hue-preserving, so bright red stays red and blue stays blue
       col = col * col * (3.0 - 2.0 * col) * 0.45 + col * 0.55;
       // push saturation: electric, not pastel
       float gl = dot(col, vec3(0.2126, 0.7152, 0.0722)); col = clamp(mix(vec3(gl), col, 1.35), 0., 1.);

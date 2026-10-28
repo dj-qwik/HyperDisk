@@ -77,7 +77,7 @@ function makeView(p, kind) {
     el.style.setProperty('--c', p.css);
     el.innerHTML = `<div class="frame"></div><div class="tags"></div>
       <div class="who"><span class="n">${p.name}</span><span class="lives"></span><span class="puchip"></span></div>
-      <div class="chg"></div><div class="msg"></div>
+      <div class="chg"></div><div class="msg"></div><div class="warn"><i></i><i></i><i></i><i></i></div>
       <div class="bot">
         <div class="meter shield"><div class="t"><span>SHIELD</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
         <div class="discs"><i></i><i></i><i></i></div>
@@ -88,7 +88,7 @@ function makeView(p, kind) {
   viewsEl.appendChild(el); v.el = el;
   v.q = s => el.querySelector(s);
   if (p && kind === 'player') {
-    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg'), pu: v.q('.puchip') };
+    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg'), pu: v.q('.puchip'), warn: [...el.querySelectorAll('.warn i')] };
   }
   v.tagLayer = v.q('.tags');
   return v;
@@ -111,7 +111,7 @@ function layoutViews() {
     const [x, y, w, h] = rects[i]; Object.assign(v, { x, y, w, h });
     Object.assign(v.el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     v.el.classList.toggle('solo', n === 1); v.el.classList.toggle('small', n > 2 || w < 700);
-    v.cam.aspect = w / Math.max(1, h); v.cam.fov = v.cam.aspect < 1 ? 74 : n > 2 ? 64 : 60; v.cam.updateProjectionMatrix();
+    v.cam.aspect = w / Math.max(1, h); v.cam.fov = v.cam.aspect < 1 ? 80 : n > 2 ? 70 : 66; v.cam.updateProjectionMatrix();
   });
 }
 function viewFlash(p, colorHex, amt) { for (const v of views) if (v.p === p) { const c = new THREE.Color(colorHex); v.flash.set(c.r, c.g, c.b, amt); } }
@@ -128,8 +128,8 @@ function shoulderCam(p, outPos, outLook, aimYaw) {
   const a = aimYaw == null ? p.aimYaw : aimYaw, fx = Math.sin(a), fz = Math.cos(a), rx = -Math.cos(a), rz = Math.sin(a);
   const e = p.aimElev == null ? ELEV_LEVEL : p.aimElev, hi = e > ELEV_WALL ? 1 : clamp((e - ELEV_LEVEL) / (ELEV_WALL - ELEV_LEVEL), -0.3, 1);
   const lift = hi > 0 ? hi * 0.6 : -hi * 0.4;
-  outPos.set(p.x - fx * 4.9 + rx * 0.6, p.y + 2.75 + lift, p.z - fz * 4.9 + rz * 0.6);
-  outLook.set(p.x + fx * 16 + rx * 0.25, p.y + 1.6 + (hi > 0 ? hi * 3.2 : hi * 4), p.z + fz * 16 + rz * 0.25);
+  outPos.set(p.x - fx * 6.8 + rx * 0.5, p.y + 3.7 + lift, p.z - fz * 6.8 + rz * 0.5);
+  outLook.set(p.x + fx * 16 + rx * 0.2, p.y + 1.2 + (hi > 0 ? hi * 3.2 : hi * 4), p.z + fz * 16 + rz * 0.2);
 }
 function orbitCam(t, outPos, outLook, r, h, speed, phase, cx, cy, cz) {
   const a = t * speed + (phase || 0);
@@ -175,12 +175,49 @@ function updateView(v, dt) {
   v.flash.w = Math.max(0, v.flash.w - dt * 2.4);
 }
 
+// ---- incoming-disc warnings ----
+// A rival's disc that will pass close to you soon, but is off screen (usually coming back off the wall
+// behind you), gets a pulsing arrow on the edge of your view pointing at where it's coming from.
+const _wv = new THREE.Vector3(), _wm = new THREE.Matrix4();
+function incomingThreats(p) {
+  const out = [];
+  for (const d of DISCS) {
+    if (d.state !== 'fly' || (d.owner === p && !d.deflected)) continue;
+    const rx = d.pos.x - p.x, ry = d.pos.y - (p.y + 1.1), rz = d.pos.z - p.z, vx = d.vel.x, vy = d.vel.y, vz = d.vel.z;
+    const vv = vx * vx + vy * vy + vz * vz; if (vv < 1) continue;
+    const t = -(rx * vx + ry * vy + rz * vz) / vv; if (t < 0 || t > 1.6) continue;
+    const mx = rx + vx * t, my = ry + vy * t, mz = rz + vz * t; if (mx * mx + my * my + mz * mz > 2.6 * 2.6) continue;
+    out.push({ d, t });
+  }
+  return out.sort((a, b) => a.t - b.t).slice(0, 4);
+}
+function updateWarnings(v) {
+  const p = v.p, W = v.hud.warn; let n = 0;
+  if (p.mode === 'play' && state === 'play') {
+    _wm.copy(v.cam.matrixWorldInverse);
+    for (const { d, t } of incomingThreats(p)) {
+      _wv.copy(d.pos).applyMatrix4(_wm);                    // camera space: -z is ahead
+      const behind = _wv.z > -0.5;
+      if (!behind) { _pj.copy(d.pos).project(v.cam); if (Math.abs(_pj.x) < 0.92 && Math.abs(_pj.y) < 0.92) continue; }   // on screen: you can see it
+      let dx = _wv.x, dy = _wv.y; if (behind) dy = -Math.abs(dy) - 2.5;   // behind you: arrow along the bottom edge
+      const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+      const hw = v.w / 2 - 46, hh = v.h / 2 - 92, k = Math.min(hw / Math.max(1e-3, Math.abs(dx)), hh / Math.max(1e-3, Math.abs(dy)));
+      const e = W[n++]; e.style.display = 'block';
+      e.style.left = (v.w / 2 + dx * k) + 'px'; e.style.top = (v.h / 2 - dy * k) + 'px';
+      e.style.transform = `translate(-50%,-50%) rotate(${Math.atan2(dx, dy)}rad) scale(${(1.25 - Math.min(1, t / 1.6) * 0.5).toFixed(2)})`;
+      e.style.setProperty('--wc', '#' + new THREE.Color(d.mod ? MOD_LOOK[d.mod].color : d.owner.color).getHexString());
+      if (n >= W.length) break;
+    }
+  }
+  for (let i = n; i < W.length; i++) W[i].style.display = 'none';
+}
 // ---- per-view HUD ----
 const _pj = new THREE.Vector3();
 function updateHud(v) {
   const p = v.p, L = v.last;
   if (p && v.hud) {
     const H = v.hud;
+    updateWarnings(v);
     if (L.lives !== p.lives) { L.lives = p.lives; H.lives.innerHTML = Array.from({ length: Math.max(S.lives, p.lives) }, (_, i) => `<i class="${i < p.lives ? '' : 'gone'}"></i>`).join(''); }
     if (L.sh !== p.defl) { L.sh = p.defl; H.shield.style.width = (p.defl / DEFLECTS * 100) + '%'; H.dv.textContent = p.defl; H.shield.style.opacity = p.defl > 0 ? 1 : 0.3; }
     { const chips = puChip(p), k = chips.map(c => c[0]).join('|'); if (L.pu !== k) { L.pu = k; H.pu.innerHTML = chips.map(([t, c]) => `<i style="--pc:#${new THREE.Color(c).getHexString()}">${t}</i>`).join(''); } }

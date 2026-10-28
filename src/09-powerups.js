@@ -36,18 +36,18 @@ function puIcon(type) {
 function makePuMesh(type) {
   const g = new THREE.Group(), c = new THREE.Color(PU_TYPES[type].color);
   const icon = new THREE.Sprite(new THREE.SpriteMaterial({ map: puIcon(type), color: new THREE.Color(1.6, 1.6, 1.6), transparent: true, depthWrite: false }));
-  icon.scale.set(1.0, 1.0, 1); icon.position.y = 0.95; icon.renderOrder = 6; g.add(icon);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.035, 8, 48), new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(3.2), transparent: true }));
-  ring.position.y = 0.95; g.add(ring);
-  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.02, 6, 48), ring.material); ring2.position.y = 0.95; g.add(ring2);
-  const pad = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.62, 6), new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(2.6), transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  icon.scale.set(0.55, 0.55, 1); icon.position.y = 0.75; icon.renderOrder = 6; g.add(icon);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.022, 8, 40), new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(3.2), transparent: true }));
+  ring.position.y = 0.75; g.add(ring);
+  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.014, 6, 40), ring.material); ring2.position.y = 0.75; g.add(ring2);
+  const pad = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.32, 6), new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(2.6), transparent: true, side: THREE.DoubleSide, depthWrite: false }));
   pad.rotation.x = -Math.PI / 2; pad.position.y = 0.03; g.add(pad);
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.55, 2.4, 24, 1, true), new THREE.ShaderMaterial({
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 1.6, 20, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uC: { value: c }, uA: { value: 1 } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
     fragmentShader: 'uniform vec3 uC; uniform float uA; varying vec2 vUv; void main(){ float a = (1.-vUv.y)*0.35*uA; gl_FragColor = vec4(uC*a, 1.); }'
   }));
-  beam.position.y = 1.2; g.add(beam);
+  beam.position.y = 0.8; g.add(beam);
   g.userData = { icon, ring, ring2, pad, beam };
   scene.add(g); return g;
 }
@@ -59,15 +59,16 @@ function puWorld(u, out) { const pad = puPad(u); if (!pad) return null; return o
 // host / local: decide where the next one appears
 function spawnPowerup() {
   const live = players.filter(p => p.mode === 'play'); if (!live.length || !STATIONS.length) return;
-  const p = live[Math.floor(Math.random() * live.length)], st = stationOf(p);
-  for (let tries = 0; tries < 12; tries++) {
+  for (let tries = 0; tries < 24; tries++) {
+    const p = live[Math.floor(Math.random() * live.length)], st = stationOf(p);
     const pad = st.pads[Math.floor(Math.random() * st.pads.length)];
     const solid = pad.rings.filter(r => r.state === 0); if (!solid.length) continue;
     const r = solid[Math.floor(Math.random() * solid.length)], a = Math.random() * TAU;
     const rr = r.rIn < 0.01 ? Math.random() * r.rOut * 0.5 : lerp(r.rIn + 0.2, r.rOut - 0.2, Math.random());
     const ox = Math.cos(a) * rr, oz = Math.sin(a) * rr;
-    if (Math.hypot(pad.x + ox - p.x, pad.z + oz - p.z) < 1.0) continue;               // not right under their feet
-    if (PU.list.some(u => u.st === st.i && u.pad === pad.idx && Math.hypot(u.ox - ox, u.oz - oz) < 1.4)) continue;
+    if (Math.hypot(pad.x + ox - p.x, pad.z + oz - p.z) < 1.5) continue;               // not right under their feet
+    if (PU.list.some(u => u.st === st.i && u.pad === pad.idx)) continue;                 // never two on one podium
+    if (PU.list.some(u => puWorld(u, _pw) && Math.hypot(_pw.x - pad.x - ox, _pw.z - pad.z - oz) < 4)) continue;   // nor close together
     const type = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
     addPowerup({ id: ++PU.seq + PU_ID_BASE, type, st: st.i, pad: pad.idx, ox, oz, age: 0 });
     return;
@@ -116,9 +117,9 @@ function updatePowerups(dt) {
     const late = PU_LIFE - u.age, blink = late < 4 ? Math.sin(t * (8 + (4 - late) * 5)) > 0 : true;
     u.mesh.visible = blink && !(ring && ring.state === 2) && !PU.taken.has(u.id);
     u.mesh.position.copy(_pw);
-    const U = u.mesh.userData, bob = Math.sin(t * 2.6 + u.id) * 0.12, pop = Math.min(1, u.age * 3);
-    U.icon.position.y = 0.95 + bob; U.ring.position.y = U.ring2.position.y = 0.95 + bob;
-    U.icon.scale.setScalar(pop); U.ring.rotation.set(t * 1.7, t * 1.1, 0); U.ring2.rotation.set(-t * 1.3, 0, t * 2.1);
+    const U = u.mesh.userData, bob = Math.sin(t * 2.6 + u.id) * 0.07, pop = Math.min(1, u.age * 3);
+    U.icon.position.y = 0.75 + bob; U.ring.position.y = U.ring2.position.y = 0.75 + bob;
+    U.icon.scale.setScalar(0.55 * pop); U.ring.rotation.set(t * 1.7, t * 1.1, 0); U.ring2.rotation.set(-t * 1.3, 0, t * 2.1);
     U.pad.rotation.z = t * 0.8;
   }
 }

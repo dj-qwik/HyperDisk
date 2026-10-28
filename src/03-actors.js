@@ -114,7 +114,7 @@ function buildBulwarks(on) {
 function buildStations(n, arena, colors) {
   clearStations(); LAYOUT = arena;
   // two runners face off down a long court; three or four share a square one
-  if (n <= 2) { BOX.hx = 11; BOX.hz = 21; } else { BOX.hx = 21; BOX.hz = 21; }
+  if (n <= 2) { BOX.hx = 11; BOX.hz = 23.5; } else { BOX.hx = 23; BOX.hz = 23; }
   buildCourt();
   const lay = stationLayout(n);
   lay.forEach((L, i) => {
