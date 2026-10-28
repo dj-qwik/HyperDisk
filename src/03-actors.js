@@ -292,79 +292,234 @@ const armorTint = c => new THREE.Color(0x15171f).lerp(new THREE.Color(c), 0.06);
 const capsule = (r, l, cs) => (THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(r, l, 6, cs || 14) : new THREE.CylinderGeometry(r, r, l + r * 2, cs || 14));
 const rbox = (w, h, d, r) => (THREE.RoundedBoxGeometry ? new THREE.RoundedBoxGeometry(w, h, d, 3, r || Math.min(w, h, d) * 0.3) : new THREE.BoxGeometry(w, h, d));
 
+/* ---------------- runner: an athletic skinned body under sculpted armour ----------------
+   One skeleton (pelvis, spine, chest, neck, head, hips/knees/ankles, shoulders/elbows/hands).
+   The body is a single lofted mesh, sculpted cross-section by cross-section, skinned to that
+   skeleton so knees, elbows, hips, waist and shoulders bend smoothly. Armour plates, gloves,
+   boots and the helmet are rigid parts bound to one bone each, merged per material, so a whole
+   runner is only a handful of draw calls. */
+let SUITT = null;
+function makeSuitTextures() {
+  const W = 512, H = 512, rnd = mulberry(909);
+  // height: fine twill weave, soft compression ribbing, panel seams with stitching
+  const hc = cnv(W, H), h = hc.getContext('2d');
+  h.fillStyle = '#808080'; h.fillRect(0, 0, W, H);
+  for (let y = 0; y < H; y += 3) for (let x = 0; x < W; x += 3) { const o = ((x / 3 + y / 3) % 4) < 2 ? 18 : -14; h.fillStyle = `rgba(${o > 0 ? 255 : 0},${o > 0 ? 255 : 0},${o > 0 ? 255 : 0},${Math.abs(o) / 255})`; h.fillRect(x, y, 2, 2); }
+  for (let y = 0; y < H; y += 24) { const g = h.createLinearGradient(0, y, 0, y + 24); g.addColorStop(0, 'rgba(0,0,0,.18)'); g.addColorStop(0.5, 'rgba(255,255,255,.10)'); g.addColorStop(1, 'rgba(0,0,0,.18)'); h.fillStyle = g; h.fillRect(0, y, W, 24); }
+  noiseFill(h, W, H, rnd, 10, false);
+  const seamsU = [0.0, 0.25, 0.5, 0.75], seamsV = [0.0, 0.5];
+  h.fillStyle = 'rgba(0,0,0,.95)'; for (const u of seamsU) { h.fillRect(u * W - 2, 0, 4, H); h.fillRect((u * W + W - 2) % W, 0, 4, H); } for (const v of seamsV) h.fillRect(0, v * H - 2, W, 4);
+  h.fillStyle = 'rgba(255,255,255,.55)'; for (const u of seamsU) for (let y = 4; y < H; y += 10) { h.fillRect(u * W + 5, y, 2, 5); h.fillRect((u * W - 7 + W) % W, y, 2, 5); }
+  const nrm = texOf(normalFromHeight(hc, 4), false, true);
+  // albedo: near-black technical fabric, slightly darker in the seams
+  const ac = cnv(W, H), a = ac.getContext('2d');
+  a.fillStyle = '#1b1d24'; a.fillRect(0, 0, W, H); noiseFill(a, W, H, rnd, 8, false);
+  a.fillStyle = 'rgba(0,0,0,.6)'; for (const u of seamsU) a.fillRect(u * W - 3, 0, 6, H); for (const v of seamsV) a.fillRect(0, v * H - 3, W, 6);
+  a.fillStyle = 'rgba(70,74,86,.35)'; for (let y = 0; y < H; y += 24) a.fillRect(0, y + 11, W, 2);
+  // emissive: thin piping along the side seams, with small dashes
+  const ec = cnv(W, H), e = ec.getContext('2d');
+  e.fillStyle = '#000'; e.fillRect(0, 0, W, H); e.fillStyle = '#fff';
+  for (const u of [0.25, 0.75]) { e.fillRect(u * W + (u < 0.5 ? 9 : -11), 0, 2, H); for (let y = 0; y < H; y += 64) e.fillRect(u * W + (u < 0.5 ? 13 : -17), y + 20, 4, 18); }
+  return { map: texOf(ac, true, true), nrm, em: texOf(ec, true, true) };
+}
+
+// bones: name, parent, local offset (rest pose: standing straight, arms hanging at the sides)
+const RIG_BONES = [
+  ['body', null, [0, 0, 0]], ['pelvis', 'body', [0, 0.96, 0]], ['spine', 'pelvis', [0, 0.06, 0]], ['chest', 'spine', [0, 0.34, 0]],
+  ['neck', 'chest', [0, 0.22, 0]], ['head', 'neck', [0, 0.15, 0.01]],
+  ['hipL', 'pelvis', [0.1, -0.04, 0]], ['kneeL', 'hipL', [0, -0.45, 0]], ['ankleL', 'kneeL', [0, -0.42, 0]],
+  ['hipR', 'pelvis', [-0.1, -0.04, 0]], ['kneeR', 'hipR', [0, -0.45, 0]], ['ankleR', 'kneeR', [0, -0.42, 0]],
+  ['shL', 'chest', [0.215, 0.12, 0]], ['elbowL', 'shL', [0, -0.29, 0]], ['handL', 'elbowL', [0, -0.27, 0]],
+  ['shR', 'chest', [-0.215, 0.12, 0]], ['elbowR', 'shR', [0, -0.29, 0]], ['handR', 'elbowR', [0, -0.27, 0]]
+];
+const RIG_I = {}; RIG_BONES.forEach((b, i) => RIG_I[b[0]] = i);
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+// Loft a vertical tube through horizontal cross-sections (superellipses with optional bumps),
+// skinned by height. sec: { y, rx, rz, x, z }, wfn(y) -> [[bone, w], [bone, w]], bump(theta, y) -> radius multiplier
+function loftTube(sec, segs, n, wfn, bump, capBottom) {
+  const pos = [], nor = [], uv = [], si = [], sw = [], idx = [];
+  let vacc = 0;
+  for (let i = 0; i < sec.length; i++) {
+    const S = sec[i]; if (i > 0) vacc += Math.abs(sec[i - 1].y - S.y) * 1.6;
+    const w = wfn(S.y);
+    for (let j = 0; j <= segs; j++) {
+      const th = j / segs * TAU, sx = Math.sin(th), cz = -Math.cos(th);   // th = 0 at the back, PI at the front
+      const ex = Math.sign(sx) * Math.pow(Math.abs(sx), 2 / n), ez = Math.sign(cz) * Math.pow(Math.abs(cz), 2 / n);
+      const m = bump ? bump(th, S.y) : 1;
+      pos.push((S.x || 0) + S.rx * ex * m, S.y, (S.z || 0) + S.rz * ez * m);
+      uv.push(j / segs, vacc);
+      si.push(w[0][0], w[1] ? w[1][0] : 0, 0, 0); sw.push(w[0][1], w[1] ? w[1][1] : 0, 0, 0);
+    }
+  }
+  const R = segs + 1;
+  for (let i = 0; i < sec.length - 1; i++) for (let j = 0; j < segs; j++) { const a = i * R + j, b = a + 1, c = a + R, d = c + 1; idx.push(a, c, b, b, c, d); }
+  if (capBottom) {   // close the lowest ring with a fan
+    const L = sec.length - 1, S = sec[L], ci = pos.length / 3, w = wfn(S.y);
+    pos.push(S.x || 0, S.y - 0.01, S.z || 0); uv.push(0.5, vacc); si.push(w[0][0], w[1] ? w[1][0] : 0, 0, 0); sw.push(w[0][1], w[1] ? w[1][1] : 0, 0, 0);
+    for (let j = 0; j < segs; j++) idx.push(L * R + j, ci, L * R + j + 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+  g.setIndex(idx); g.computeVertexNormals();
+  // make sure faces point outward, and weld the normals across the UV seam
+  const P = g.attributes.position, N = g.attributes.normal;
+  const mid = Math.floor(sec.length / 2) * R + Math.floor(segs / 2), cx = sec[Math.floor(sec.length / 2)].x || 0, cz0 = sec[Math.floor(sec.length / 2)].z || 0;
+  if ((P.getX(mid) - cx) * N.getX(mid) + (P.getZ(mid) - cz0) * N.getZ(mid) < 0) { const I = g.index.array; for (let k = 0; k < I.length; k += 3) { const t = I[k + 1]; I[k + 1] = I[k + 2]; I[k + 2] = t; } g.computeVertexNormals(); }
+  for (let i = 0; i < sec.length; i++) { const a = i * R, b = a + segs; const nx = N.getX(a) + N.getX(b), ny = N.getY(a) + N.getY(b), nz = N.getZ(a) + N.getZ(b), l = Math.hypot(nx, ny, nz) || 1; N.setXYZ(a, nx / l, ny / l, nz / l); N.setXYZ(b, nx / l, ny / l, nz / l); }
+  return g;
+}
+// merge rigid parts (each on one bone) and skinned pieces into one skinned geometry
+function mergeSkinned(list) {
+  let n = 0; const gs = list.map(it => { const g = it.g.index ? it.g.toNonIndexed() : it.g.clone(); if (it.m) g.applyMatrix4(it.m); n += g.attributes.position.count; return [g, it]; });
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2), si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+  let o = 0;
+  for (const [g, it] of gs) {
+    const c = g.attributes.position.count;
+    pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3);
+    if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2);
+    if (g.attributes.skinIndex) { si.set(g.attributes.skinIndex.array, o * 4); sw.set(g.attributes.skinWeight.array, o * 4); }
+    else for (let k = 0; k < c; k++) { si[(o + k) * 4] = it.bone; sw[(o + k) * 4] = 1; }
+    o += c;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  out.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); out.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+  return out;
+}
+
 function makeRunner(color) {
+  if (!SUITT) SUITT = makeSuitTextures();
   const c = new THREE.Color(color);
-  const armor = new THREE.MeshPhysicalMaterial({ color: armorTint(color), metalness: 0.75, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12, normalMap: ARMN, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.7 });
-  const suit = new THREE.MeshStandardMaterial({ color: 0x0a0b11, metalness: 0.25, roughness: 0.62, normalMap: ARMN, normalScale: new THREE.Vector2(0.9, 0.9) });
+  const armor = new THREE.MeshPhysicalMaterial({ color: armorTint(color), metalness: 0.75, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.1, normalMap: ARMN, normalScale: new THREE.Vector2(0.3, 0.3), envMapIntensity: 0.75, side: THREE.DoubleSide });
+  const suit = new THREE.MeshStandardMaterial({ color: 0x8c8f99, map: SUITT.map, normalMap: SUITT.nrm, normalScale: new THREE.Vector2(0.8, 0.8), roughness: 0.74, metalness: 0.08, envMapIntensity: 0.6, emissiveMap: SUITT.em, emissive: c.clone().multiplyScalar(0.9) });
+  const glove = new THREE.MeshStandardMaterial({ color: 0x15161b, roughness: 0.45, metalness: 0.35, normalMap: SUITT.nrm, normalScale: new THREE.Vector2(0.5, 0.5) });
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x05060a, metalness: 0.2, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.02 });
   const glow = new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(2.6) });
   const visorM = new THREE.MeshPhysicalMaterial({ color: 0x020203, metalness: 0.6, roughness: 0.08, clearcoat: 1, emissive: c.clone().multiplyScalar(1.5), emissiveIntensity: 1 });
-  const M = (geo, mat, x, y, z, parent) => { const m = new THREE.Mesh(geo, mat); m.position.set(x || 0, y || 0, z || 0); m.castShadow = true; if (parent) parent.add(m); return m; };
-  const G = (x, y, z, parent) => { const g = new THREE.Group(); g.position.set(x || 0, y || 0, z || 0); if (parent) parent.add(g); return g; };
 
-  const root = new THREE.Group(), body = G(0, 0, 0, root), pelvis = G(0, 0.96, 0, body);
-  M(rbox(0.3, 0.16, 0.2, 0.06), suit, 0, 0, 0, pelvis);
-  const belt = M(new THREE.TorusGeometry(0.165, 0.025, 8, 32), glow, 0, 0.06, 0, pelvis); belt.rotation.x = Math.PI / 2; belt.scale.set(1, 0.72, 1);
-  M(rbox(0.12, 0.1, 0.05, 0.02), armor, 0, 0.04, 0.12, pelvis);
-  const legs = [];
+  // skeleton in rest pose
+  const root = new THREE.Group(), bones = [], B = {};
+  for (const [name, par, off] of RIG_BONES) { const b = new THREE.Bone(); b.name = name; b.position.set(off[0], off[1], off[2]); (par ? B[par] : root).add(b); B[name] = b; bones.push(b); }
+  root.updateMatrixWorld(true);
+  const W = name => B[name].matrixWorld;   // rest world matrix of a bone
+  const parts = { suit: [], armor: [], glow: [], glove: [], glass: [], visor: [] };
+  // add a rigid part: geometry placed in the bone's local frame
+  const add = (mat, bone, geo, x, y, z, rx, ry, rz, sx, sy, sz) => {
+    const local = new THREE.Matrix4().compose(new THREE.Vector3(x || 0, y || 0, z || 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx || 0, ry || 0, rz || 0)), new THREE.Vector3(sx || 1, sy || sx || 1, sz || sx || 1));
+    if (bone === 'head') local.premultiply(new THREE.Matrix4().makeScale(0.8, 0.8, 0.8));   // helmet sized to a real head
+    parts[mat].push({ g: geo, m: W(bone).clone().multiply(local), bone: RIG_I[bone] });
+  };
+  // ---- the body ----
+  const two = (a, b, y0, y1, y) => { const t = sstep(y0, y1, y); return [[a, 1 - t], [b, t]]; };
+  const torsoW = y => y < 1.06 ? two(RIG_I.pelvis, RIG_I.spine, 0.99, 1.07, y) : y < 1.34 ? two(RIG_I.spine, RIG_I.chest, 1.26, 1.34, y) : two(RIG_I.chest, RIG_I.neck, 1.55, 1.61, y);
+  const TORSO = [   // y, half-width, half-depth, centre z (top down)
+    [1.75, .048, .05, .012], [1.68, .052, .054, .012], [1.61, .057, .057, .008], [1.575, .075, .066, 0], [1.545, .13, .088, -.008], [1.505, .172, .1, -.002],
+    [1.46, .19, .118, .006], [1.40, .192, .13, .012], [1.33, .184, .132, .014], [1.26, .17, .122, .012], [1.19, .156, .113, .008], [1.12, .148, .108, .006],
+    [1.06, .152, .11, .002], [1.0, .166, .118, -.004], [0.94, .176, .124, -.01], [0.88, .172, .12, -.01], [0.83, .15, .108, -.004], [0.80, .12, .09, 0]
+  ].map(([y, rx, rz, z]) => ({ y, rx, rz, z }));
+  // pecs, shoulder blades and glutes as gentle bulges on the cross-sections
+  const torsoBump = (th, y) => {
+    const front = Math.max(0, -Math.cos(th)), back = Math.max(0, Math.cos(th)), sideA = Math.abs(Math.sin(th));
+    const pec = front * Math.exp(-Math.pow((y - 1.39) / 0.05, 2)) * (0.55 + 0.45 * Math.pow(Math.abs(Math.sin(th * 2)), 0.6)) * 0.07;
+    const blade = back * Math.exp(-Math.pow((y - 1.4) / 0.06, 2)) * sideA * 0.06;
+    const glute = back * Math.exp(-Math.pow((y - 0.9) / 0.05, 2)) * (0.5 + 0.5 * sideA) * 0.08;
+    const lat = sideA * Math.exp(-Math.pow((y - 1.32) / 0.08, 2)) * 0.03;
+    return 1 + pec + blade + glute + lat;
+  };
+  parts.suit.push({ g: loftTube(TORSO, 44, 2.6, torsoW, torsoBump, true) });
   for (const sd of [1, -1]) {
-    const hip = G(0.1 * sd, -0.04, 0, pelvis);
-    M(capsule(0.085, 0.28), suit, 0, -0.21, 0, hip);
-    const tp = M(rbox(0.13, 0.26, 0.1, 0.04), armor, 0.01 * sd, -0.19, 0.045, hip); tp.rotation.x = -0.05;
-    M(new THREE.BoxGeometry(0.012, 0.2, 0.02), glow, 0.07 * sd, -0.2, 0.0, hip);
-    const knee = G(0, -0.45, 0, hip);
-    const kp = M(new THREE.SphereGeometry(0.07, 16, 10), armor, 0, 0, 0.06, knee); kp.scale.set(1, 1.1, 0.8);
-    M(new THREE.SphereGeometry(0.018, 8, 6), glow, 0, 0.01, 0.115, knee);
-    M(capsule(0.07, 0.26), suit, 0, -0.2, 0, knee);
-    M(rbox(0.11, 0.26, 0.09, 0.035), armor, 0, -0.2, 0.035, knee);
-    M(new THREE.BoxGeometry(0.06, 0.012, 0.02), glow, 0, -0.29, 0.085, knee);
-    const ankle = G(0, -0.42, 0, knee);
-    M(rbox(0.13, 0.11, 0.27, 0.04), armor, 0, -0.03, 0.05, ankle);
-    M(new THREE.BoxGeometry(0.135, 0.018, 0.25), glow, 0, -0.085, 0.05, ankle);
-    legs.push({ hip, knee, ankle });
+    const S = sd > 0 ? 'L' : 'R', x = 0.1 * sd;
+    const LEG = [[1.0, .08, .092, 0], [0.93, .092, .102, -.004], [0.85, .089, .097, 0], [0.76, .081, .088, .004], [0.67, .071, .077, .008], [0.58, .061, .066, .01],
+      [0.52, .055, .059, .012], [0.47, .053, .057, .012], [0.42, .052, .058, .002], [0.37, .056, .066, -.012], [0.31, .055, .064, -.012], [0.24, .048, .054, -.008],
+      [0.17, .04, .045, -.003], [0.11, .035, .039, 0], [0.06, .034, .038, 0]].map(([y, rx, rz, z]) => ({ y, rx, rz, z, x: x - sd * (0.92 - Math.min(0.92, y)) * 0.015 }));
+    const legW = y => y > 0.95 ? (t => [[RIG_I['hip' + S], 1 - 0.5 * t], [RIG_I.pelvis, 0.5 * t]])(sstep(0.95, 1.0, y)) : y > 0.3 ? two(RIG_I['knee' + S], RIG_I['hip' + S], 0.43, 0.51, y) : two(RIG_I['ankle' + S], RIG_I['knee' + S], 0.07, 0.11, y);
+    // inner-thigh (adductor) and calf (gastrocnemius) shaping
+    const legBump = (th, y) => { const inner = Math.max(0, -Math.sin(th) * sd), back = Math.max(0, Math.cos(th)); return 1 + inner * Math.exp(-Math.pow((y - 0.8) / 0.08, 2)) * 0.06 + back * Math.exp(-Math.pow((y - 0.35) / 0.06, 2)) * 0.1 + Math.max(0, -Math.cos(th)) * Math.exp(-Math.pow((y - 0.72) / 0.1, 2)) * 0.05; };
+    parts.suit.push({ g: loftTube(LEG, 30, 2.2, legW, legBump, false) });
+    const ax = 0.215 * sd;
+    const ARM = [[1.53, .05, .055, 0], [1.48, .062, .066, 0], [1.42, .06, .062, 0], [1.35, .054, .058, .004], [1.28, .049, .053, .006], [1.22, .044, .048, .002],
+      [1.19, .042, .046, 0], [1.15, .045, .049, .004], [1.09, .045, .047, .005], [1.03, .04, .042, .003], [0.97, .033, .035, 0], [0.935, .03, .032, 0]].map(([y, rx, rz, z]) => ({ y, rx, rz, z, x: ax }));
+    const armW = y => y > 1.47 ? (t => [[RIG_I['sh' + S], 1 - 0.4 * t], [RIG_I.chest, 0.4 * t]])(sstep(1.47, 1.54, y)) : y > 1.05 ? two(RIG_I['elbow' + S], RIG_I['sh' + S], 1.16, 1.22, y) : two(RIG_I['hand' + S], RIG_I['elbow' + S], 0.93, 0.97, y);
+    const armBump = (th, y) => 1 + Math.max(0, -Math.cos(th)) * Math.exp(-Math.pow((y - 1.32) / 0.05, 2)) * 0.1 + Math.max(0, Math.cos(th)) * Math.exp(-Math.pow((y - 1.36) / 0.07, 2)) * 0.06 + Math.exp(-Math.pow((y - 1.12) / 0.05, 2)) * 0.05;
+    parts.suit.push({ g: loftTube(ARM, 24, 2.2, armW, armBump, false) });
+
+    // ---- leg armour ----
+    add('armor', 'hip' + S, new THREE.CylinderGeometry(0.104, 0.084, 0.27, 20, 1, true, -1.05, 2.1), 0.004 * sd, -0.2, 0.004, 0.04, 0, 0);
+    add('armor', 'hip' + S, rbox(0.03, 0.16, 0.06, 0.012), 0.088 * sd, -0.16, -0.01, 0, 0, 0.06 * sd);
+    add('glow', 'hip' + S, new THREE.BoxGeometry(0.01, 0.17, 0.01), 0.104 * sd, -0.16, -0.01, 0, 0, 0.06 * sd);
+    add('armor', 'knee' + S, new THREE.SphereGeometry(0.056, 18, 12), 0, 0.005, 0.05, 0, 0, 0, 1, 1.15, 0.72);
+    add('glow', 'knee' + S, new THREE.SphereGeometry(0.014, 8, 6), 0, 0.012, 0.091);
+    add('armor', 'knee' + S, new THREE.CylinderGeometry(0.069, 0.05, 0.28, 18, 1, true, -0.95, 1.9), 0, -0.19, 0.008, -0.04, 0, 0);
+    add('glow', 'knee' + S, new THREE.BoxGeometry(0.05, 0.01, 0.012), 0, -0.29, 0.06);
+    // boots: shaped upper, sole, toe cap and heel
+    add('armor', 'ankle' + S, new THREE.CylinderGeometry(0.046, 0.054, 0.13, 18), 0, 0.02, -0.002);
+    add('armor', 'ankle' + S, rbox(0.105, 0.05, 0.255, 0.02), 0, -0.035, 0.048);
+    add('armor', 'ankle' + S, new THREE.SphereGeometry(0.056, 18, 10, 0, TAU, 0, Math.PI / 2), 0, -0.035, 0.12, 0, 0, 0, 0.95, 0.75, 1.35);
+    add('armor', 'ankle' + S, rbox(0.085, 0.06, 0.06, 0.02), 0, -0.03, -0.055);
+    add('glow', 'ankle' + S, new THREE.BoxGeometry(0.108, 0.01, 0.24), 0, -0.058, 0.048);
+
+    // ---- arms: pauldron, elbow cop, gauntlet ----
+    add('armor', 'sh' + S, new THREE.SphereGeometry(0.08, 22, 12, 0, TAU, 0, Math.PI * 0.5), 0.01 * sd, 0.012, 0, 0, 0, -0.28 * sd, 1.05, 0.62, 1.05);
+    add('armor', 'sh' + S, new THREE.SphereGeometry(0.072, 20, 10, 0, TAU, Math.PI * 0.32, Math.PI * 0.2), 0.012 * sd, -0.03, 0, 0, 0, -0.3 * sd, 1.0, 0.9, 1.0);
+    add('glow', 'sh' + S, new THREE.BoxGeometry(0.008, 0.008, 0.1), 0.083 * sd, -0.022, 0, 0, 0, -0.3 * sd);
+    add('armor', 'elbow' + S, new THREE.SphereGeometry(0.044, 14, 10), 0, 0.0, -0.028, 0, 0, 0, 1, 1.1, 0.8);
+    add('armor', 'elbow' + S, new THREE.CylinderGeometry(0.056, 0.043, 0.16, 20, 1, true), 0, -0.135, 0.004);
+    add('glow', 'elbow' + S, new THREE.TorusGeometry(0.055, 0.006, 6, 28), 0, -0.07, 0.004, Math.PI / 2, 0, 0);
+    // gloves: palm, four curled fingers, thumb, knuckle guard (palm faces the body)
+    add('glove', 'hand' + S, rbox(0.032, 0.082, 0.078, 0.012), 0, -0.05, 0.004);
+    for (let f = 0; f < 4; f++) {
+      const z = 0.03 - f * 0.02, len = [0.062, 0.07, 0.066, 0.054][f];
+      add('glove', 'hand' + S, rbox(0.019, len * 0.55, 0.017, 0.007), -0.006 * sd, -0.1, z, 0, 0, -0.25 * sd);
+      add('glove', 'hand' + S, rbox(0.017, len * 0.5, 0.016, 0.007), -0.017 * sd, -0.136, z, 0, 0, -0.65 * sd);
+    }
+    add('glove', 'hand' + S, rbox(0.02, 0.05, 0.02, 0.008), -0.016 * sd, -0.05, 0.045, -0.5, 0, -0.3 * sd);
+    add('armor', 'hand' + S, rbox(0.012, 0.05, 0.07, 0.006), 0.02 * sd, -0.06, 0.004);
   }
-  const spine = G(0, 0.06, 0, pelvis);
-  M(capsule(0.12, 0.12), suit, 0, 0.12, 0, spine);
-  const chest = G(0, 0.34, 0, spine);
-  const rib = M(new THREE.SphereGeometry(0.2, 28, 18), suit, 0, 0, 0, chest); rib.scale.set(1.2, 1.05, 0.82);
-  const plate = M(rbox(0.36, 0.26, 0.12, 0.05), armor, 0, 0.02, 0.08, chest); plate.rotation.x = -0.08;
-  const bplate = M(rbox(0.34, 0.3, 0.1, 0.05), armor, 0, 0.0, -0.09, chest);
-  // V chevron across the chest
-  for (const sd of [1, -1]) { const v = M(new THREE.BoxGeometry(0.16, 0.016, 0.012), glow, 0.065 * sd, 0.02, 0.145, chest); v.rotation.z = 0.55 * sd; }
-  M(new THREE.SphereGeometry(0.026, 12, 8), glow, 0, -0.03, 0.15, chest);
-  // spine light and the back dock that carries spare discs
-  M(new THREE.BoxGeometry(0.014, 0.22, 0.012), glow, 0, 0.0, -0.145, chest);
-  const dock = G(0, 0.0, -0.17, chest);
-  const dockRing = M(new THREE.TorusGeometry(0.17, 0.022, 8, 40), armor, 0, 0, 0, dock);
+  // ---- pelvis: belt, buckle, hip guards ----
+  add('armor', 'pelvis', new THREE.TorusGeometry(0.174, 0.026, 10, 44), 0, 0.075, -0.004, Math.PI / 2, 0, 0, 1, 0.73, 1);
+  add('glow', 'pelvis', new THREE.TorusGeometry(0.177, 0.006, 6, 44), 0, 0.075, -0.004, Math.PI / 2, 0, 0, 1, 0.74, 1);
+  add('armor', 'pelvis', rbox(0.1, 0.07, 0.035, 0.012), 0, 0.068, 0.126);
+  add('glow', 'pelvis', new THREE.BoxGeometry(0.05, 0.01, 0.01), 0, 0.068, 0.145);
+  for (const sd of [1, -1]) add('armor', 'pelvis', new THREE.CylinderGeometry(0.183, 0.19, 0.085, 16, 1, true, sd > 0 ? 1.2 : Math.PI + 1.2, 0.75), 0, -0.005, -0.006, 0, 0, 0, 1, 1, 0.7);
+  // ---- abdomen: three segmented plates ----
+  for (let i = 0; i < 3; i++) add('armor', 'spine', new THREE.CylinderGeometry(0.16, 0.162, 0.05, 20, 1, true, -0.75, 1.5), 0, 0.06 + i * 0.062, 0.006, 0, 0, 0, 1, 1, 0.74 + i * 0.03);
+  // ---- chest: sculpted breastplate, back plate, collar, chevron light, spine light, disc dock ----
+  add('armor', 'chest', new THREE.SphereGeometry(0.205, 30, 16, Math.PI / 2 - 1.05, 2.1, 0.95, 1.05), 0, 0.005, 0.012, 0, 0, 0, 1.0, 1.0, 0.7);
+  add('armor', 'chest', new THREE.SphereGeometry(0.2, 26, 14, Math.PI * 1.5 - 1.1, 2.2, 0.85, 1.25), 0, 0.0, -0.01, 0, 0, 0, 1.0, 1.0, 0.64);
+  add('armor', 'chest', new THREE.TorusGeometry(0.088, 0.026, 10, 30), 0, 0.185, 0.0, Math.PI / 2, 0, 0, 1.1, 1.0, 1);
+  for (const sd of [1, -1]) add('glow', 'chest', new THREE.BoxGeometry(0.13, 0.012, 0.012), 0.056 * sd, 0.03, 0.142, -0.12, 0, 0.5 * sd);
+  add('glow', 'chest', new THREE.SphereGeometry(0.022, 12, 8), 0, -0.012, 0.142);
+  add('glow', 'chest', new THREE.BoxGeometry(0.012, 0.2, 0.01), 0, 0.0, -0.132);
+  add('armor', 'chest', new THREE.TorusGeometry(0.16, 0.02, 8, 40), 0, 0, -0.158);
+  // ---- head: helmet shell, glass, visor, crest, ear pods ----
+  add('glass', 'head', new THREE.SphereGeometry(0.146, 32, 22), 0, 0, 0, 0, 0, 0, 0.96, 1.1, 1.05);
+  add('armor', 'head', new THREE.SphereGeometry(0.152, 32, 22, 0, TAU, 0, Math.PI * 0.55), 0, 0.005, -0.012, -0.35, 0, 0, 0.99, 1.12, 1.08);
+  add('visor', 'head', new THREE.SphereGeometry(0.149, 32, 16, Math.PI * 0.12, Math.PI * 0.76, Math.PI * 0.4, Math.PI * 0.2), 0, 0, 0.004, 0, 0, 0, 1, 1.1, 1.06);
+  add('armor', 'head', rbox(0.022, 0.06, 0.2, 0.01), 0, 0.165, -0.02);
+  add('glow', 'head', new THREE.BoxGeometry(0.01, 0.01, 0.16), 0, 0.2, -0.02);
+  add('armor', 'head', new THREE.CylinderGeometry(0.05, 0.06, 0.07, 18, 1, true, 0.4, TAU - 0.8), 0, -0.1, -0.03);   // jaw guard
+  for (const sd of [1, -1]) {
+    add('armor', 'head', new THREE.CylinderGeometry(0.043, 0.048, 0.045, 20), 0.143 * sd, 0, -0.01, 0, 0, Math.PI / 2);
+    add('glow', 'head', new THREE.TorusGeometry(0.033, 0.007, 6, 20), 0.168 * sd, 0, -0.01, 0, Math.PI / 2, 0);
+  }
+
+  // one skinned mesh per material, all sharing the skeleton
+  const skeleton = new THREE.Skeleton(bones);
+  const mats = { suit, armor, glow, glove, glass, visor: visorM };
+  const meshes = [];
+  for (const k in parts) {
+    if (!parts[k].length) continue;
+    const m = new THREE.SkinnedMesh(mergeSkinned(parts[k]), mats[k]);
+    m.frustumCulled = false; m.castShadow = k !== 'glow'; m.receiveShadow = k === 'suit' || k === 'armor';
+    root.add(m); m.bind(skeleton, new THREE.Matrix4()); meshes.push(m);
+  }
+  // spare discs on the back dock, and the disc held in the throwing (right) hand
+  const dock = new THREE.Group(); dock.position.set(0, 0.0, -0.17); B.chest.add(dock);
   const dockDiscs = [];
-  for (let i = 0; i < 3; i++) { const d = makeDiscMesh(color, 0.36); d.userData.rimM.color.multiplyScalar(0.45); d.userData.haloM.opacity = 0.15; d.rotation.x = Math.PI / 2; d.position.set(0, 0, -0.035 - i * 0.032); dock.add(d); dockDiscs.push(d); }
-  const collar = M(new THREE.TorusGeometry(0.1, 0.035, 10, 28), armor, 0, 0.19, 0, chest); collar.rotation.x = Math.PI / 2;
-  const neck = G(0, 0.22, 0, chest);
-  M(capsule(0.05, 0.06), suit, 0, 0.04, 0, neck);
-  const head = G(0, 0.15, 0.01, neck);
-  const helm = M(new THREE.SphereGeometry(0.15, 32, 22), glass, 0, 0, 0, head); helm.scale.set(0.98, 1.1, 1.06);
-  const shell = M(new THREE.SphereGeometry(0.155, 32, 22, 0, TAU, 0, Math.PI * 0.55), armor, 0, 0.005, -0.012, head); shell.scale.set(1, 1.12, 1.08); shell.rotation.x = -0.35;
-  const visor = M(new THREE.SphereGeometry(0.152, 32, 16, Math.PI * 0.12, Math.PI * 0.76, Math.PI * 0.4, Math.PI * 0.2), visorM, 0, 0, 0.004, head); visor.scale.set(1, 1.1, 1.06);
-  M(new THREE.BoxGeometry(0.02, 0.06, 0.2), armor, 0, 0.17, -0.02, head);
-  M(new THREE.BoxGeometry(0.012, 0.012, 0.16), glow, 0, 0.205, -0.02, head);
-  for (const sd of [1, -1]) { const ear = M(new THREE.CylinderGeometry(0.045, 0.05, 0.05, 20), armor, 0.15 * sd, 0, -0.01, head); ear.rotation.z = Math.PI / 2; const er = M(new THREE.TorusGeometry(0.035, 0.008, 6, 20), glow, 0.178 * sd, 0, -0.01, head); er.rotation.y = Math.PI / 2; }
-  const arms = [];
-  for (const sd of [1, -1]) {
-    const sh = G(0.25 * sd, 0.12, 0, chest);
-    const pd = M(new THREE.SphereGeometry(0.105, 20, 12, 0, TAU, 0, Math.PI * 0.6), armor, 0.01 * sd, 0.02, 0, sh); pd.scale.set(1.05, 0.85, 1.05);
-    M(new THREE.BoxGeometry(0.09, 0.012, 0.012), glow, 0.04 * sd, -0.01, 0.085, sh);
-    M(capsule(0.055, 0.18), suit, 0, -0.14, 0, sh);
-    const elbow = G(0, -0.29, 0, sh);
-    M(new THREE.SphereGeometry(0.05, 12, 8), armor, 0, 0, 0, elbow);
-    M(capsule(0.05, 0.16), suit, 0, -0.12, 0, elbow);
-    const gaunt = M(new THREE.CylinderGeometry(0.07, 0.058, 0.17, 20), armor, 0, -0.13, 0, elbow);
-    const gr = M(new THREE.TorusGeometry(0.066, 0.01, 6, 24), glow, 0, -0.07, 0, elbow); gr.rotation.x = Math.PI / 2;
-    const hand = G(0, -0.27, 0, elbow);
-    M(rbox(0.075, 0.09, 0.09, 0.025), suit, 0, -0.02, 0.005, hand);
-    arms.push({ sh, elbow, hand });
-  }
-  // disc held in the throwing (right) hand while charging
-  const handDisc = makeDiscMesh(color, 0.62); handDisc.position.set(0, -0.06, 0.06); handDisc.rotation.z = Math.PI / 2; handDisc.visible = false; arms[1].hand.add(handDisc);
+  for (let i = 0; i < 3; i++) { const d = makeDiscMesh(color, 0.36); d.userData.rimM.color.multiplyScalar(0.45); d.userData.haloM.opacity = 0.15; d.rotation.x = Math.PI / 2; d.position.set(0, 0, -0.03 - i * 0.032); dock.add(d); dockDiscs.push(d); }
+  const handDisc = makeDiscMesh(color, 0.62); handDisc.position.set(0, -0.08, 0.05); handDisc.rotation.z = Math.PI / 2; handDisc.visible = false; B.handR.add(handDisc);
   // deflector: a hex-lattice energy shell in front of the body
   const shieldMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
@@ -381,67 +536,113 @@ function makeRunner(color) {
   const shield = new THREE.Mesh(new THREE.SphereGeometry(SHIELD_R * 0.86, 40, 20, Math.PI / 2 - SHIELD_ARC, SHIELD_ARC * 2, 0, Math.PI * 0.72), shieldMat);
   shield.position.y = SHIELD_Y; shield.visible = false; shield.renderOrder = 4; root.add(shield);
   const shieldCore = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.42, 0.5, 20, 1, true), glowMat(c, 2.2, 0.55)); shieldCore.position.set(0.06, 2.05, 0.12); shieldCore.visible = false; root.add(shieldCore);
-  // player light: makes their podium glow in their colour
 
-  root.traverse(o => { if (o.isMesh && o.material === glow) o.castShadow = false; });
-  return { root, body, pelvis, spine, chest, head, neck, legs, arms, dockDiscs, handDisc, shield, shieldCore, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, armor };
+  const legs = [{ hip: B.hipL, knee: B.kneeL, ankle: B.ankleL }, { hip: B.hipR, knee: B.kneeR, ankle: B.ankleR }];
+  const arms = [{ sh: B.shL, elbow: B.elbowL, hand: B.handL }, { sh: B.shR, elbow: B.elbowR, hand: B.handR }];
+  return { root, body: B.body, pelvis: B.pelvis, spine: B.spine, chest: B.chest, head: B.head, neck: B.neck, legs, arms, dockDiscs, handDisc, shield, shieldCore, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, armor, suit, meshes };
 }
 
-// pose a runner: everything eases toward a target pose built from the player's state
+// ---- pose a runner: build a target pose from the player's state, then ease every joint toward it ----
 function poseRunner(p, dt) {
-  const R = p.rig, st = p.anim, t = p.animT;
-  const k = Math.min(1, dt * 14);
-  const P = { lean: 0, twist: 0, hipBob: 0, armL: [0, 0, 0.12], armR: [0, 0, -0.12], elbL: -0.35, elbR: -0.35, legL: [0, 0], legR: [0, 0], head: 0, crouch: 0, roll: 0 };
+  const R = p.rig, t = p.animT;
+  const k = 1 - Math.exp(-dt * 16), kSlow = 1 - Math.exp(-dt * 7);
+  // P: pelvis/torso + per-limb targets. leg: h (hip pitch, + = forward), a (hip abduction, + = outward), kn (knee bend >= 0), an (ankle pitch)
+  // arm: x (shoulder pitch, - = forward/up), y (twist), z (abduction, + = outward), e (elbow bend >= 0), w (wrist)
+  const P = { lean: 0.03, roll: 0, twist: 0, pYaw: 0, pRoll: 0, pX: 0, bob: 0, crouch: 0.03, headX: 0, headY: 0, breathe: 0,
+    L: [{ h: 0, a: 0.03, kn: 0.06, an: null }, { h: 0, a: 0.03, kn: 0.06, an: null }],
+    A: [{ x: 0.05, y: 0, z: 0.1, e: 0.3, w: 0 }, { x: 0.05, y: 0, z: 0.1, e: 0.3, w: 0 }] };
   const sp = Math.hypot(p.vx, p.vz), moving = p.onGround && sp > 0.4 && p.mode === 'play';
-  // local movement direction relative to facing, for strafing legs
   const fx = Math.sin(p.yaw), fz = Math.cos(p.yaw), fwd = (p.vx * fx + p.vz * fz), side = (p.vx * fz - p.vz * fx);
+  P.breathe = Math.sin(t * 1.7) * 0.018;
   if (moving) {
-    const ph = p.stride, amp = clamp(sp / RUN, 0, 1) * 0.65;
-    P.legL = [Math.sin(ph) * amp * Math.sign(fwd || 1), -Math.max(0, Math.cos(ph)) * amp * 1.2];
-    P.legR = [-Math.sin(ph) * amp * Math.sign(fwd || 1), -Math.max(0, -Math.cos(ph)) * amp * 1.2];
-    P.hipBob = Math.abs(Math.cos(ph)) * 0.035; P.lean = fwd / RUN * 0.12; P.roll = -side / RUN * 0.1;
-    P.armL[0] = -Math.sin(ph) * amp * 0.5; P.armR[0] = Math.sin(ph) * amp * 0.5;
+    const ph = p.stride, amp = clamp(sp / RUN, 0, 1), dir = Math.abs(fwd) > Math.abs(side) * 0.6 ? Math.sign(fwd || 1) : 0, str = Math.abs(side) > Math.abs(fwd) * 0.6 ? Math.sign(side) : 0;
+    for (let i = 0; i < 2; i++) {
+      const q = ph + i * Math.PI, s = Math.sin(q), sw = Math.max(0, Math.sin(q + 1.9));   // sw: swing phase (foot off the ground)
+      const L = P.L[i];
+      L.h = (dir ? dir : 0.35) * 0.62 * amp * s + 0.1 * amp;
+      L.kn = 0.12 + amp * (1.05 * sw + 0.18 * Math.max(0, -s));
+      L.a = 0.04 + (str ? str * (i === 0 ? 1 : -1) * 0.22 * amp * Math.max(0, s) : 0);
+      L.an = null;   // keep the foot level (solved below), plus a toe-off flick at the end of stance
+      L.toe = 0.35 * amp * Math.max(0, -Math.sin(q - 0.6)) * (1 - sw);
+      // arms swing opposite their leg, elbows bent like a sprinter's
+      const A = P.A[1 - i];
+      A.x = -(dir || 0.4) * 0.55 * amp * s; A.e = 0.55 + 0.75 * amp + 0.35 * amp * Math.max(0, -A.x); A.z = 0.12 + 0.05 * amp; A.y = 0.15 * (i ? 1 : -1) * amp;
+    }
+    P.bob = (Math.abs(Math.cos(ph)) - 0.6) * 0.045 * amp; P.lean = 0.04 + fwd / RUN * 0.16; P.roll = -side / RUN * 0.12;
+    P.pYaw = 0.17 * amp * Math.sin(ph) * (dir || 0); P.twist = -P.pYaw * 1.6; P.pRoll = 0.05 * amp * Math.cos(ph);
+    P.crouch = 0.05 * amp; P.headX = -P.lean * 0.6;
   } else {
-    P.hipBob = Math.sin(t * 2.1) * 0.008; P.armL[2] = 0.14 + Math.sin(t * 2.1) * 0.02; P.armR[2] = -0.14 - Math.sin(t * 2.1) * 0.02;
-    P.crouch = 0.05; P.legL = [0.08, -0.16]; P.legR = [-0.05, -0.12];
+    // idle: weight on one hip, slow breathing, head looking about
+    const sway = Math.sin(t * 0.55);
+    P.pX = sway * 0.012; P.pRoll = sway * 0.035; P.L[0].kn = 0.06 + Math.max(0, -sway) * 0.12; P.L[1].kn = 0.06 + Math.max(0, sway) * 0.12;
+    P.L[0].a = 0.07; P.L[1].a = 0.07; P.headY = Math.sin(t * 0.37) * 0.22; P.headX = Math.sin(t * 0.29) * 0.06;
+    P.A[0].z = 0.12 + P.breathe; P.A[1].z = 0.12 + P.breathe; P.A[0].e = 0.32; P.A[1].e = 0.32; P.crouch = 0.04;
   }
-  // throwing arm
-  if (p.charge > 0 && !p.shieldOn) { P.armR = [-1.2, 0.3, -0.5]; P.elbR = -1.1; P.twist = -0.2; }
-  if (p.throwT > 0) { const q = 1 - p.throwT / 0.28; P.armR = [lerp(-2.1, 0.9, q), lerp(0.4, -0.9, q), -0.3]; P.elbR = lerp(-1.4, -0.15, q); P.twist = lerp(-0.45, 0.5, q); }
-  // shield: the throwing arm goes straight up holding a disc flat over the head; the dome forms from it
-  if (p.shieldOn) { P.armR = [-3.05, 0, -0.12]; P.elbR = -0.05; P.armL = [-0.6, 0, 0.5]; P.elbL = -0.7; P.twist = 0; P.crouch = 0.1; P.head = 0.15; }
-  if (!p.onGround && p.mode === 'play') { P.legL = [0.7, -1.2]; P.legR = [0.3, -0.7]; P.armL[2] = 0.6; P.armR[2] = -0.6; P.crouch = 0; }
-  if (p.stun > 0) { P.lean = -0.45; P.armL = [-0.9, 0, 1.0]; P.armR = [-0.9, 0, -1.0]; P.head = -0.3; }
-  if (p.teeter > 0) { const w = t * 16; P.lean = -0.35 + Math.sin(t * 5) * 0.12; P.armL = [-1.6 + Math.sin(w) * 1.3, 0, 1.3]; P.armR = [-1.6 - Math.sin(w) * 1.3, 0, -1.3]; P.legL = [0.4, -0.3]; P.head = -0.2; }
-  if (p.mode === 'fall') { const w = t * 9; P.lean = -0.6; P.armL = [-2.4 + Math.sin(w) * 0.8, 0, 1.2]; P.armR = [-2.4 - Math.sin(w) * 0.8, 0, -1.2]; P.legL = [Math.sin(w) * 0.8, -0.9]; P.legR = [-Math.sin(w) * 0.8, -0.6]; P.head = -0.5; }
-  if (p.mode === 'win') { const w = t * 4; P.armR = [-2.9, 0, -0.25]; P.elbR = -0.1; P.armL = [-0.3 + Math.sin(w) * 0.2, 0, 0.5]; P.twist = Math.sin(w * 0.5) * 0.3; P.hipBob = Math.abs(Math.sin(w)) * 0.06; P.head = 0.25; }
-  if (p.mode === 'idle') { P.armR = [-0.2, 0, -0.2]; }
+  // throwing: wind-up with the throwing arm cocked back, front foot planted, torso coiled; then a whip-through follow-up
+  if (p.charge > 0 && !p.shieldOn) { const A = P.A[1]; A.x = -1.45; A.y = -0.3; A.z = 0.75; A.e = 1.5; A.w = -0.4; P.twist = -0.45; P.A[0].x = -0.7; P.A[0].e = 0.9; P.A[0].z = 0.35; P.L[0].h = 0.35; P.L[0].kn = 0.3; P.L[1].h = -0.25; P.L[1].kn = 0.25; P.crouch = 0.07; P.lean = 0.0; }
+  if (p.throwT > 0) {
+    const q = 1 - p.throwT / 0.28, A = P.A[1];
+    A.x = lerp(-1.9, 0.4, q); A.y = lerp(-0.4, 0.9, q); A.z = lerp(0.8, 0.2, q); A.e = lerp(1.4, 0.15, q); A.w = lerp(-0.6, 0.5, q);
+    P.twist = lerp(-0.5, 0.55, q); P.pYaw = lerp(-0.15, 0.2, q); P.lean = lerp(0, 0.22, q);
+    P.A[0].x = lerp(-0.8, 0.3, q); P.A[0].e = lerp(1.0, 0.6, q); P.A[0].z = 0.3;
+    P.L[0].h = 0.35; P.L[0].kn = lerp(0.3, 0.45, q); P.L[1].h = -0.3; P.L[1].kn = 0.3; P.crouch = 0.08;
+  }
+  // shield: throwing arm straight up holding the disc flat overhead, braced wide stance
+  if (p.shieldOn) {
+    P.A[1] = { x: -3.0, y: 0, z: 0.1, e: 0.08, w: 0 }; P.A[0] = { x: -0.7, y: 0.3, z: 0.55, e: 1.1, w: 0 };
+    P.twist = 0; P.crouch = 0.12; P.headX = 0.18; P.L[0].a = 0.17; P.L[1].a = 0.17; P.L[0].kn = 0.3; P.L[1].kn = 0.3; P.L[0].h = 0.12; P.L[1].h = -0.05;
+  }
+  if (!p.onGround && p.mode === 'play') { P.L[0] = { h: 0.75, a: 0.08, kn: 1.25 }; P.L[1] = { h: 0.3, a: 0.06, kn: 0.7 }; P.A[0].z = 0.75; P.A[1].z = 0.75; P.A[0].e = 0.5; P.A[1].e = 0.5; P.crouch = 0; P.lean = 0.12; }
+  if (p.stun > 0) { P.lean = -0.4; P.headX = -0.35; P.A[0] = { x: -0.9, y: 0, z: 1.0, e: 0.6, w: 0 }; P.A[1] = { x: -0.9, y: 0, z: 1.0, e: 0.6, w: 0 }; P.L[0].kn = 0.35; P.L[1].kn = 0.35; P.crouch = 0.1; }
+  if (p.teeter > 0) {
+    const w = t * 16; P.lean = -0.32 + Math.sin(t * 5) * 0.12; P.headX = -0.25;
+    P.A[0] = { x: -1.6 + Math.sin(w) * 1.3, y: 0, z: 1.25, e: 0.2, w: 0 }; P.A[1] = { x: -1.6 - Math.sin(w) * 1.3, y: 0, z: 1.25, e: 0.2, w: 0 };
+    P.L[0] = { h: 0.45, a: 0.1, kn: 0.35 }; P.L[1] = { h: -0.1, a: 0.05, kn: 0.25 };
+  }
+  if (p.mode === 'fall') {
+    const w = t * 9; P.lean = -0.55; P.headX = -0.45;
+    P.A[0] = { x: -2.3 + Math.sin(w) * 0.8, y: 0, z: 1.1, e: 0.4, w: 0 }; P.A[1] = { x: -2.3 - Math.sin(w) * 0.8, y: 0, z: 1.1, e: 0.4, w: 0 };
+    P.L[0] = { h: 0.4 + Math.sin(w) * 0.7, a: 0.15, kn: 0.9 }; P.L[1] = { h: 0.4 - Math.sin(w) * 0.7, a: 0.12, kn: 0.6 };
+  }
+  if (p.mode === 'win') { const w = t * 4; P.A[1] = { x: -2.95, y: 0, z: 0.2, e: 0.15, w: 0 }; P.A[0] = { x: -0.3 + Math.sin(w) * 0.2, y: 0, z: 0.35, e: 0.9, w: 0 }; P.twist = Math.sin(w * 0.5) * 0.3; P.bob = Math.abs(Math.sin(w)) * 0.06; P.headX = 0.25; }
+  if (p.mode === 'idle') { P.A[1].x = -0.15; P.A[1].e = 0.45; }
 
-  const e = (o, prop, v) => { o[prop] = lerp(o[prop], v, k); };
-  e(R.pelvis.position, 'y', 0.96 + P.hipBob - P.crouch);
+  // ---- apply ----
+  const e = (o, prop, v, kk) => { o[prop] = lerp(o[prop], v, kk || k); };
+  e(R.pelvis.position, 'y', 0.96 + P.bob - P.crouch); e(R.pelvis.position, 'x', P.pX, kSlow);
   e(R.body.rotation, 'x', P.lean); e(R.body.rotation, 'z', P.roll);
-  e(R.spine.rotation, 'y', P.twist);
-  e(R.head.rotation, 'x', -P.head);
-  const L = [[P.legL, R.legs[0]], [P.legR, R.legs[1]]];
-  for (const [[h, kn], leg] of L) { e(leg.hip.rotation, 'x', -h - P.crouch * 1.4); e(leg.knee.rotation, 'x', -kn + P.crouch * 2.4); e(leg.ankle.rotation, 'x', -P.crouch * 1.0 + kn * 0.3); }
-  const A = [[P.armL, P.elbL, R.arms[0]], [P.armR, P.elbR, R.arms[1]]];
-  for (const [[ax, ay, az], el, arm] of A) { e(arm.sh.rotation, 'x', ax); e(arm.sh.rotation, 'y', ay); e(arm.sh.rotation, 'z', az); e(arm.elbow.rotation, 'x', el); }
+  e(R.pelvis.rotation, 'y', P.pYaw); e(R.pelvis.rotation, 'z', P.pRoll, kSlow);
+  e(R.spine.rotation, 'y', P.twist * 0.45); e(R.chest.rotation, 'y', P.twist * 0.55); e(R.spine.rotation, 'z', -P.pRoll * 0.8, kSlow);
+  e(R.chest.rotation, 'x', -P.breathe - P.lean * 0.15); e(R.spine.rotation, 'x', P.crouch * 0.8);
+  e(R.neck.rotation, 'x', -P.headX * 0.4); e(R.head.rotation, 'x', -P.headX * 0.6); e(R.head.rotation, 'y', P.headY - P.twist * 0.5, kSlow);
+  for (let i = 0; i < 2; i++) {
+    const L = P.L[i], leg = R.legs[i], sd = i === 0 ? 1 : -1;
+    const hx = -L.h - P.crouch * 1.6, kx = (L.kn || 0) + P.crouch * 2.8;
+    e(leg.hip.rotation, 'x', hx); e(leg.hip.rotation, 'z', (L.a || 0) * sd - P.pRoll); e(leg.hip.rotation, 'y', -P.pYaw * 0.5);
+    e(leg.knee.rotation, 'x', Math.max(0, kx));
+    // keep the foot roughly level with the ground (body lean included), then add the toe-off
+    const an = L.an != null ? L.an : -(hx + kx + R.body.rotation.x) * 0.9 + (L.toe || 0);
+    e(leg.ankle.rotation, 'x', an); e(leg.ankle.rotation, 'z', -(L.a || 0) * sd * 0.8);
+  }
+  for (let i = 0; i < 2; i++) {
+    const A = P.A[i], arm = R.arms[i], sd = i === 0 ? 1 : -1;
+    e(arm.sh.rotation, 'x', A.x); e(arm.sh.rotation, 'y', A.y * sd); e(arm.sh.rotation, 'z', A.z * sd);
+    e(arm.elbow.rotation, 'x', -Math.max(0, A.e)); e(arm.hand.rotation, 'x', -(A.w || 0) - 0.08);
+  }
   // spare discs on the back
   const inHand = (p.charge > 0 || p.shieldOn) && p.discsHome > 0;
   for (let i = 0; i < 3; i++) R.dockDiscs[i].visible = i < p.discsHome - (inHand ? 1 : 0);
   R.handDisc.visible = inHand;
   if (inHand) {
-    R.handDisc.rotation.z = p.shieldOn ? 0 : Math.PI / 2; R.handDisc.position.set(0, p.shieldOn ? -0.14 : -0.06, p.shieldOn ? 0 : 0.06);
+    R.handDisc.rotation.z = p.shieldOn ? 0 : Math.PI / 2; R.handDisc.position.set(0, p.shieldOn ? -0.16 : -0.08, p.shieldOn ? 0 : 0.05);
     R.handDisc.rotation.y += dt * (p.shieldOn ? 38 : 14); R.handDisc.scale.setScalar(p.shieldOn ? 1.0 + Math.sin(t * 30) * 0.04 : 1);
   }
   R.shieldCore.visible = p.shieldOn; if (p.shieldOn) R.shieldCore.material.opacity = 0.35 + Math.sin(t * 22) * 0.15;
-  // deflector
   const sa = R.shieldMat.uniforms.uA; sa.value = damp(sa.value, p.shieldOn ? 1 : 0, 18, dt);
   R.shield.visible = sa.value > 0.02; R.shieldMat.uniforms.uHit.value = Math.max(0, R.shieldMat.uniforms.uHit.value - dt * 3);
-  // hit flash on the glow lines
+  // hit flash on the glow lines and suit piping
   const fl = Math.max(0, p.flash); R.glow.color.copy(R.glowBase).lerp(new THREE.Color(5, 5, 5), Math.min(1, fl * 3));
-  R.visorM.emissiveIntensity = 1 + fl * 4;
-  // invulnerability flicker
+  R.visorM.emissiveIntensity = 1 + fl * 4; R.suit.emissiveIntensity = 1 + fl * 3;
   const dz = p.derezAt != null ? uTime.value - p.derezAt : 99, derezing = p.mode === 'dead' && dz < 1.05;
   if (derezing) { R.glow.color.setRGB(0.5, 3.5, 0.9); const j = Math.random() < 0.25 ? 1 + Math.random() * 0.25 : 1; R.root.scale.set(j, 1 - dz * 0.35, j); }
   else R.root.scale.set(1, 1, 1);
