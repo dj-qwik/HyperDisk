@@ -43,7 +43,7 @@ function readHuman(p, dt) {
     i.mx = (held(m.right) ? 1 : 0) - (held(m.left) ? 1 : 0); i.mz = (held(m.up) ? 1 : 0) - (held(m.down) ? 1 : 0);
     i.aim = (held(m.aimR) ? 1 : 0) - (held(m.aimL) ? 1 : 0);
     i.elev = ((held(m.lvlUp) ? 1 : 0) - (held(m.lvlDn) ? 1 : 0)) * ER; i.level = hit(m.level);
-    i.fire = held(m.fire); i.shield = held(m.shield); i.hop = hit(m.hop); i.recall = hit(m.recall);
+    i.fire = held(m.fire); i.shield = held(m.shield); i.recall = hit(m.recall);
     if (c.type === 'kb1') {
       if (MOUSE.locked) { i.aimAbs = MOUSE.dx * 0.0026; i.fire = i.fire || MOUSE.l; i.shield = i.shield || MOUSE.r; }
       if (MOUSE.wheel) { i.elev += (MOUSE.wheel < 0 ? 1 : -1) * 0.8; }
@@ -56,13 +56,13 @@ function readHuman(p, dt) {
       const rx = axis(gp, 2); i.aim = Math.sign(rx) * Math.pow(Math.abs(rx), 1.6); i.analog = true;
       // right stick up/down raises and lowers the aim line; RB/LB and the d-pad nudge it; click the right stick to level it
       i.elev = -axis(gp, 3) * ER * 1.15 + ((btn(gp, 5) || btn(gp, 12) ? 1 : 0) - (btn(gp, 4) || btn(gp, 13) ? 1 : 0)) * ER * 0.6; i.level = padHit(c.idx, 11);
-      i.fire = btn(gp, 7); i.shield = btn(gp, 6) || btn(gp, 1); i.hop = padHit(c.idx, 0); i.recall = padHit(c.idx, 2) || padHit(c.idx, 3);
+      i.fire = btn(gp, 7); i.shield = btn(gp, 6) || btn(gp, 1); i.recall = padHit(c.idx, 2) || padHit(c.idx, 3);
       // d-pad left/right fine aim
       i.aim += (btn(gp, 15) ? 0.5 : 0) - (btn(gp, 14) ? 0.5 : 0);
     }
   } else if (c.type === 'touch') {
     i.mx = TOUCH.mx; i.mz = TOUCH.mz; i.aimAbs = TOUCH.dx * 0.006; TOUCH.dx = 0; i.fire = TOUCH.fire; i.shield = TOUCH.shield;
-    i.hop = TOUCH.hopP; i.elev = TOUCH.lvl * ER; TOUCH.hopP = false; i.analog = true;
+    i.elev = TOUCH.lvl * ER; i.analog = true;
   }
   const l = Math.hypot(i.mx, i.mz); if (l > 1) { i.mx /= l; i.mz /= l; }
   return i;
@@ -74,7 +74,7 @@ function makePlayer(slot, kind, ctl, name, color) {
     slot, kind, ctl, name, color: PCOL[slot], css: PCSS[slot], local: true, peer: null,
     rig: makeRunner(PCOL[slot]), x: 0, y: 0, z: 0, vx: 0, vz: 0, mvx: 0, mvz: 0, kbx: 0, kbz: 0, vy: 0, onGround: true, airT: 0,
     yaw: 0, aimYaw: 0, lvl: 1, aimElev: ELEV_LEVEL, mode: 'idle', lives: S.lives, heat: 0, stun: 0, invuln: 0, flash: 0,
-    shieldE: 100, defl: DEFLECTS, teeter: 0, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
+    shieldE: 100, defl: DEFLECTS, teeter: 0, edgePush: 0, edgeDx: 0, edgeDz: 0, leaping: false, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
     fallT: 0, deadT: 0, lastHitBy: -1, lastHitAt: -99, stride: 0, animT: Math.random() * 10,
     stats: { hits: 0, rings: 0, kos: 0, defl: 0, thrown: 0 }, bot: null, skill: S.skill,
     net: null, shake: 0, popQ: []
@@ -415,7 +415,7 @@ function stepPlayer(p, inp, dt) {
   if (ctl) { wx = (fx * inp.mz + rx * inp.mx) * RUN; wz = (fz * inp.mz + rz * inp.mx) * RUN; }
   const slow = p.shieldOn ? 0.55 : p.charge > 0 ? 0.75 : 1;
   const acc = p.onGround ? 16 : 3;
-  p.mvx = damp(p.mvx, wx * slow, acc, dt); p.mvz = damp(p.mvz, wz * slow, acc, dt);
+  if (p.onGround || !p.leaping) { p.mvx = damp(p.mvx, wx * slow, acc, dt); p.mvz = damp(p.mvz, wz * slow, acc, dt); }
   p.kbx *= Math.exp(-FRICT * dt); p.kbz *= Math.exp(-FRICT * dt);
 
   // teetering on the edge (as in the original): push back toward the podium to recover, or go over
@@ -430,9 +430,16 @@ function stepPlayer(p, inp, dt) {
   }
 
   if (p.onGround) {
-    // hop
-    if (ctl && inp.hop) { p.onGround = false; p.vy = HOP_V; p.airT = 0; p.mvx = wx ? wx / RUN * HOP_H : 0; p.mvz = wz ? wz / RUN * HOP_H : 0; SFX.hop(p); }
-    else {
+    // As in the original there is no jump button and you can never walk off: hold the stick into the edge
+    // toward another platform of yours (or across a hole in your rings) for half a second and you leap over.
+    const wl = Math.hypot(wx, wz);
+    if (ctl && wl > RUN * 0.5 && !supportAt(p.x + wx / wl * 0.4, p.z + wz / wl * 0.4, 0.0)) {
+      const dx = wx / wl, dz = wz / wl;
+      if (p.edgePush > 0 && dx * p.edgeDx + dz * p.edgeDz < 0.85) p.edgePush = 0;
+      p.edgeDx = dx; p.edgeDz = dz; p.edgePush += dt;
+      if (p.edgePush >= AUTO_JUMP_HOLD) { p.edgePush = 0; autoJump(p, dx, dz); }
+    } else p.edgePush = 0;
+    if (p.onGround) {
       // walking can't take you off the edge; knockback can
       let nx = p.x + p.mvx * dt, nz = p.z + p.mvz * dt;
       if (!supportAt(nx, nz, 0.02)) {
@@ -448,11 +455,33 @@ function stepPlayer(p, inp, dt) {
     p.airT += dt; p.vy -= GRAV * dt; const py = p.y;
     p.x += (p.mvx + p.kbx) * dt; p.z += (p.mvz + p.kbz) * dt; p.y += p.vy * dt;
     const sup = supportAt(p.x, p.z, 0.12);
-    if (sup && p.vy <= 0 && p.y <= sup.y && py >= sup.y - 0.35) { p.y = sup.y; p.onGround = true; p.vy = 0; p.mvx *= 0.3; p.mvz *= 0.3; SFX.land(p); sparks(p.x, p.y + 0.05, p.z, p.color, 8, 2.5, 0.35, 0.05); }
+    if (sup && p.vy <= 0 && p.y <= sup.y && py >= sup.y - 0.35) { p.y = sup.y; p.onGround = true; p.vy = 0; p.mvx *= 0.3; p.mvz *= 0.3; p.leaping = false; SFX.land(p); sparks(p.x, p.y + 0.05, p.z, p.color, 8, 2.5, 0.35, 0.05); }
     else if (p.y < -1.2 + Math.min(...stationOf(p).pads.map(q => q.y)) - 2) startFall(p, true);
   }
   p.vx = p.mvx + p.kbx; p.vz = p.mvz + p.kbz;
   if (p.onGround) p.stride += Math.hypot(p.mvx, p.mvz) * dt * 2.6;
+}
+// find solid footing beyond the gap in this direction, on one of your own platforms, and leap to it on an arc
+function autoJump(p, dx, dz) {
+  const st = stationOf(p);
+  let gap = false, land = null;
+  for (let s = 0.3; s <= 7; s += 0.15) {
+    const x = p.x + dx * s, z = p.z + dz * s, sup = supportAt(x, z, -0.1);
+    if (!sup) { gap = true; continue; }
+    if (gap && sup.pad.st === st) {
+      // land a little way onto it, on a ring that will still be there
+      for (let e = 0.55; e >= 0; e -= 0.1) { const s2 = supportAt(x + dx * e, z + dz * e, -0.2); if (s2 && s2.pad.rings[s2.ring].state === 0) { land = { x: x + dx * e, z: z + dz * e, pad: s2.pad }; break; } }
+      break;
+    }
+  }
+  if (!land) return false;
+  const T = AUTO_JUMP_T, D = Math.hypot(land.x - p.x, land.z - p.z), yLand = padHeightAt(land.pad, (DEMO ? uTime.value : matchT) + T);
+  if (Math.abs(yLand - p.y) > 3.2) return false;
+  p.onGround = false; p.leaping = true; p.airT = 0;
+  p.mvx = (land.x - p.x) / T; p.mvz = (land.z - p.z) / T; p.kbx = p.kbz = 0;
+  p.vy = (yLand - p.y + 0.5 * GRAV * T * T) / T;
+  SFX.hop(p); sparks(p.x, p.y + 0.05, p.z, p.color, 10, 3, 0.4, 0.05);
+  return D > 0;
 }
 function nearestPad(p, extra) {
   let best = null, bd = 1e9;
@@ -544,7 +573,7 @@ function botInput(p, dt) {
         if (B.choice === 'dodge') {
           const vx = threat.vel.x, vz = threat.vel.z, l = Math.hypot(vx, vz) || 1; let sx = -vz / l, sz = vx / l;
           if (!supportAt(p.x + sx * 1.2, p.z + sz * 1.2, 0)) { sx = -sx; sz = -sz; }
-          B.dodge = { x: sx, z: sz, t: 0.45 }; B.hopDodge = p.onGround && threat.pos.y < p.y + 1.1 && Math.random() < 0.35 && supportAt(p.x + sx * 1.6, p.z + sz * 1.6, 0);
+          B.dodge = { x: sx, z: sz, t: 0.45 };
         }
         if (B.choice === 'shield') B.shieldT = 0.45;
       }
@@ -568,9 +597,6 @@ function botInput(p, dt) {
     if (alt) {
       const ax = alt.x - p.x, az = alt.z - p.z, l = Math.hypot(ax, az);
       goal = { x: alt.x, z: alt.z }; B.safe = null; B.goPad = alt;
-      const dirOk = Math.hypot(p.mvx, p.mvz) > RUN * 0.6 && (p.mvx * ax + p.mvz * az) / (Math.hypot(p.mvx, p.mvz) * l) > 0.92;
-      const hopDist = 2 * HOP_V / GRAV * HOP_H, lx = p.x + ax / l * hopDist, lz = p.z + az / l * hopDist;
-      if (dirOk && l < hopDist + 0.6 && Math.abs(alt.y - here.y) < 0.7 && supportAt(lx, lz, -0.2)) inp.hop = true;
     }
   }
   if (B.safe) { B.safe.t -= dt; const r = B.safe.ring; if (B.safe.t <= 0 || r.state !== 0 || Math.hypot(p.x - B.safe.x, p.z - B.safe.z) < 0.3) B.safe = null; }
@@ -582,14 +608,8 @@ function botInput(p, dt) {
   }
   if (B.safe && !goal) {
     goal = B.safe;
-    // no walkable path (a vanished ring in the way)? hop across
-    const moved = Math.hypot(p.x - B.safe.px, p.z - B.safe.pz); B.safe.px = p.x; B.safe.pz = p.z;
-    B.safe.stuck = moved < 0.01 ? B.safe.stuck + dt : 0;
-    if (B.safe.stuck > 0.12 && p.onGround) {
-      const gx = B.safe.x - p.x, gz = B.safe.z - p.z, gl = Math.hypot(gx, gz) || 1, hd = 2 * HOP_V / GRAV * HOP_H;
-      const lx = p.x + gx / gl * Math.min(hd, gl + 0.4), lz = p.z + gz / gl * Math.min(hd, gl + 0.4);
-      if (supportAt(lx, lz, -0.15)) { inp.hop = true; B.hopTo = { x: gx / gl, z: gz / gl, t: 0.75 }; }
-    }
+    // a vanished ring in the way? just keep pushing: the auto-jump carries us across
+    B.safe.t = Math.max(B.safe.t, 0.7);
   }
   if (!goal) {
     B.wanderT -= dt;
@@ -606,8 +626,7 @@ function botInput(p, dt) {
   }
   B.lastGoal = goal === B.wander ? 'wander' : 'safe'; let gx = goal.x - p.x, gz = goal.z - p.z; const gl = Math.hypot(gx, gz);
   let wx = gl > 0.2 ? gx / gl * Math.min(1, gl * 1.5) : 0, wz = gl > 0.2 ? gz / gl * Math.min(1, gl * 1.5) : 0;
-  if (B.hopTo && B.hopTo.t > 0) { B.hopTo.t -= dt; wx = B.hopTo.x; wz = B.hopTo.z; }
-  if (B.dodge && B.dodge.t > 0 && !B.safe) { B.dodge.t -= dt; wx = B.dodge.x; wz = B.dodge.z; if (B.hopDodge && p.onGround) { inp.hop = true; B.hopDodge = false; wx = wz = 0; } }
+  if (B.dodge && B.dodge.t > 0 && !B.safe) { B.dodge.t -= dt; wx = B.dodge.x; wz = B.dodge.z; }
   // world move -> stick (relative to aim)
   const fx = Math.sin(p.aimYaw), fz = Math.cos(p.aimYaw), rx = -Math.cos(p.aimYaw), rz = Math.sin(p.aimYaw);
   inp.mz = wx * fx + wz * fz; inp.mx = wx * rx + wz * rz;

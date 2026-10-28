@@ -246,7 +246,6 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
       <div class="opt"><span class="k">LIVES</span><span class="pick"><button data-o="lives" data-d="-1">◀</button><span class="v" id="vLives"></span><button data-o="lives" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">CPU RIVALS</span><span class="pick"><button data-o="cpus" data-d="-1">◀</button><span class="v" id="vCpus"></span><button data-o="cpus" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">CPU SKILL</span><span class="pick"><button data-o="skill" data-d="-1">◀</button><span class="v" id="vSkill"></span><button data-o="skill" data-d="1">▶</button></span></div>
-      <div class="opt"><span class="k">AIM GUIDE</span><span class="pick"><button data-o="guide" data-d="-1">◀</button><span class="v" id="vGuide"></span><button data-o="guide" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">GRAPHICS</span><span class="pick"><button data-o="quality" data-d="-1">◀</button><span class="v" id="vQuality"></span><button data-o="quality" data-d="1">▶</button></span></div>
     </div>
 
@@ -264,7 +263,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><td>Level the aim line</td><td>Click right stick</td><td><kbd>V</kbd></td><td><kbd>;</kbd></td></tr>
         <tr><td>Throw (hold = power)</td><td>RT</td><td><kbd>Space</kbd> or click</td><td><kbd>/</kbd> <kbd>Enter</kbd></td></tr>
         <tr><td>Deflector</td><td>LT or B</td><td><kbd>Shift</kbd> or right-click</td><td><kbd>.</kbd> <kbd>R-Shift</kbd></td></tr>
-        <tr><td>Hop</td><td>A</td><td><kbd>C</kbd></td><td><kbd>U</kbd></td></tr>
+        <tr><td>Jump to next platform</td><td colspan="3">Hold toward it at the edge for half a second</td></tr>
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>
@@ -374,6 +373,7 @@ const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.
 // body tuning
 const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
+const AUTO_JUMP_HOLD = 0.5, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
 const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 
 /* ================= settings ================= */
@@ -1686,7 +1686,7 @@ function readHuman(p, dt) {
     i.mx = (held(m.right) ? 1 : 0) - (held(m.left) ? 1 : 0); i.mz = (held(m.up) ? 1 : 0) - (held(m.down) ? 1 : 0);
     i.aim = (held(m.aimR) ? 1 : 0) - (held(m.aimL) ? 1 : 0);
     i.elev = ((held(m.lvlUp) ? 1 : 0) - (held(m.lvlDn) ? 1 : 0)) * ER; i.level = hit(m.level);
-    i.fire = held(m.fire); i.shield = held(m.shield); i.hop = hit(m.hop); i.recall = hit(m.recall);
+    i.fire = held(m.fire); i.shield = held(m.shield); i.recall = hit(m.recall);
     if (c.type === 'kb1') {
       if (MOUSE.locked) { i.aimAbs = MOUSE.dx * 0.0026; i.fire = i.fire || MOUSE.l; i.shield = i.shield || MOUSE.r; }
       if (MOUSE.wheel) { i.elev += (MOUSE.wheel < 0 ? 1 : -1) * 0.8; }
@@ -1699,13 +1699,13 @@ function readHuman(p, dt) {
       const rx = axis(gp, 2); i.aim = Math.sign(rx) * Math.pow(Math.abs(rx), 1.6); i.analog = true;
       // right stick up/down raises and lowers the aim line; RB/LB and the d-pad nudge it; click the right stick to level it
       i.elev = -axis(gp, 3) * ER * 1.15 + ((btn(gp, 5) || btn(gp, 12) ? 1 : 0) - (btn(gp, 4) || btn(gp, 13) ? 1 : 0)) * ER * 0.6; i.level = padHit(c.idx, 11);
-      i.fire = btn(gp, 7); i.shield = btn(gp, 6) || btn(gp, 1); i.hop = padHit(c.idx, 0); i.recall = padHit(c.idx, 2) || padHit(c.idx, 3);
+      i.fire = btn(gp, 7); i.shield = btn(gp, 6) || btn(gp, 1); i.recall = padHit(c.idx, 2) || padHit(c.idx, 3);
       // d-pad left/right fine aim
       i.aim += (btn(gp, 15) ? 0.5 : 0) - (btn(gp, 14) ? 0.5 : 0);
     }
   } else if (c.type === 'touch') {
     i.mx = TOUCH.mx; i.mz = TOUCH.mz; i.aimAbs = TOUCH.dx * 0.006; TOUCH.dx = 0; i.fire = TOUCH.fire; i.shield = TOUCH.shield;
-    i.hop = TOUCH.hopP; i.elev = TOUCH.lvl * ER; TOUCH.hopP = false; i.analog = true;
+    i.elev = TOUCH.lvl * ER; i.analog = true;
   }
   const l = Math.hypot(i.mx, i.mz); if (l > 1) { i.mx /= l; i.mz /= l; }
   return i;
@@ -1717,7 +1717,7 @@ function makePlayer(slot, kind, ctl, name, color) {
     slot, kind, ctl, name, color: PCOL[slot], css: PCSS[slot], local: true, peer: null,
     rig: makeRunner(PCOL[slot]), x: 0, y: 0, z: 0, vx: 0, vz: 0, mvx: 0, mvz: 0, kbx: 0, kbz: 0, vy: 0, onGround: true, airT: 0,
     yaw: 0, aimYaw: 0, lvl: 1, aimElev: ELEV_LEVEL, mode: 'idle', lives: S.lives, heat: 0, stun: 0, invuln: 0, flash: 0,
-    shieldE: 100, defl: DEFLECTS, teeter: 0, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
+    shieldE: 100, defl: DEFLECTS, teeter: 0, edgePush: 0, edgeDx: 0, edgeDz: 0, leaping: false, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
     fallT: 0, deadT: 0, lastHitBy: -1, lastHitAt: -99, stride: 0, animT: Math.random() * 10,
     stats: { hits: 0, rings: 0, kos: 0, defl: 0, thrown: 0 }, bot: null, skill: S.skill,
     net: null, shake: 0, popQ: []
@@ -2058,7 +2058,7 @@ function stepPlayer(p, inp, dt) {
   if (ctl) { wx = (fx * inp.mz + rx * inp.mx) * RUN; wz = (fz * inp.mz + rz * inp.mx) * RUN; }
   const slow = p.shieldOn ? 0.55 : p.charge > 0 ? 0.75 : 1;
   const acc = p.onGround ? 16 : 3;
-  p.mvx = damp(p.mvx, wx * slow, acc, dt); p.mvz = damp(p.mvz, wz * slow, acc, dt);
+  if (p.onGround || !p.leaping) { p.mvx = damp(p.mvx, wx * slow, acc, dt); p.mvz = damp(p.mvz, wz * slow, acc, dt); }
   p.kbx *= Math.exp(-FRICT * dt); p.kbz *= Math.exp(-FRICT * dt);
 
   // teetering on the edge (as in the original): push back toward the podium to recover, or go over
@@ -2073,9 +2073,16 @@ function stepPlayer(p, inp, dt) {
   }
 
   if (p.onGround) {
-    // hop
-    if (ctl && inp.hop) { p.onGround = false; p.vy = HOP_V; p.airT = 0; p.mvx = wx ? wx / RUN * HOP_H : 0; p.mvz = wz ? wz / RUN * HOP_H : 0; SFX.hop(p); }
-    else {
+    // As in the original there is no jump button and you can never walk off: hold the stick into the edge
+    // toward another platform of yours (or across a hole in your rings) for half a second and you leap over.
+    const wl = Math.hypot(wx, wz);
+    if (ctl && wl > RUN * 0.5 && !supportAt(p.x + wx / wl * 0.4, p.z + wz / wl * 0.4, 0.0)) {
+      const dx = wx / wl, dz = wz / wl;
+      if (p.edgePush > 0 && dx * p.edgeDx + dz * p.edgeDz < 0.85) p.edgePush = 0;
+      p.edgeDx = dx; p.edgeDz = dz; p.edgePush += dt;
+      if (p.edgePush >= AUTO_JUMP_HOLD) { p.edgePush = 0; autoJump(p, dx, dz); }
+    } else p.edgePush = 0;
+    if (p.onGround) {
       // walking can't take you off the edge; knockback can
       let nx = p.x + p.mvx * dt, nz = p.z + p.mvz * dt;
       if (!supportAt(nx, nz, 0.02)) {
@@ -2091,11 +2098,33 @@ function stepPlayer(p, inp, dt) {
     p.airT += dt; p.vy -= GRAV * dt; const py = p.y;
     p.x += (p.mvx + p.kbx) * dt; p.z += (p.mvz + p.kbz) * dt; p.y += p.vy * dt;
     const sup = supportAt(p.x, p.z, 0.12);
-    if (sup && p.vy <= 0 && p.y <= sup.y && py >= sup.y - 0.35) { p.y = sup.y; p.onGround = true; p.vy = 0; p.mvx *= 0.3; p.mvz *= 0.3; SFX.land(p); sparks(p.x, p.y + 0.05, p.z, p.color, 8, 2.5, 0.35, 0.05); }
+    if (sup && p.vy <= 0 && p.y <= sup.y && py >= sup.y - 0.35) { p.y = sup.y; p.onGround = true; p.vy = 0; p.mvx *= 0.3; p.mvz *= 0.3; p.leaping = false; SFX.land(p); sparks(p.x, p.y + 0.05, p.z, p.color, 8, 2.5, 0.35, 0.05); }
     else if (p.y < -1.2 + Math.min(...stationOf(p).pads.map(q => q.y)) - 2) startFall(p, true);
   }
   p.vx = p.mvx + p.kbx; p.vz = p.mvz + p.kbz;
   if (p.onGround) p.stride += Math.hypot(p.mvx, p.mvz) * dt * 2.6;
+}
+// find solid footing beyond the gap in this direction, on one of your own platforms, and leap to it on an arc
+function autoJump(p, dx, dz) {
+  const st = stationOf(p);
+  let gap = false, land = null;
+  for (let s = 0.3; s <= 7; s += 0.15) {
+    const x = p.x + dx * s, z = p.z + dz * s, sup = supportAt(x, z, -0.1);
+    if (!sup) { gap = true; continue; }
+    if (gap && sup.pad.st === st) {
+      // land a little way onto it, on a ring that will still be there
+      for (let e = 0.55; e >= 0; e -= 0.1) { const s2 = supportAt(x + dx * e, z + dz * e, -0.2); if (s2 && s2.pad.rings[s2.ring].state === 0) { land = { x: x + dx * e, z: z + dz * e, pad: s2.pad }; break; } }
+      break;
+    }
+  }
+  if (!land) return false;
+  const T = AUTO_JUMP_T, D = Math.hypot(land.x - p.x, land.z - p.z), yLand = padHeightAt(land.pad, (DEMO ? uTime.value : matchT) + T);
+  if (Math.abs(yLand - p.y) > 3.2) return false;
+  p.onGround = false; p.leaping = true; p.airT = 0;
+  p.mvx = (land.x - p.x) / T; p.mvz = (land.z - p.z) / T; p.kbx = p.kbz = 0;
+  p.vy = (yLand - p.y + 0.5 * GRAV * T * T) / T;
+  SFX.hop(p); sparks(p.x, p.y + 0.05, p.z, p.color, 10, 3, 0.4, 0.05);
+  return D > 0;
 }
 function nearestPad(p, extra) {
   let best = null, bd = 1e9;
@@ -2187,7 +2216,7 @@ function botInput(p, dt) {
         if (B.choice === 'dodge') {
           const vx = threat.vel.x, vz = threat.vel.z, l = Math.hypot(vx, vz) || 1; let sx = -vz / l, sz = vx / l;
           if (!supportAt(p.x + sx * 1.2, p.z + sz * 1.2, 0)) { sx = -sx; sz = -sz; }
-          B.dodge = { x: sx, z: sz, t: 0.45 }; B.hopDodge = p.onGround && threat.pos.y < p.y + 1.1 && Math.random() < 0.35 && supportAt(p.x + sx * 1.6, p.z + sz * 1.6, 0);
+          B.dodge = { x: sx, z: sz, t: 0.45 };
         }
         if (B.choice === 'shield') B.shieldT = 0.45;
       }
@@ -2211,9 +2240,6 @@ function botInput(p, dt) {
     if (alt) {
       const ax = alt.x - p.x, az = alt.z - p.z, l = Math.hypot(ax, az);
       goal = { x: alt.x, z: alt.z }; B.safe = null; B.goPad = alt;
-      const dirOk = Math.hypot(p.mvx, p.mvz) > RUN * 0.6 && (p.mvx * ax + p.mvz * az) / (Math.hypot(p.mvx, p.mvz) * l) > 0.92;
-      const hopDist = 2 * HOP_V / GRAV * HOP_H, lx = p.x + ax / l * hopDist, lz = p.z + az / l * hopDist;
-      if (dirOk && l < hopDist + 0.6 && Math.abs(alt.y - here.y) < 0.7 && supportAt(lx, lz, -0.2)) inp.hop = true;
     }
   }
   if (B.safe) { B.safe.t -= dt; const r = B.safe.ring; if (B.safe.t <= 0 || r.state !== 0 || Math.hypot(p.x - B.safe.x, p.z - B.safe.z) < 0.3) B.safe = null; }
@@ -2225,14 +2251,8 @@ function botInput(p, dt) {
   }
   if (B.safe && !goal) {
     goal = B.safe;
-    // no walkable path (a vanished ring in the way)? hop across
-    const moved = Math.hypot(p.x - B.safe.px, p.z - B.safe.pz); B.safe.px = p.x; B.safe.pz = p.z;
-    B.safe.stuck = moved < 0.01 ? B.safe.stuck + dt : 0;
-    if (B.safe.stuck > 0.12 && p.onGround) {
-      const gx = B.safe.x - p.x, gz = B.safe.z - p.z, gl = Math.hypot(gx, gz) || 1, hd = 2 * HOP_V / GRAV * HOP_H;
-      const lx = p.x + gx / gl * Math.min(hd, gl + 0.4), lz = p.z + gz / gl * Math.min(hd, gl + 0.4);
-      if (supportAt(lx, lz, -0.15)) { inp.hop = true; B.hopTo = { x: gx / gl, z: gz / gl, t: 0.75 }; }
-    }
+    // a vanished ring in the way? just keep pushing: the auto-jump carries us across
+    B.safe.t = Math.max(B.safe.t, 0.7);
   }
   if (!goal) {
     B.wanderT -= dt;
@@ -2249,8 +2269,7 @@ function botInput(p, dt) {
   }
   B.lastGoal = goal === B.wander ? 'wander' : 'safe'; let gx = goal.x - p.x, gz = goal.z - p.z; const gl = Math.hypot(gx, gz);
   let wx = gl > 0.2 ? gx / gl * Math.min(1, gl * 1.5) : 0, wz = gl > 0.2 ? gz / gl * Math.min(1, gl * 1.5) : 0;
-  if (B.hopTo && B.hopTo.t > 0) { B.hopTo.t -= dt; wx = B.hopTo.x; wz = B.hopTo.z; }
-  if (B.dodge && B.dodge.t > 0 && !B.safe) { B.dodge.t -= dt; wx = B.dodge.x; wz = B.dodge.z; if (B.hopDodge && p.onGround) { inp.hop = true; B.hopDodge = false; wx = wz = 0; } }
+  if (B.dodge && B.dodge.t > 0 && !B.safe) { B.dodge.t -= dt; wx = B.dodge.x; wz = B.dodge.z; }
   // world move -> stick (relative to aim)
   const fx = Math.sin(p.aimYaw), fz = Math.cos(p.aimYaw), rx = -Math.cos(p.aimYaw), rz = Math.sin(p.aimYaw);
   inp.mz = wx * fx + wz * fz; inp.mx = wx * rx + wz * rz;
@@ -2355,7 +2374,7 @@ function setLine(g, hx, hz, y) {
 function updateGuide(p, dt) {
   const g = p.guide; if (!g) return;
   const show = p.mode === 'play' && (state === 'play' || state === 'count');
-  g.dots.visible = show && S.guide; g.ret.visible = show; g.line.visible = show; if (!show) return;
+  g.dots.visible = false; g.ret.visible = show; g.line.visible = show; if (!show) return;
   const ap = aimPoint(p, p.aimYaw, p.aimElev, _ga);
   // the line: round the walls at the aimed height, or a rectangle across the ceiling through the crosshair
   if (!ap.ceil) setLine(g, BOX.hx - 0.06, BOX.hz - 0.06, ap.y);
@@ -2368,17 +2387,15 @@ function updateGuide(p, dt) {
   const tgt = aimTarget(p, p.aimYaw);
   handPos(p, _gp); _gv.set(ap.x - _gp.x, ap.y - _gp.y, ap.z - _gp.z).normalize().multiplyScalar(D_SPEED);
   let n = 0, dist = 0, lock = false, bounces = 0; const h = 1 / 60;
-  for (let i = 0; i < 320 && n < GUIDE_N; i++) {
+  for (let i = 0; i < 320; i++) {
     const px = _gp.x, py = _gp.y, pz = _gp.z;
     discEnvStep(_gp, _gv, h, p.slot, _ge);
     dist += Math.hypot(_gp.x - px, _gp.y - py, _gp.z - pz);
-    if (dist > 0.8) { dist = 0; if (S.guide) { _gs.setScalar(1 - n / GUIDE_N * 0.6); _gm.compose(_gp, _gq, _gs); g.dots.setMatrixAt(n++, _gm); } }
     let hitR = false; for (const o of players) if (o !== p && o.mode === 'play' && hitsBody(o, _gp.x, _gp.y, _gp.z, D_R * 0.8)) hitR = true;
     if (hitR) { lock = true; break; }
     if (_ge.kind === 'wall' || _ge.kind === 'ceil') { bounces++; if (bounces > 2) break; }
     if (_ge.kind === 'ring' || _ge.kind === 'block' || _ge.kind === 'bulwark' || _ge.kind === 'abyss') break;
   }
-  g.dots.count = n; g.dots.instanceMatrix.needsUpdate = true;
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);
@@ -2598,7 +2615,7 @@ function renderLobby() {
   const ar = ARENAS[S.arena];
   $('#vArena').textContent = ar.name; $('#arenaDesc').textContent = ar.desc;
   $('#vLives').textContent = S.lives; $('#vCpus').textContent = S.cpus; $('#vSkill').textContent = SKILLS[S.skill].name;
-  $('#vGuide').textContent = S.guide ? 'ON' : 'OFF'; $('#vQuality').textContent = QUALS[S.quality].name;
+  $('#vQuality').textContent = QUALS[S.quality].name;
   const canStart = online ? (NET.room && NET.role === 'host') : true;
   const st = $('#start'); st.disabled = !canStart;
   $('#startSub').textContent = online ? (NET.room ? (NET.role === 'host' ? 'PRESS ENTER OR START' : 'WAITING FOR HOST') : 'HOST OR JOIN A ROOM') : (LOBBY.humans.length ? 'PRESS ENTER OR START' : 'OR WATCH CPUS FIGHT');
@@ -2613,7 +2630,7 @@ const TIPS = [
   'Knocked to the edge? Push back toward your podium to save yourself.',
   'You get 7 deflects a life. Knock a rival out to refill them.',
   'Your disc can smash theirs out of the air, and you get it straight back.',
-  'Nobody can hit you while you are mid-hop. They can when you land.'
+  'To jump to another platform, hold toward it at the edge for half a second. Nobody can hit you mid-leap.'
 ];
 function renderOnlineBox() {
   const box = $('#onlineBox');
@@ -3225,13 +3242,12 @@ $('#slots').addEventListener('click', e => {
 });
 
 /* ================= touch controls ================= */
-const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lvl: 0 };
+const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, lvl: 0 };
 {
   const box = $('#touch');
   box.innerHTML = `<div class="stick" hidden><i></i></div>
     <button class="tb big" data-b="fire" style="right:26px;bottom:34px">THROW</button>
     <button class="tb" data-b="shield" style="right:130px;bottom:22px">BLOCK</button>
-    <button class="tb" data-b="hop" style="right:42px;bottom:140px">HOP</button>
     <button class="tb" data-b="up" style="right:140px;bottom:112px;width:50px;height:50px">▲</button>
     <button class="tb" data-b="dn" style="right:196px;bottom:80px;width:50px;height:50px">▼</button>`;
   const stick = box.querySelector('.stick'), knob = stick.querySelector('i');
@@ -3241,7 +3257,7 @@ const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lv
     const b = e.target.closest('[data-b]');
     if (b) {
       const k = b.dataset.b; b.classList.add('on');
-      if (k === 'fire') TOUCH.fire = true; if (k === 'shield') TOUCH.shield = true; if (k === 'hop') TOUCH.hopP = true; if (k === 'up') TOUCH.lvl = 1; if (k === 'dn') TOUCH.lvl = -1;
+      if (k === 'fire') TOUCH.fire = true; if (k === 'shield') TOUCH.shield = true; if (k === 'up') TOUCH.lvl = 1; if (k === 'dn') TOUCH.lvl = -1;
       b.setPointerCapture(e.pointerId); b._pid = e.pointerId; return;
     }
     if (e.clientX < window.innerWidth * 0.45 && stickId == null) { stickId = e.pointerId; sx = e.clientX; sy = e.clientY; stick.hidden = false; stick.style.left = sx + 'px'; stick.style.top = sy + 'px'; box.setPointerCapture(e.pointerId); }
@@ -3270,7 +3286,7 @@ readHuman = function (p, dt) {
     if (!q) continue;
     if (Math.abs(q.mx) + Math.abs(q.mz) > Math.abs(o.mx) + Math.abs(o.mz)) { o.mx = q.mx; o.mz = q.mz; }
     if (Math.abs(q.aim) > Math.abs(o.aim)) { o.aim = q.aim; o.analog = q.analog; }
-    o.aimAbs += q.aimAbs; o.elev += q.elev; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.hop = o.hop || q.hop; o.recall = o.recall || q.recall;
+    o.aimAbs += q.aimAbs; o.elev += q.elev; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.recall = o.recall || q.recall;
   }
   return o;
 };

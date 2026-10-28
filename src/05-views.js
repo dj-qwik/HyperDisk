@@ -36,7 +36,7 @@ function setLine(g, hx, hz, y) {
 function updateGuide(p, dt) {
   const g = p.guide; if (!g) return;
   const show = p.mode === 'play' && (state === 'play' || state === 'count');
-  g.dots.visible = show && S.guide; g.ret.visible = show; g.line.visible = show; if (!show) return;
+  g.dots.visible = false; g.ret.visible = show; g.line.visible = show; if (!show) return;
   const ap = aimPoint(p, p.aimYaw, p.aimElev, _ga);
   // the line: round the walls at the aimed height, or a rectangle across the ceiling through the crosshair
   if (!ap.ceil) setLine(g, BOX.hx - 0.06, BOX.hz - 0.06, ap.y);
@@ -49,17 +49,15 @@ function updateGuide(p, dt) {
   const tgt = aimTarget(p, p.aimYaw);
   handPos(p, _gp); _gv.set(ap.x - _gp.x, ap.y - _gp.y, ap.z - _gp.z).normalize().multiplyScalar(D_SPEED);
   let n = 0, dist = 0, lock = false, bounces = 0; const h = 1 / 60;
-  for (let i = 0; i < 320 && n < GUIDE_N; i++) {
+  for (let i = 0; i < 320; i++) {
     const px = _gp.x, py = _gp.y, pz = _gp.z;
     discEnvStep(_gp, _gv, h, p.slot, _ge);
     dist += Math.hypot(_gp.x - px, _gp.y - py, _gp.z - pz);
-    if (dist > 0.8) { dist = 0; if (S.guide) { _gs.setScalar(1 - n / GUIDE_N * 0.6); _gm.compose(_gp, _gq, _gs); g.dots.setMatrixAt(n++, _gm); } }
     let hitR = false; for (const o of players) if (o !== p && o.mode === 'play' && hitsBody(o, _gp.x, _gp.y, _gp.z, D_R * 0.8)) hitR = true;
     if (hitR) { lock = true; break; }
     if (_ge.kind === 'wall' || _ge.kind === 'ceil') { bounces++; if (bounces > 2) break; }
     if (_ge.kind === 'ring' || _ge.kind === 'block' || _ge.kind === 'bulwark' || _ge.kind === 'abyss') break;
   }
-  g.dots.count = n; g.dots.instanceMatrix.needsUpdate = true;
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);

@@ -65,7 +65,7 @@ function renderLobby() {
   const ar = ARENAS[S.arena];
   $('#vArena').textContent = ar.name; $('#arenaDesc').textContent = ar.desc;
   $('#vLives').textContent = S.lives; $('#vCpus').textContent = S.cpus; $('#vSkill').textContent = SKILLS[S.skill].name;
-  $('#vGuide').textContent = S.guide ? 'ON' : 'OFF'; $('#vQuality').textContent = QUALS[S.quality].name;
+  $('#vQuality').textContent = QUALS[S.quality].name;
   const canStart = online ? (NET.room && NET.role === 'host') : true;
   const st = $('#start'); st.disabled = !canStart;
   $('#startSub').textContent = online ? (NET.room ? (NET.role === 'host' ? 'PRESS ENTER OR START' : 'WAITING FOR HOST') : 'HOST OR JOIN A ROOM') : (LOBBY.humans.length ? 'PRESS ENTER OR START' : 'OR WATCH CPUS FIGHT');
@@ -80,7 +80,7 @@ const TIPS = [
   'Knocked to the edge? Push back toward your podium to save yourself.',
   'You get 7 deflects a life. Knock a rival out to refill them.',
   'Your disc can smash theirs out of the air, and you get it straight back.',
-  'Nobody can hit you while you are mid-hop. They can when you land.'
+  'To jump to another platform, hold toward it at the edge for half a second. Nobody can hit you mid-leap.'
 ];
 function renderOnlineBox() {
   const box = $('#onlineBox');

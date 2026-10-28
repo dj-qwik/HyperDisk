@@ -70,6 +70,7 @@ const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.
 // body tuning
 const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
+const AUTO_JUMP_HOLD = 0.5, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
 const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 
 /* ================= settings ================= */

@@ -16,7 +16,7 @@ Zero-g disc duels above a neon megacity. Stand on a floating podium of concentri
 | **Rings** | A struck ring flashes for 1.6 s, then vanishes for 9 s. Anyone standing on it falls. Centre plates are armoured. |
 | **Hits** | Knock you back. Each hit raises OVERLOAD, so the next one sends you further. |
 | **Deflector** | Covers your front. 7 deflects per life (a power disc costs 2); knock a rival out to refill. Bank shots go around it. |
-| **Edges** | Shoved just past the rim, you teeter: push back toward your podium to save yourself. You can't be hit mid-hop. |
+| **Edges** | You can't walk off a platform. To cross to another of your platforms (or over a hole in your rings), hold toward it at the edge for half a second and you leap over; nobody can hit you mid-leap. Shoved just past the rim by a hit, you teeter: push back toward your podium to save yourself. |
 | **Disc vs disc** | Smash a rival's disc out of the air and yours is straight back in your hand. |
 | **Recall** | Calls every disc you have in the air back to your hand. |
 
@@ -33,7 +33,7 @@ Arenas (all available from the start): **Halo Rings** (one podium, three rings),
 | Level the aim line | Click right stick | V | ; |
 | Throw (hold = power) | RT | Space or left click | / or Enter |
 | Deflector | LT or B | Shift or right click | . or Right Shift |
-| Hop | A | C | U |
+| Jump to another platform | Hold toward it at the edge for half a second | same | same |
 | Recall | X / Y | X | O |
 | Pause | Start | Esc / P | Esc / P |
 

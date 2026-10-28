@@ -56,13 +56,12 @@ $('#slots').addEventListener('click', e => {
 });
 
 /* ================= touch controls ================= */
-const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lvl: 0 };
+const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, lvl: 0 };
 {
   const box = $('#touch');
   box.innerHTML = `<div class="stick" hidden><i></i></div>
     <button class="tb big" data-b="fire" style="right:26px;bottom:34px">THROW</button>
     <button class="tb" data-b="shield" style="right:130px;bottom:22px">BLOCK</button>
-    <button class="tb" data-b="hop" style="right:42px;bottom:140px">HOP</button>
     <button class="tb" data-b="up" style="right:140px;bottom:112px;width:50px;height:50px">▲</button>
     <button class="tb" data-b="dn" style="right:196px;bottom:80px;width:50px;height:50px">▼</button>`;
   const stick = box.querySelector('.stick'), knob = stick.querySelector('i');
@@ -72,7 +71,7 @@ const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lv
     const b = e.target.closest('[data-b]');
     if (b) {
       const k = b.dataset.b; b.classList.add('on');
-      if (k === 'fire') TOUCH.fire = true; if (k === 'shield') TOUCH.shield = true; if (k === 'hop') TOUCH.hopP = true; if (k === 'up') TOUCH.lvl = 1; if (k === 'dn') TOUCH.lvl = -1;
+      if (k === 'fire') TOUCH.fire = true; if (k === 'shield') TOUCH.shield = true; if (k === 'up') TOUCH.lvl = 1; if (k === 'dn') TOUCH.lvl = -1;
       b.setPointerCapture(e.pointerId); b._pid = e.pointerId; return;
     }
     if (e.clientX < window.innerWidth * 0.45 && stickId == null) { stickId = e.pointerId; sx = e.clientX; sy = e.clientY; stick.hidden = false; stick.style.left = sx + 'px'; stick.style.top = sy + 'px'; box.setPointerCapture(e.pointerId); }
@@ -101,7 +100,7 @@ readHuman = function (p, dt) {
     if (!q) continue;
     if (Math.abs(q.mx) + Math.abs(q.mz) > Math.abs(o.mx) + Math.abs(o.mz)) { o.mx = q.mx; o.mz = q.mz; }
     if (Math.abs(q.aim) > Math.abs(o.aim)) { o.aim = q.aim; o.analog = q.analog; }
-    o.aimAbs += q.aimAbs; o.elev += q.elev; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.hop = o.hop || q.hop; o.recall = o.recall || q.recall;
+    o.aimAbs += q.aimAbs; o.elev += q.elev; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.recall = o.recall || q.recall;
   }
   return o;
 };
