@@ -43,6 +43,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #lobby { position: absolute; left: 0; top: 0; bottom: 0; width: min(470px, 100vw); padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 12px;
   overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
   background: linear-gradient(90deg, rgba(4,3,12,.92) 0%, rgba(4,3,12,.78) 70%, rgba(4,3,12,0) 100%); }
+#lobby > * { flex-shrink: 0; }   /* never squash menu items; fitLobby() scales the whole panel instead */
 #lobby::-webkit-scrollbar { width: 6px; } #lobby::-webkit-scrollbar-thumb { background: var(--faint); }
 .logo { position: relative; margin: 2px 0 0; line-height: .86; font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; letter-spacing: .04em; }
 .logo .w { display: block; font-size: 58px; background: linear-gradient(100deg, #8fb8ff 0%, var(--cyan) 30%, #3d3dff 62%, var(--mag) 100%);
