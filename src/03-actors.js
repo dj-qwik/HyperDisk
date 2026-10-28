@@ -382,9 +382,9 @@ function makeRunner(color) {
   shield.position.y = SHIELD_Y; shield.visible = false; shield.renderOrder = 4; root.add(shield);
   const shieldCore = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.42, 0.5, 20, 1, true), glowMat(c, 2.2, 0.55)); shieldCore.position.set(0.06, 2.05, 0.12); shieldCore.visible = false; root.add(shieldCore);
   // player light: makes their podium glow in their colour
-  const light = new THREE.PointLight(c, 0.7, 6, 1.8); light.position.set(0, 1.4, 0.4); root.add(light);
+
   root.traverse(o => { if (o.isMesh && o.material === glow) o.castShadow = false; });
-  return { root, body, pelvis, spine, chest, head, neck, legs, arms, dockDiscs, handDisc, shield, shieldCore, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, light, armor };
+  return { root, body, pelvis, spine, chest, head, neck, legs, arms, dockDiscs, handDisc, shield, shieldCore, shieldMat, glow, glowBase: c.clone().multiplyScalar(2.6), visorM, armor };
 }
 
 // pose a runner: everything eases toward a target pose built from the player's state

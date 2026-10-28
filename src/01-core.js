@@ -115,6 +115,7 @@ const FOG_COL = new THREE.Color(0x0a0618);
 scene.fog = new THREE.FogExp2(FOG_COL.getHex(), 0.0058);
 
 let DW = 1, DH = 1, sceneRT = null, bloomPass = null, finalQuad = null, finalMat = null, pixelRatio = 1;
+let RSCALE = 1;   // adaptive render scale (see the frame loop): drops when the frame rate can't keep up
 finalMat = new THREE.ShaderMaterial({
   uniforms: {
     tDiffuse: { value: null }, uTime: { value: 0 }, uExposure: { value: 0.95 }, uAberr: { value: 0.0025 }, uRes: { value: new THREE.Vector2(1, 1) },
@@ -158,7 +159,7 @@ if (THREE.FullScreenQuad) finalQuad = new THREE.FullScreenQuad(finalMat);
 
 function resize() {
   const q = QUALS[S.quality];
-  pixelRatio = Math.min(window.devicePixelRatio || 1, q.pr);
+  pixelRatio = Math.max(0.5, Math.min(window.devicePixelRatio || 1, q.pr) * RSCALE);
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   DW = Math.max(1, Math.floor(window.innerWidth * pixelRatio)); DH = Math.max(1, Math.floor(window.innerHeight * pixelRatio));

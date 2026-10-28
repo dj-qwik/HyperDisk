@@ -185,5 +185,5 @@ function debugTick(dt) {
   if (!DEBUG.hud) { el.innerHTML = ''; return; }
   const row = p => { const st = STATIONS[p.slot]; const rs = st ? st.pads.map(pd => pd.rings.map(r => '■▒░·'[r.state]).join('')).join(' ') : '';
     return `<div><b style="color:${p.css}">${p.name}</b> ${p.kind === 'cpu' ? 'CPU' : ''} · ${p.mode.toUpperCase()} · lives ${p.lives} · overload ${Math.round(p.heat / 8 * 100)}% · discs ${p.discsHome} · shield ${p.defl} · ${p.weapon ? p.weapon.type + '×' + p.weapon.n : '—'} · pads ${rs}</div>`; };
-  el.innerHTML = `<div>FPS ${DEBUG.fps} · ${state.toUpperCase()} · t ${matchT.toFixed(1)}s · arena ${LAYOUT && LAYOUT.id || S.arena} · discs in flight ${DISCS.filter(d => d.state !== 'home').length} · pickups ${PU.list.length}</div>` + players.map(row).join('');
+  el.innerHTML = `<div>FPS ${DEBUG.fps} · res ${Math.round(RSCALE * 100)}% · ${state.toUpperCase()} · t ${matchT.toFixed(1)}s · arena ${LAYOUT && LAYOUT.id || S.arena} · discs in flight ${DISCS.filter(d => d.state !== 'home').length} · pickups ${PU.list.length}</div>` + players.map(row).join('');
 }

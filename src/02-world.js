@@ -48,7 +48,9 @@ const geoMerge = (parts) => {
   let n = 0; const gs = parts.map(p => { const g = (p.g.index ? p.g.toNonIndexed() : p.g.clone()); g.applyMatrix4(p.m || new THREE.Matrix4()); n += g.attributes.position.count; return g; });
   const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3); let o = 0;
   gs.forEach((g, i) => { const c = parts[i].c || [1, 1, 1], k = g.attributes.position.count; pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); for (let j = 0; j < k; j++) col.set(c, (o + j) * 3); o += k; });
-  const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); out.setAttribute('color', new THREE.BufferAttribute(col, 3)); return out;
+  const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  if (gs.every(g => g.attributes.uv)) { const uv = new Float32Array(n * 2); let q = 0; gs.forEach(g => { uv.set(g.attributes.uv.array, q * 2); q += g.attributes.uv.count; }); out.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
+  return out;
 };
 const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx || 0, ry || 0, rz || 0)), new THREE.Vector3(sx || 1, sy || 1, sz || 1));
 {
@@ -99,10 +101,18 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
           vec2 fw = fwidth(g); float lod = smoothstep(0.22, 0.6, max(fw.x, fw.y));
           vec4 bx = style < 0.5 ? vec4(0.06, 0.94, 0.16, 0.95) : style < 1.5 ? vec4(0.22, 0.78, 0.3, 0.8) : style < 2.5 ? vec4(0.0, 1.0, 0.38, 0.8) : vec4(0.25, 0.75, 0.42, 0.62);
           float aa = 0.04;
-          float win = smoothstep(bx.x, bx.x + aa, f.x) * smoothstep(bx.y, bx.y - aa, f.x) * smoothstep(bx.z, bx.z + aa, f.y) * smoothstep(bx.w, bx.w - aa, f.y);
-          if (style > 2.5) win *= step(0.55, h21(vec2(floor(id.x / 3.), id.y) + seed * 9.));   // megablock: sparse windows among plating
-          vec2 key = id + vec2(seed * 173., faceId * 31.);
           float occ = 0.16 + 0.42 * fract(seed * 7.3);
+          vec3 glass = mix(vec3(0.006, 0.008, 0.02), vec3(0.06, 0.03, 0.1), fres) + vec3(0.012, 0.004, 0.02) * smoothstep(-100., 60., vWP.y);
+          vec3 frame = vec3(0.014, 0.015, 0.026) + vec3(0.04, 0.012, 0.06) * fres;
+          frame *= 0.8 + 0.4 * h21(vec2(floor(u / 6.), floor(wy / 12.)) + seed);   // panel variation
+          if (style > 2.5) frame += vec3(0.01) * step(0.92, fract(u / 4.)) ;
+          float area = (bx.y - bx.x) * (bx.w - bx.z) * (style > 2.5 ? 0.45 : 1.);
+          vec3 avg = frame * (1. - area) + area * (glass * (1. - occ) + vec3(0.8, 0.72, 0.6) * 0.55 * 0.62 * (occ + 0.05));
+          col = avg;
+          if (lod < 0.98) {   // far-away facades skip the per-window work entirely
+          float win = smoothstep(bx.x, bx.x + aa, f.x) * smoothstep(bx.y, bx.y - aa, f.x) * smoothstep(bx.z, bx.z + aa, f.y) * smoothstep(bx.w, bx.w - aa, f.y);
+          if (style > 2.5) win *= step(0.55, h21(vec2(floor(id.x / 3.), id.y) + seed * 9.));
+          vec2 key = id + vec2(seed * 173., faceId * 31.);
           float office = step(h21(vec2(id.y, seed * 91. + faceId)), 0.09);
           float r = h21(key);
           float lit = max(step(r, occ), office);
@@ -112,16 +122,11 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
           float blinds = h21(key * 3.3) < 0.3 ? mix(0.65 + 0.35 * step(0.4, fract(f.y * 10.)), 0.86, smoothstep(0.25, 0.6, fw.y * 10.)) : 1.;
           float interior = mix(0.7, 1.15, smoothstep(bx.z, bx.w, f.y)) * blinds;
           float flick = h21(key * 7.7) > 0.995 ? step(0.3, fract(sin(uTime * 13. + r * 90.) * 3.)) : 1.;
-          vec3 glass = mix(vec3(0.006, 0.008, 0.02), vec3(0.06, 0.03, 0.1), fres) + vec3(0.012, 0.004, 0.02) * smoothstep(-100., 60., vWP.y);
           vec3 litC = wc * bright * interior * 0.55 * flick;
-          vec3 frame = vec3(0.014, 0.015, 0.026) + vec3(0.04, 0.012, 0.06) * fres;
-          frame *= 0.8 + 0.4 * h21(vec2(floor(u / 6.), floor(wy / 12.)) + seed);   // panel variation
-          if (style > 2.5) frame += vec3(0.01) * step(0.92, fract(u / 4.)) ;
           float slab = smoothstep(0.035, 0.0, abs(f.y - 0.02)) * (style < 0.5 ? 1. : 0.);
           vec3 detailed = mix(frame, mix(glass, litC, lit), win) + vec3(0.02, 0.025, 0.04) * slab;
-          float area = (bx.y - bx.x) * (bx.w - bx.z) * (style > 2.5 ? 0.45 : 1.);
-          vec3 avg = frame * (1. - area) + area * (glass * (1. - occ) + vec3(0.8, 0.72, 0.6) * 0.55 * 0.62 * (occ + 0.05));
           col = mix(detailed, avg, lod);
+          }
           // megablock: thin vertical light strips
           if (style > 2.5) col += vec3(0.5, 0.7, 1.0) * 0.5 * smoothstep(0.03, 0.0, abs(fract(u / 9.) - 0.5) - 0.0) * step(0.5, fract(seed * 17.));
           // neon accents
@@ -239,7 +244,7 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
   const plant = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), plantMat, props.length); props.forEach((m, i) => plant.setMatrixAt(i, m)); plant.frustumCulled = false; world.add(plant);
   const mast = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x2a2d36, metalness: 0.8, roughness: 0.4 }), masts.length); masts.forEach((m, i) => mast.setMatrixAt(i, m)); mast.frustumCulled = false; world.add(mast);
   // aviation beacons: slow red blinks, each with its own phase
-  const bgeo = new THREE.SphereGeometry(0.35, 8, 6), ph = new Float32Array(beacons.length);
+  const bgeo = new THREE.OctahedronGeometry(0.4, 0), ph = new Float32Array(beacons.length);
   const bim = new THREE.InstancedMesh(bgeo, new THREE.ShaderMaterial({
     uniforms: { uTime }, fog: false,
     vertexShader: 'attribute float aPh; uniform float uTime; varying float vB; void main(){ float c = fract(uTime * 0.45 + aPh); vB = 0.12 + 3.2 * smoothstep(0.0, 0.04, c) * smoothstep(0.22, 0.12, c); vec4 mv = modelViewMatrix * instanceMatrix * vec4(position * (0.7 + vB * 0.25), 1.); gl_Position = projectionMatrix * mv; }',
@@ -402,7 +407,7 @@ const HOLO = new THREE.Group();
   // lanes: ring lanes in altitude bands round the arena, and straight skyways between towers
   const lanes = [], cars = [];
   const typePick = () => { const k = rnd(); return k < 0.42 ? 'car' : k < 0.56 ? 'cab' : k < 0.74 ? 'hauler' : k < 0.8 ? 'patrol' : 'bike'; };
-  const nRing = Math.round(10 * qty), nLine = Math.round(7 * qty);   // halved for performance
+  const nRing = Math.round(6 * qty), nLine = Math.round(4 * qty);   // kept light for frame rate
   for (let i = 0; i < nRing; i++) {
     const inner = i < nRing * 0.45;
     let r = inner ? 37 + rnd() * 14 : 70 + rnd() * 120, y = inner ? -10 + rnd() * 30 : -12 + rnd() * 70;
@@ -506,15 +511,17 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   // the wall itself
   const wall = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 128, 1, true), wallM); wall.position.y = (SHAFT.top + SHAFT.bottom) / 2; wall.receiveShadow = true; ARENA.add(wall);
 
-  // girder rings (I-beam section) every 10 m, studded with bolts
+  // girder rings (I-beam section) every 10 m, studded with bolts (merged into one mesh)
+  const girderGeos = [];
   const ringYs = []; for (let y = -6; y > SHAFT.grid + 2; y -= 10) ringYs.push(y);
   const bolts = [];
   for (const y of ringYs) {
     const prof = [[R, 0.55], [R - 1.5, 0.55], [R - 1.5, 0.38], [R - 0.95, 0.38], [R - 0.95, -0.38], [R - 1.5, -0.38], [R - 1.5, -0.55], [R, -0.55]].map(q => new THREE.Vector2(q[0], q[1] + y));
-    const g = new THREE.Mesh(new THREE.LatheGeometry(prof, 128), steel); g.receiveShadow = true; ARENA.add(g);
-    for (let i = 0; i < 128; i++) { const a = i / 128 * TAU; for (const dy of [0.56, -0.56]) { facing(a); onWall(a, R - 1.25, y + dy); M4.compose(P, Q, Sc); bolts.push(M4.clone()); } }
+    girderGeos.push({ g: new THREE.LatheGeometry(prof, 96) });
+    for (let i = 0; i < 64; i++) { const a = i / 64 * TAU; for (const dy of [0.56, -0.56]) { facing(a); onWall(a, R - 1.25, y + dy); M4.compose(P, Q, Sc); bolts.push(M4.clone()); } }
   }
-  inst(new THREE.CylinderGeometry(0.06, 0.06, 0.06, 6), darkSteel, bolts);
+  { const gm = new THREE.Mesh(geoMerge(girderGeos), steel); gm.receiveShadow = true; ARENA.add(gm); }
+  inst(new THREE.BoxGeometry(0.1, 0.06, 0.1), darkSteel, bolts);
 
   // vertical columns and X-bracing between the girders
   const cols = 20, colM = [], braceM = [];
@@ -648,23 +655,25 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   [[-21, 0.5], [-33, 0.8]].forEach(([y, d]) => { const m = new THREE.Mesh(new THREE.CircleGeometry(R - 0.2, 64), hazeMat(d)); m.rotation.x = -Math.PI / 2; m.position.y = y; m.renderOrder = 1; ARENA.add(m); });
 
   // angled armour skirts under each girder: chamfered plates sloping in from the wall, like a bulkhead frame
+  const skirtGeos = [];
   for (const y of ringYs) {
     const prof = [[R - 0.05, -0.55], [R - 1.5, -0.55], [R - 2.6, -1.9], [R - 2.6, -2.15], [R - 2.45, -2.15], [R - 1.2, -0.9], [R - 0.05, -0.9]].map(q => new THREE.Vector2(q[0], q[1] + y));
-    for (let k = 0; k < 8; k++) { const seg = new THREE.Mesh(new THREE.LatheGeometry(prof, 10, k / 8 * TAU + 0.05, TAU / 8 - 0.1), darkSteel); seg.receiveShadow = true; ARENA.add(seg); }
+    for (let k = 0; k < 8; k++) skirtGeos.push({ g: new THREE.LatheGeometry(prof, 8, k / 8 * TAU + 0.05, TAU / 8 - 0.1) });
   }
+  { const sm = new THREE.Mesh(geoMerge(skirtGeos), darkSteel); sm.receiveShadow = true; ARENA.add(sm); }
   // hundreds of small amber indicator lights: rows on the skirts and girders, columns of dots down the uprights
   const dots = [], dotCols = [];
   const amber = () => new THREE.Color(0xffb020).multiplyScalar(1.4 + rnd() * 1.6);
   for (const y of ringYs) {
-    for (let i = 0; i < 360; i++) { const a = i / 360 * TAU; if ((i % 45) > 38 || rnd() < 0.18) continue;
+    for (let i = 0; i < 180; i++) { const a = i / 180 * TAU; if ((i % 22) > 18 || rnd() < 0.18) continue;
       for (const [rr, dy] of [[R - 2.0, -1.45], [R - 2.3, -1.75]]) { onWall(a, rr, y + dy); M4.makeTranslation(P.x, P.y, P.z); dots.push(M4.clone()); dotCols.push(amber()); } }
   }
   for (let i = 0; i < cols; i++) {
     const a = i / cols * TAU;
-    for (let y = SHAFT.top - 1.2; y > SHAFT.grid; y -= 0.55) { if (rnd() < 0.3) continue;
+    for (let y = SHAFT.top - 1.2; y > SHAFT.grid; y -= 1.1) { if (rnd() < 0.3) continue;
       for (const s of [-0.28, 0.28]) { const aa = a + s / (R - 0.95); onWall(aa, R - 0.97, y); M4.makeTranslation(P.x, P.y, P.z); dots.push(M4.clone()); dotCols.push(amber()); } }
   }
-  const dotMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.045, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), dots.length);
+  const dotMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.06, 0), new THREE.MeshBasicMaterial({ color: 0xffffff }), dots.length);
   dots.forEach((m, i) => { dotMesh.setMatrixAt(i, m); dotMesh.setColorAt(i, dotCols[i]); }); ARENA.add(dotMesh);
 
   // ---- the laser grid: crackling green beams strung across the shaft floor ----
@@ -694,7 +703,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
         gl_FragColor = vec4(vec3(0.18, 1.0, 0.32) * g * 2.2 + vec3(0.6,1.,0.7) * max(0., g - 1.6) * 0.5, 1.);
       }`
   });
-  [[0, 1.6, 0, 0.85, 1], [0.55, 2.3, Math.PI / 4, 0.4, -0.8], [-1.6, 1.1, 0.2, 0.16, 0.6]].forEach(([dy, cell, rot, b, sp]) => {
+  [[0, 1.6, 0, 0.9, 1], [0.55, 2.3, Math.PI / 4, 0.45, -0.8]].forEach(([dy, cell, rot, b, sp]) => {
     const m = new THREE.Mesh(new THREE.CircleGeometry(R - 0.1, 96), gridMat(cell, rot, b, sp)); m.rotation.x = -Math.PI / 2; m.position.y = SHAFT.grid + dy; m.renderOrder = 2; ARENA.add(m);
   });
   // emitter heads round the wall where the beams are anchored
@@ -811,7 +820,7 @@ function buildCourt() {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x5a12ff, 3);
   for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x5a12ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0x5a12ff, 2.6); }
   ARENA.add(g); COURT.g = g;
-  for (let i = 0; i < RIMS.length; i++) { const sx = i === 0 || i === 3 ? 1 : -1, sz = i < 2 ? 1 : -1; RIMS[i].position.set(sx * (hx - 1.5), 7, sz * (hz - 1.5)); }
+  for (const l of RIMS) l.position.set(l.userData.sx * (hx - 1.5), 7, l.userData.sz * (hz - 1.5));
   buildCeiling();
 }
 function wallFlash(x, y, z, colorHex) {
@@ -911,14 +920,13 @@ sunLight.shadow.mapSize.set(QUALS[S.quality].shadow, QUALS[S.quality].shadow); s
 sunLight.shadow.camera.near = 4; sunLight.shadow.camera.far = 40;
 scene.add(sunLight, sunLight.target);
 const RIMS = [];
-[[0x1650ff, 0], [0xff1414, 1], [0x1650ff, 2], [0xff1414, 3]].forEach(([c, i]) => {
-  const l = new THREE.PointLight(c, 1.2, 46, 1.6); const a = i / 4 * TAU + Math.PI / 4; l.position.set(Math.cos(a) * 25, 7, Math.sin(a) * 25); scene.add(l); RIMS.push(l);
+// two rim lights on opposite corners (every point light costs on every lit pixel, so they're kept few)
+[[0x1650ff, 1, 1], [0xff1414, -1, -1]].forEach(([c, sx, sz]) => {
+  const l = new THREE.PointLight(c, 1.7, 60, 1.5); l.userData.sx = sx; l.userData.sz = sz; l.position.set(sx * 18, 7, sz * 18); scene.add(l); RIMS.push(l);
 });
 // warm work light down the shaft (no coloured neon in there)
 const under = new THREE.PointLight(0xffd2a0, 1.6, 70, 1.3); under.position.set(0, -16, 0); scene.add(under);
-const under2 = new THREE.PointLight(0xc8d4ff, 0.6, 50, 1.3); under2.position.set(0, -30, 0); scene.add(under2);
-const gridGlow = new THREE.PointLight(0x30ff60, 3.2, 34, 1.4); gridGlow.position.set(0, SHAFT.grid + 4, 0); scene.add(gridGlow);
-anim.push(t => { gridGlow.intensity = 2.6 + Math.random() * 1.2 + Math.sin(t * 9) * 0.3; });
+
 
 // image-based lighting: a small neon "studio" so metal and glass pick up cyan/magenta reflections
 {

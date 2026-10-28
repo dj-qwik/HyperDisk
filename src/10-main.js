@@ -166,8 +166,10 @@ function handleSystemInput() {
 }
 
 /* ================= render ================= */
+let SHADOW_TICK = 0;
 function render(dt) {
-  renderer.shadowMap.needsUpdate = true;
+  // shadows only come from the runners and discs over the court: refreshing them every other frame halves that pass
+  SHADOW_TICK = (SHADOW_TICK + 1) % 2; renderer.shadowMap.needsUpdate = SHADOW_TICK === 0;
   const W = window.innerWidth, H = window.innerHeight;
   const postOK = sceneRT && bloomPass && finalQuad;
   for (let i = 0; i < views.length; i++) {
@@ -223,10 +225,27 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, Math.max(0.001, (now - lastNow) / 1000 || 0.016)); lastNow = now;
   tick(dt, true);
+  adaptRes(dt);
+}
+// Adaptive resolution: every couple of seconds, look at the average frame time. If the game is running
+// well under 60 fps, render at a lower internal resolution (the HUD stays sharp); when there's plenty of
+// headroom again, step back up. Hysteresis and a settle period keep it from flip-flopping.
+const AR = { t: 0, n: 0, sum: 0, settle: 2, good: 0 };
+function adaptRes(dt) {
+  if (document.hidden) return;
+  if (AR.settle > 0) { AR.settle -= dt; return; }
+  AR.t += dt; AR.n++; AR.sum += dt;
+  if (AR.t < 1.5) return;
+  const avg = AR.sum / AR.n; AR.t = AR.n = AR.sum = 0;
+  let next = RSCALE;
+  if (avg > 1 / 50) { next = Math.max(0.5, RSCALE - (avg > 1 / 35 ? 0.2 : 0.1)); AR.good = 0; }
+  else if (avg < 1 / 58) { if (++AR.good >= 3) { next = Math.min(1, RSCALE + 0.1); AR.good = 0; } }
+  else AR.good = 0;
+  if (Math.abs(next - RSCALE) > 0.01) { RSCALE = +next.toFixed(2); resize(); AR.settle = 1; }
 }
 
 // debug/test hook
-window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, render, startFall, CITY, MUSIC, PU, grantPowerup, spawnPowerup, addPowerup, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
+window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, render, startFall, CITY, scene, world, ARENA, renderer, MUSIC, PU, grantPowerup, spawnPowerup, addPowerup, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
 
 resize();
 toLobby();
