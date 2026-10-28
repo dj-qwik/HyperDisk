@@ -40,10 +40,8 @@ Arenas (all available from the start): **Halo Rings** (one podium, three rings),
 | Recall | X / Y | X | O |
 | Pause | Start | Esc / P | Esc / P |
 
-### Rebinding and the debug menu
+### Rebinding
 Every keyboard key and controller button can be rebound under **CONTROLS** (lobby `C`, or pause menu). Bindings are saved per device.
-
-The **debug menu** opens with `F2`, or X / the DEBUG button in the pause menu. It only affects your own local game and is always off in online matches.
 
 ## Project layout
 

@@ -5,6 +5,7 @@ window.addEventListener('keydown', e => {
   audioInit();
   if (isTyping(e)) return;
   if (GAME_KEYS.has(e.code)) e.preventDefault();
+  if (!e.repeat && /^F[458]$/.test(e.code) && dbgSeqKey(e.code)) { e.preventDefault(); return; }
   K[e.code] = true; if (!e.repeat) KP.add(e.code);
 });
 window.addEventListener('keyup', e => { K[e.code] = false; });
@@ -47,7 +48,6 @@ document.querySelectorAll('#howTabs button').forEach((b, k) => b.onclick = () =>
 $('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHow(false); });
 $('#bCtl').onclick = () => { audioInit(); ctlOpen(true); };
 $('#bPCtl').onclick = () => ctlOpen(true);
-$('#bPDbg').onclick = () => dbgOpen(true);
 $('#ctlClose').onclick = () => ctlOpen(false);
 $('#controls').addEventListener('click', e => { if (e.target.id === 'controls') { ctlOpen(false); return; } CTLUI.padNav = false; const b = e.target.closest('.cbtn'); if (b) ctlClick(b); });
 document.querySelectorAll('#ctlTabs button').forEach(b => b.onclick = () => { CTLUI.tab = b.dataset.s; CTLUI.listen = null; CTLUI.focus = 0; renderControls(); SFX.tick(); });
@@ -128,7 +128,6 @@ readHuman = function (p, dt) {
 function anyPadHit(b) { for (let i = 0; i < padEdges.length; i++) if (padHit(i, b)) return i; return -1; }
 function handleSystemInput() {
   if (ctlInput()) return;
-  if (KP.has('F2')) dbgOpen();
   if (KP.has('Backquote')) toggleFull();
   if (KP.has('KeyM') && !(state === 'lobby' && document.activeElement && document.activeElement.id === 'codeIn')) MUSIC.setOn(!MUSIC.on);
   const back = anyPadHit(8); if (back >= 0) toggleFull();
@@ -163,7 +162,7 @@ function handleSystemInput() {
     return;
   }
   if (KP.has('Escape') || KP.has('KeyP') || anyPadHit(9) >= 0) { if (!(KP.has('Escape') && MOUSE.locked)) setPaused($('#pause').hidden); }
-  if (!$('#pause').hidden) { if (anyPadHit(0) >= 0) setPaused(false); else if (anyPadHit(1) >= 0 && paused) { setPaused(false); quitToLobby(); } else if (anyPadHit(3) >= 0) ctlOpen(true); else if (anyPadHit(2) >= 0) dbgOpen(); }
+  if (!$('#pause').hidden) { if (anyPadHit(0) >= 0) setPaused(false); else if (anyPadHit(1) >= 0 && paused) { setPaused(false); quitToLobby(); } else if (anyPadHit(3) >= 0) ctlOpen(true); }
 }
 
 /* ================= render ================= */

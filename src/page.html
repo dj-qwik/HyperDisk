@@ -409,7 +409,6 @@ table.ctl td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.06); fo
         <tr><td>Jump to next platform</td><td colspan="3">Hold toward it at the edge for a quarter second</td></tr>
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
-        <tr><td>Debug menu (offline)</td><td>X in the pause menu</td><td colspan="2"><kbd>F2</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>
       </table>
       <p class="small" style="margin-top:8px">These are the defaults. Rebind anything under <b>CONTROLS</b> in the lobby (<kbd>C</kbd>) or the pause menu.</p>
@@ -426,13 +425,13 @@ table.ctl td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.06); fo
     </div>
   </div>
   <div id="debug" class="panel live" hidden>
-    <div class="dhead"><b>DEBUG</b><span>F2</span><button class="x" id="dbgClose">×</button></div>
+    <div class="dhead"><b>DEBUG</b><span></span><button class="x" id="dbgClose">×</button></div>
     <div id="dbgBody"></div>
   </div>
   <div id="pause" class="modal live" hidden>
     <div class="panel"><h2>PAUSED</h2><div class="small">Press Start, Esc or P to resume.</div>
       <div class="row"><button class="btn" id="bResume">RESUME</button><button class="btn mag" id="bQuit">QUIT TO LOBBY</button></div>
-      <div class="row"><button class="btn ghost" id="bPCtl">CONTROLS · Y</button><button class="btn ghost" id="bPDbg">DEBUG · X / F2</button></div></div>
+      <div class="row"><button class="btn ghost" id="bPCtl">CONTROLS · Y</button></div></div>
   </div>
   <div id="results" class="modal live" hidden>
     <div class="panel"><div class="label">MATCH OVER</div><div class="win" id="winName"></div><div class="small" id="winSub"></div>

@@ -111,11 +111,19 @@ function ctlInput() {
   return true;
 }
 
-/* ---------------- debug menu (F2, or Debug in the pause menu) ---------------- */
+/* ---------------- debug menu (secret key sequence, see dbgSeqKey) ---------------- */
 const DEBUG = { on: false, god: false, cpuFreeze: false, cpuHold: false, ts: 1, hud: true, fps: 60, _acc: 0, _n: 0, allowed: false };
-// Open any time offline with F2 or from the pause menu. It only ever affects your own local game, and it
-// is always off in online matches, so nobody can use it to cheat a room.
+// Not advertised anywhere: opened by typing F4, F8, F5 in that order (within a few seconds). It only ever
+// affects your own local game, and it is always off in online matches, so nobody can use it to cheat a room.
 DEBUG.allowed = true;
+const DBG_SEQ = ['F4', 'F8', 'F5']; let dbgSeqI = 0, dbgSeqT = 0;
+// called from the keydown listener; returns true when the key completed the sequence (so F5 doesn't reload)
+function dbgSeqKey(code) {
+  const now = performance.now();
+  if (now - dbgSeqT > 3000) dbgSeqI = 0;
+  if (code === DBG_SEQ[dbgSeqI]) { dbgSeqI++; dbgSeqT = now; if (dbgSeqI === DBG_SEQ.length) { dbgSeqI = 0; dbgOpen(); return true; } return false; }
+  dbgSeqI = code === DBG_SEQ[0] ? 1 : 0; dbgSeqT = now; return false;
+}
 function dbgMe() { return players.find(p => p.local && p.kind === 'human') || players[0]; }
 function dbgRivals() { const me = dbgMe(); return players.filter(p => p !== me); }
 function dbgOpen(on) {
