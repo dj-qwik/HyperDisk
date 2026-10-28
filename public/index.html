@@ -3733,6 +3733,13 @@ function updateHud(v) {
 /* ---------- 06-flow.js ---------- */
 /* ================= HUD helpers ================= */
 let toastT = null;
+// size the big centre text (countdown, DUEL!, "NAME WINS") so it always fits the window
+function fitBig(el) {
+  el.style.fontSize = ''; el.style.visibility = 'hidden'; el.hidden = false;
+  const base = Math.min(140, window.innerHeight * 0.2), w = el.scrollWidth / (parseFloat(getComputedStyle(el).fontSize) || 140) * base, max = window.innerWidth * 0.92;
+  el.style.fontSize = Math.max(28, Math.floor(base * Math.min(1, max / (w || 1)))) + 'px'; el.style.visibility = '';
+}
+window.addEventListener('resize', () => { const c = $('#count'); if (c && !c.hidden) fitBig(c); });
 function toast(msg, ms) { const t = $('#toast'); t.textContent = msg; t.classList.remove('hide'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hide'), ms || 2600); }
 const show = (sel, on) => { const e = $(sel); if (e) e.hidden = !on; };
 
@@ -3918,7 +3925,7 @@ function toCount() {
 function toPlay() {
   if (state === 'play') return;
   state = 'play'; phaseT = 0;
-  const c = $('#count'); c.textContent = players.length === 2 ? 'DUEL!' : 'BRAWL!'; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true);
+  const c = $('#count'); c.textContent = players.length === 2 ? 'DUEL!' : 'BRAWL!'; fitBig(c); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true);
   setTimeout(() => { if (state === 'play') show('#count', false); }, 800);
   SFX.go();
 }
@@ -3934,7 +3941,7 @@ function endMatch(winSlot) {
   if (winner) { winner.mode = 'win'; winner.shieldOn = false; winner.charge = 0; }
   players.forEach(p => { if (p.guide) { p.guide.dots.visible = false; p.guide.ret.visible = false; } });
   show('#count', false);
-  if (winner) { const c = $('#count'); c.textContent = winner.name + ' WINS'; c.style.color = winner.css; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true); setTimeout(() => { show('#count', false); c.style.color = ''; }, 1500); }
+  if (winner) { const c = $('#count'); c.textContent = winner.name + ' WINS'; c.style.color = winner.css; fitBig(c); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true); setTimeout(() => { show('#count', false); c.style.color = ''; }, 1500); }
   SFX.win();
 }
 function showResults() {
@@ -3946,7 +3953,7 @@ function showResults() {
     rows.map(p => `<tr><td style="color:${p.css}">${p.name}</td><td>${p.stats.hits}</td><td>${p.stats.rings}</td><td>${p.stats.kos}</td><td>${p.stats.defl}</td></tr>`).join('');
   const guest = NET.room && NET.role === 'guest';
   $('#bAgain').hidden = guest; $('#bLobby').textContent = guest ? 'LEAVE · B' : 'LOBBY · B';
-  show('#results', true);
+  show('#results', true); show('#count', false);   // the big banner has had its moment; the results card takes over
   if (document.pointerLockElement) document.exitPointerLock();
 }
 function rematch() {
@@ -3980,7 +3987,7 @@ function updateFlow(dt) {
 }
 function countTick() {
   const n = 3 - Math.floor(phaseT);
-  if (n !== countN && n > 0) { countN = n; const c = $('#count'); c.textContent = n; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true); SFX.beep(); }
+  if (n !== countN && n > 0) { countN = n; const c = $('#count'); c.textContent = n; fitBig(c); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); show('#count', true); SFX.beep(); }
 }
 
 /* ================= how to play ================= */
