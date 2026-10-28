@@ -37,6 +37,14 @@ function nextJoinHint() {
   opts.push('A ON A CONTROLLER');
   return 'PRESS ' + opts.join(' · ');
 }
+// shrink the lobby panel to fit short windows, so the whole menu (down to START) is always on screen
+function fitLobby() {
+  const el = $('#lobby'); if (!el || el.hidden) return;
+  el.style.zoom = 1;
+  const need = el.scrollHeight, have = window.innerHeight;
+  const k = need > have ? Math.max(0.5, have / need) : 1;
+  el.style.zoom = k.toFixed(3);
+}
 function renderLobby() {
   if (state !== 'lobby') return;
   const online = LOBBY.mode === 'online';
@@ -70,6 +78,7 @@ function renderLobby() {
   const st = $('#start'); st.disabled = !canStart;
   $('#startSub').textContent = online ? (NET.room ? (NET.role === 'host' ? 'PRESS ENTER OR START' : 'WAITING FOR HOST') : 'HOST OR JOIN A ROOM') : (LOBBY.humans.length ? 'PRESS ENTER OR START' : 'OR WATCH CPUS FIGHT');
   $('#tip').innerHTML = '<b>PRO TIP</b>' + TIPS[(Math.floor(uTime.value / 8)) % TIPS.length];
+  fitLobby();
 }
 const TIPS = [
   'The light blue line on the walls is your throwing height. The crosshair on it is exactly where your disc goes.',

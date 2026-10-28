@@ -172,6 +172,7 @@ function resize() {
   finalMat.uniforms.uRes.value.set(DW, DH);
   if (sunLight) { sunLight.shadow.mapSize.set(q.shadow, q.shadow); if (sunLight.shadow.map) { sunLight.shadow.map.dispose(); sunLight.shadow.map = null; } }
   if (typeof layoutViews === 'function') layoutViews();
+  if (typeof fitLobby === 'function') fitLobby();
 }
 
 /* ================= procedural textures ================= */
