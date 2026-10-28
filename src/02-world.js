@@ -267,19 +267,21 @@ const WALL_HIT_COL = []; for (let i = 0; i < 10; i++) WALL_HIT_COL.push(new THRE
 let wallHitIdx = 0;
 const membraneMat = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-  uniforms: { uTime, uHits: { value: WALL_HITS }, uHitCol: { value: WALL_HIT_COL } },
+  uniforms: { uTime, uHits: { value: WALL_HITS }, uHitCol: { value: WALL_HIT_COL }, uAxis: { value: 0 }, uTint: { value: new THREE.Color(0x19e6ff) } },
   vertexShader: 'varying vec3 vWP; varying vec2 vUv; void main(){ vUv=uv; vec4 w = modelMatrix*vec4(position,1.); vWP = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }',
   fragmentShader: `
-    uniform float uTime; uniform vec4 uHits[10]; uniform vec3 uHitCol[10]; varying vec3 vWP; varying vec2 vUv;
+    uniform float uTime, uAxis; uniform vec3 uTint; uniform vec4 uHits[10]; uniform vec3 uHitCol[10]; varying vec3 vWP; varying vec2 vUv;
     vec4 hexCoords(vec2 uv){ vec2 r = vec2(1., 1.7320508); vec2 h = r*0.5; vec2 a = mod(uv, r)-h; vec2 b = mod(uv-h, r)-h; vec2 gv = dot(a,a) < dot(b,b) ? a : b; float x = atan(gv.x, gv.y); float y = 0.5 - max(abs(gv.x), dot(abs(gv), normalize(r))); return vec4(gv, y, 0.); }
     void main(){
-      float ang = atan(vWP.z, vWP.x); vec2 p = vec2(ang * ${RA.toFixed(1)}, vWP.y) / 1.25;
+      float u = uAxis > 0.5 ? vWP.x : vWP.z; vec2 p = vec2(u, vWP.y) / 1.25;
       vec4 hx = hexCoords(p);
       float edge = smoothstep(0.06, 0.0, hx.z);
-      float yy = (vWP.y + 2.4) / 16.;
-      vec3 base = mix(vec3(0.05,0.55,1.0), vec3(0.75,0.15,1.0), yy);
+      float yy = (vWP.y + 2.4) / ${(YC + 2.4).toFixed(1)};
+      vec3 base = mix(uTint, vec3(0.75,0.15,1.0), yy * 0.7);
       float scan = smoothstep(0.08, 0., abs(fract(yy*1.5 - uTime*0.12) - 0.5) - 0.42);
-      float a = edge * (0.028 + 0.06*scan) + 0.004 + scan * 0.008;
+      // the original arena's horizontal wall lines
+      float lines = smoothstep(0.06, 0.0, abs(fract((vWP.y + 2.4) / 1.9) - 0.5) - 0.44);
+      float a = edge * (0.012 + 0.03*scan) + lines * 0.055 + 0.002 + scan * 0.004;
       vec3 col = base * a;
       // strike ripples
       for (int i = 0; i < 10; i++) {
@@ -289,12 +291,28 @@ const membraneMat = new THREE.ShaderMaterial({
         float core = exp(-d*0.9) * exp(-age*3.5) * 3.;
         col += uHitCol[i] * (edge * (wave * 2.2 + core) + core * 0.25 + wave * 0.12);
       }
-      float fadeEnds = smoothstep(0., 0.06, yy) * smoothstep(1., 0.9, yy);
+      float fadeEnds = smoothstep(0., 0.04, yy) * smoothstep(1., 0.96, yy);
       gl_FragColor = vec4(col * fadeEnds, 1.);
     }`
 });
-{
-  const mem = new THREE.Mesh(new THREE.CylinderGeometry(RA - 0.3, RA - 0.3, 16.4, 192, 1, true), membraneMat); mem.position.y = -2.4 + 8.2; mem.renderOrder = 2; ARENA.add(mem);
+// the court: four glass walls with neon frames, rebuilt to fit the number of runners
+const COURT = { g: null };
+function buildCourt() {
+  if (COURT.g) { ARENA.remove(COURT.g); COURT.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== membraneMat) o.material.dispose(); }); }
+  const g = new THREE.Group(), hx = BOX.hx, hz = BOX.hz, H = YC + 2.4, yMid = -2.4 + H / 2;
+  const wall = (w, x, z, ry, axis, tint) => {
+    const m = membraneMat.clone(); m.uniforms = Object.assign({}, membraneMat.uniforms, { uAxis: { value: axis }, uTint: { value: new THREE.Color(tint) } });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, H, 1, 1), m); mesh.position.set(x, yMid, z); mesh.rotation.y = ry; mesh.renderOrder = 2; g.add(mesh);
+  };
+  wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0xff2fa8); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0xff2fa8);
+  wall(2 * hx, 0, hz, Math.PI, 1, 0x19e6ff); wall(2 * hx, 0, -hz, 0, 1, 0x19e6ff);
+  // frame beams along every edge of the box
+  const beam = (len, x, y, z, axis, color, k) => { const s = [0.14, 0.14, 0.14]; s[axis] = len; const m = new THREE.Mesh(new THREE.BoxGeometry(s[0], s[1], s[2]), emissiveMat(color, k)); m.position.set(x, y, z); g.add(m); };
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x19e6ff, 3);
+  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x19e6ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0xff2fa8, 2.6); }
+  ARENA.add(g); COURT.g = g;
+  for (let i = 0; i < RIMS.length; i++) { const sx = i === 0 || i === 3 ? 1 : -1, sz = i < 2 ? 1 : -1; RIMS[i].position.set(sx * (hx - 1.5), 7, sz * (hz - 1.5)); }
+  buildCeiling();
 }
 function wallFlash(x, y, z, colorHex) {
   const v = WALL_HITS[wallHitIdx]; v.set(x, y, z, uTime.value);
@@ -315,13 +333,14 @@ function wallFlash(x, y, z, colorHex) {
   for (const y of [YC - 3.15, YC - 1.45]) { const r = new THREE.Mesh(new THREE.TorusGeometry(RA - 0.95, 0.05, 6, 200), emissiveMat(0x19e6ff, 3)); r.rotation.x = Math.PI / 2; r.position.y = y; ARENA.add(r); }
 }
 
-// ceiling: smoked-glass hex plates with light seams, open oculus in the middle
-const CEIL = {};
-{
+// ceiling: smoked-glass hex plates with light seams over the court, open oculus in the middle
+const CEIL = { plates: [], seams: null, pm: null, pulses: [] };
+function buildCeiling() {
+  if (CEIL.pm) { ARENA.remove(CEIL.pm, CEIL.seams); CEIL.pm.dispose && CEIL.pm.dispose(); CEIL.seams.dispose && CEIL.seams.dispose(); }
   const s = 1.55, plates = [], rOcc = 7.5;
-  for (let q = -24; q <= 24; q++) for (let r = -24; r <= 24; r++) {
+  for (let q = -30; q <= 30; q++) for (let r = -30; r <= 30; r++) {
     const x = s * Math.sqrt(3) * (q + r / 2), z = s * 1.5 * r, d = Math.hypot(x, z);
-    if (d < RA - 0.5 && d > rOcc + 0.8) plates.push([x, z, d]);
+    if (Math.abs(x) < BOX.hx - s * 0.6 && Math.abs(z) < BOX.hz - s * 0.6 && d > rOcc + 0.8) plates.push([x, z, d]);
   }
   const plateGeo = new THREE.CylinderGeometry(s * 0.97, s * 0.97, 0.22, 6); plateGeo.rotateY(Math.PI / 6);
   const plateMat = new THREE.MeshStandardMaterial({ color: 0x0a0b12, metalness: 0.9, roughness: 0.22, transparent: true, opacity: 0.94 });
@@ -331,7 +350,10 @@ const CEIL = {};
   const m4 = new THREE.Matrix4(); const col = new THREE.Color();
   plates.forEach(([x, z], i) => { m4.makeTranslation(x, YC + 0.12, z); pm.setMatrixAt(i, m4); m4.makeTranslation(x, YC - 0.02, z); sm.setMatrixAt(i, m4); sm.setColorAt(i, col.setRGB(0.1, 0.4, 0.6)); });
   ARENA.add(pm, sm);
-  CEIL.plates = plates; CEIL.seams = sm; CEIL.pulses = [];
+  CEIL.plates = plates; CEIL.seams = sm; CEIL.pm = pm;
+}
+{
+  const rOcc = 7.5;
   const occ = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 0.4, 0.22, 10, 120), emissiveMat(0xff2fa8, 3.5)); occ.rotation.x = Math.PI / 2; occ.position.y = YC; ARENA.add(occ);
   const occ2 = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 1.1, 0.06, 6, 120), emissiveMat(0x19e6ff, 3.5)); occ2.rotation.x = Math.PI / 2; occ2.position.y = YC - 0.1; ARENA.add(occ2);
   // hanging emblem under the oculus

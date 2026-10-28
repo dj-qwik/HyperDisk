@@ -11,13 +11,16 @@ Zero-g disc duels above a neon megacity. Stand on a floating podium of concentri
 | | |
 |---|---|
 | **Discs** | Three each. They bounce off the walls and ceiling up to three times, then fly home. Hold throw to charge a power disc. |
-| **Elevation** | HIGH banks off the ceiling and drops onto a rival. MID flies at chest height. LOW smashes the ring in front of them. |
-| **Rings** | A struck ring flashes for 1.2 s, then vanishes for 7 s. Anyone standing on it falls. Centre plates are armoured. |
+| **Aiming** | As in the original: a light blue line runs round all four walls at your throwing height, with a crosshair on it. Turn to slide the crosshair, raise or lower the line for elevation. The disc flies straight at the crosshair. Push the line past the top of the walls and it runs out across the ceiling. |
+| **Banks** | Discs rebound off flat walls (angle in = angle out) and off the ceiling. Bank round deflectors and barriers. Missed discs come back off the far wall and can hit you from behind. |
+| **Rings** | A struck ring flashes for 1.6 s, then vanishes for 9 s. Anyone standing on it falls. Centre plates are armoured. |
 | **Hits** | Knock you back. Each hit raises OVERLOAD, so the next one sends you further. |
-| **Deflector** | Covers your front, drains while held, and cracks under power discs. Bank shots go around it. |
+| **Deflector** | Covers your front. 7 deflects per life (a power disc costs 2); knock a rival out to refill. Bank shots go around it. |
+| **Edges** | Shoved just past the rim, you teeter: push back toward your podium to save yourself. You can't be hit mid-hop. |
+| **Disc vs disc** | Smash a rival's disc out of the air and yours is straight back in your hand. |
 | **Recall** | Calls every disc you have in the air back to your hand. |
 
-Arenas: **Halo Rings** (one podium, three rings), **Triad** (three podiums, hop between them), **Pistons** (podiums rise and fall), **Firewall** (a spinning wall of blocks between you), **Overdrive** (all of it).
+Arenas (all available from the start): **Halo Rings** (one podium, three rings), **Triad** (three podiums, hop between them), **Pistons** (podiums rise and fall), **Firewall** (a spinning wall of blocks between you), **Bulwark** (a barrier guards each podium: bank or lob), **Overdrive** (pistons and firewall).
 
 ## Controls
 
@@ -26,7 +29,8 @@ Arenas: **Halo Rings** (one podium, three rings), **Triad** (three podiums, hop 
 | Join | A | Space | / |
 | Move | Left stick | W A S D | I J K L |
 | Aim | Right stick | Q / E or mouse | ← / → |
-| Elevation | RB / LB, D-pad, right stick flick | R / F or wheel | ↑ / ↓ |
+| Aim line up / down | Right stick ↑↓, RB / LB, D-pad | R / F, mouse or wheel | ↑ / ↓ |
+| Level the aim line | Click right stick | V | ; |
 | Throw (hold = power) | RT | Space or left click | / or Enter |
 | Deflector | LT or B | Shift or right click | . or Right Shift |
 | Hop | A | C | U |

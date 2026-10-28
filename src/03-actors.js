@@ -89,8 +89,33 @@ function clearStations() {
   STATIONS.forEach(st => { stationRoot.remove(st.g); st.g.traverse(o => { if (o.geometry && o.geometry !== ringGeo) o.geometry.dispose(); }); });
   STATIONS.length = 0;
 }
+// Bulwarks: armoured barriers in front of each podium (the original's later stages). A runner's own
+// discs pass through their own barrier; everyone else's bounce off it.
+const BULWARKS = [];
+const bulwarkGroup = new THREE.Group(); scene.add(bulwarkGroup);
+function buildBulwarks(on) {
+  BULWARKS.length = 0;
+  while (bulwarkGroup.children.length) { const c = bulwarkGroup.children.pop(); c.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  if (!on) return;
+  const hw = 2.4, top = 2.5;
+  for (const st of STATIONS) {
+    const fx = Math.sin(st.yaw), fz = Math.cos(st.yaw), cx = st.x + fx * 5.2, cz = st.z + fz * 5.2;
+    BULWARKS.push({ st: st.i, x: cx, z: cz, fx, fz, rx: -fz, rz: fx, hw, top });
+    const g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = st.yaw;
+    const slab = new THREE.Mesh(rbox(hw * 2, top + 0.6, 0.5, 0.12), new THREE.MeshStandardMaterial({ color: 0x14161e, metalness: 0.85, roughness: 0.35, normalMap: HULLT.nrm, map: HULLT.map, emissiveMap: HULLT.em, emissive: new THREE.Color(st.color).multiplyScalar(0.9) }));
+    slab.position.y = (top - 0.6) / 2; slab.castShadow = true; slab.receiveShadow = true; g.add(slab);
+    const c = new THREE.Color(st.color);
+    for (const y of [-0.55, top]) { const e = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 0.06, 0.07, 0.56), emissiveMat(c, 3)); e.position.y = y; g.add(e); }
+    for (const x of [-hw, hw]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.07, top + 0.62, 0.56), emissiveMat(c, 3)); e.position.set(x, (top - 0.6) / 2, 0); g.add(e); }
+    const under = new THREE.Mesh(new THREE.ConeGeometry(0.9, 2.2, 6, 1, true), glowMat(c, 1.6, 0.5)); under.rotation.x = Math.PI; under.position.y = -1.7; g.add(under);
+    bulwarkGroup.add(g);
+  }
+}
 function buildStations(n, arena, colors) {
   clearStations(); LAYOUT = arena;
+  // two runners face off down a long court; three or four share a square one
+  if (n <= 2) { BOX.hx = 11; BOX.hz = 21; } else { BOX.hx = 21; BOX.hz = 21; }
+  buildCourt();
   const lay = stationLayout(n);
   lay.forEach((L, i) => {
     const st = { i, x: L.x, z: L.z, yaw: L.yaw, pads: [], g: new THREE.Group(), color: colors[i] };
@@ -107,6 +132,7 @@ function buildStations(n, arena, colors) {
     stationRoot.add(st.g); STATIONS.push(st);
   });
   WALLFW.setOn(!!arena.wall);
+  buildBulwarks(!!arena.bulwark);
 }
 function padHeightAt(pad, t) { return pad.baseY + (LAYOUT.lifts ? Math.sin(t * 0.62 + pad.phase) * 2.3 : 0); }
 function updateStations(t, dt) {
@@ -380,6 +406,7 @@ function poseRunner(p, dt) {
   if (p.shieldOn) { P.armL = [-1.45, -0.4, 0.2]; P.elbL = -0.5; P.twist = Math.max(P.twist, 0.12); P.crouch = 0.12; }
   if (!p.onGround && p.mode === 'play') { P.legL = [0.7, -1.2]; P.legR = [0.3, -0.7]; P.armL[2] = 0.6; P.armR[2] = -0.6; P.crouch = 0; }
   if (p.stun > 0) { P.lean = -0.45; P.armL = [-0.9, 0, 1.0]; P.armR = [-0.9, 0, -1.0]; P.head = -0.3; }
+  if (p.teeter > 0) { const w = t * 16; P.lean = -0.35 + Math.sin(t * 5) * 0.12; P.armL = [-1.6 + Math.sin(w) * 1.3, 0, 1.3]; P.armR = [-1.6 - Math.sin(w) * 1.3, 0, -1.3]; P.legL = [0.4, -0.3]; P.head = -0.2; }
   if (p.mode === 'fall') { const w = t * 9; P.lean = -0.6; P.armL = [-2.4 + Math.sin(w) * 0.8, 0, 1.2]; P.armR = [-2.4 - Math.sin(w) * 0.8, 0, -1.2]; P.legL = [Math.sin(w) * 0.8, -0.9]; P.legR = [-Math.sin(w) * 0.8, -0.6]; P.head = -0.5; }
   if (p.mode === 'win') { const w = t * 4; P.armR = [-2.9, 0, -0.25]; P.elbR = -0.1; P.armL = [-0.3 + Math.sin(w) * 0.2, 0, 0.5]; P.twist = Math.sin(w * 0.5) * 0.3; P.hipBob = Math.abs(Math.sin(w)) * 0.06; P.head = 0.25; }
   if (p.mode === 'idle') { P.armR = [-0.2, 0, -0.2]; }

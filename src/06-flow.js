@@ -72,13 +72,15 @@ function renderLobby() {
   $('#tip').innerHTML = '<b>PRO TIP</b>' + TIPS[(Math.floor(uTime.value / 8)) % TIPS.length];
 }
 const TIPS = [
-  'LOW throws smash the rings at your rival\'s feet. Stand on a flashing ring and you\'re going down.',
-  'HIGH banks off the ceiling and drops on them from above, right over a deflector.',
+  'The light blue line on the walls is your throwing height. The crosshair on it is exactly where your disc goes.',
+  'Put the crosshair on a side wall to bank a disc round a deflector or a barrier.',
+  'Raise the aim line past the top of the walls and it runs across the ceiling: bank off it to drop discs on them from above.',
+  'Lower the line and your disc smashes the rings at their feet. Stand on a flashing ring and you are going down.',
   'Every hit raises OVERLOAD. The higher it is, the further the next hit sends you.',
-  'Hold throw to charge a power disc. It hits harder and cracks shields.',
-  'Your own disc can knock theirs out of the air.',
-  'The deflector only covers your front. Bank shots off the walls go around it.',
-  'Recall your discs early if they are bouncing around the far side of the arena.'
+  'Knocked to the edge? Push back toward your podium to save yourself.',
+  'You get 7 deflects a life. Knock a rival out to refill them.',
+  'Your disc can smash theirs out of the air, and you get it straight back.',
+  'Nobody can hit you while you are mid-hop. They can when you land.'
 ];
 function renderOnlineBox() {
   const box = $('#onlineBox');

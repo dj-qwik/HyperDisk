@@ -38,6 +38,7 @@ const ARENAS = [
   { id: 'triad', name: 'TRIAD', desc: 'Three podiums each. Hop between them when the floor goes.', triad: true, lifts: false, wall: false },
   { id: 'pistons', name: 'PISTONS', desc: 'Your podiums rise and fall. Time your hops.', triad: true, lifts: true, wall: false },
   { id: 'firewall', name: 'FIREWALL', desc: 'A spinning wall of blocks between you. Blast through it or bank over it.', triad: false, lifts: false, wall: true },
+  { id: 'bulwark', name: 'BULWARK', desc: 'A barrier guards every podium. Bank shots off the side walls or lob over the top.', triad: false, lifts: false, wall: false, bulwark: true },
   { id: 'overdrive', name: 'OVERDRIVE', desc: 'Pistons and the firewall, all at once.', triad: true, lifts: true, wall: true },
   { id: 'random', name: 'RANDOM', desc: 'A different arena every match.' }
 ];
@@ -50,7 +51,15 @@ const QUALS = [
 // arena geometry
 const RA = 30;          // wall radius (disc bounce surface sits a little inside)
 const R_BOUNCE = RA - 0.9;
+// the playing court is a box like the original cabinet's arena: flat walls make bank shots predictable
+const BOX = { hx: 11, hz: 21 };
+const WALL_IN = 0.25;   // disc bounce plane sits this far inside the glass
+const DEFLECTS = 7;     // deflector uses per life, refilled when you knock a rival out (as in the original)
 const YC = 17;          // ceiling height (bounce plane)
+const ELEV_FLOOR = -1.0;                    // the aim line's lowest height on the walls
+const ELEV_WALL = YC - 0.3 - ELEV_FLOOR;    // above this the line runs out onto the ceiling
+const ELEV_LEVEL = 1.32 - ELEV_FLOOR;       // level throw: the line at chest height
+const ELEV_RATE = 7.5;                      // units per second when held
 const RS = 15;          // station distance from center
 const HAND_Y = 1.38;    // throw height above feet
 const CHEST_Y = 1.3;
@@ -59,9 +68,9 @@ const RB = 8.2;         // firewall ring radius
 // disc tuning
 const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.42, D_COOL = 0.3, D_CHARGE = 0.45;
 // body tuning
-const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 7.6, KB_HEAT = 0.28, KB_POWER = 1.45, FRICT = 4.2;
+const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
-const RING_FLASH = 1.2, RING_GONE = 7, RING_REFORM = 0.8;
+const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 
 /* ================= settings ================= */
 const S = {

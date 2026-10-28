@@ -20,7 +20,7 @@ canvas.addEventListener('mousedown', e => {
 window.addEventListener('mouseup', e => { if (e.button === 0) MOUSE.l = false; if (e.button === 2) MOUSE.r = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('pointerlockchange', () => { MOUSE.locked = document.pointerLockElement === canvas; if (!MOUSE.locked) { MOUSE.l = MOUSE.r = false; } });
-window.addEventListener('mousemove', e => { if (MOUSE.locked) MOUSE.dx += e.movementX || 0; });
+window.addEventListener('mousemove', e => { if (MOUSE.locked) { MOUSE.dx += e.movementX || 0; MOUSE.dy += e.movementY || 0; } });
 window.addEventListener('wheel', e => { if (MOUSE.locked || state === 'play') MOUSE.wheel += Math.sign(e.deltaY); }, { passive: true });
 window.addEventListener('resize', () => resize());
 document.addEventListener('fullscreenchange', () => setTimeout(resize, 60));
@@ -56,7 +56,7 @@ $('#slots').addEventListener('click', e => {
 });
 
 /* ================= touch controls ================= */
-const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lvlP: 0 };
+const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lvl: 0 };
 {
   const box = $('#touch');
   box.innerHTML = `<div class="stick" hidden><i></i></div>
@@ -72,7 +72,7 @@ const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lv
     const b = e.target.closest('[data-b]');
     if (b) {
       const k = b.dataset.b; b.classList.add('on');
-      if (k === 'fire') TOUCH.fire = true; if (k === 'shield') TOUCH.shield = true; if (k === 'hop') TOUCH.hopP = true; if (k === 'up') TOUCH.lvlP = 1; if (k === 'dn') TOUCH.lvlP = -1;
+      if (k === 'fire') TOUCH.fire = true; if (k === 'shield') TOUCH.shield = true; if (k === 'hop') TOUCH.hopP = true; if (k === 'up') TOUCH.lvl = 1; if (k === 'dn') TOUCH.lvl = -1;
       b.setPointerCapture(e.pointerId); b._pid = e.pointerId; return;
     }
     if (e.clientX < window.innerWidth * 0.45 && stickId == null) { stickId = e.pointerId; sx = e.clientX; sy = e.clientY; stick.hidden = false; stick.style.left = sx + 'px'; stick.style.top = sy + 'px'; box.setPointerCapture(e.pointerId); }
@@ -85,7 +85,7 @@ const TOUCH = { mx: 0, mz: 0, dx: 0, fire: false, shield: false, hopP: false, lv
   const end = e => {
     if (e.pointerId === stickId) { stickId = null; stick.hidden = true; knob.style.transform = ''; TOUCH.mx = TOUCH.mz = 0; }
     if (e.pointerId === lookId) lookId = null;
-    box.querySelectorAll('[data-b]').forEach(b => { if (b._pid === e.pointerId) { b.classList.remove('on'); b._pid = null; if (b.dataset.b === 'fire') TOUCH.fire = false; if (b.dataset.b === 'shield') TOUCH.shield = false; } });
+    box.querySelectorAll('[data-b]').forEach(b => { if (b._pid === e.pointerId) { b.classList.remove('on'); b._pid = null; if (b.dataset.b === 'fire') TOUCH.fire = false; if (b.dataset.b === 'shield') TOUCH.shield = false; if (b.dataset.b === 'up' || b.dataset.b === 'dn') TOUCH.lvl = 0; } });
   };
   box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
 }
@@ -96,14 +96,13 @@ readHuman = function (p, dt) {
   if (!p.ctl || p.ctl.type !== 'any') return _readHumanBase(p, dt);
   const parts = [_readHumanBase({ ctl: { type: 'kb1' } }, dt), _readHumanBase({ ctl: { type: 'kb2' } }, dt), IS_TOUCH ? _readHumanBase({ ctl: { type: 'touch' } }, dt) : null];
   for (let i = 0; i < pads.length; i++) if (pads[i]) parts.push(_readHumanBase({ ctl: { type: 'pad', idx: i } }, dt));
-  const o = { mx: 0, mz: 0, aim: 0, aimAbs: 0, lvl: 0, fire: false, shield: false, hop: false, recall: false, analog: false };
+  const o = { mx: 0, mz: 0, aim: 0, aimAbs: 0, elev: 0, level: false, fire: false, shield: false, hop: false, recall: false, analog: false };
   for (const q of parts) {
     if (!q) continue;
     if (Math.abs(q.mx) + Math.abs(q.mz) > Math.abs(o.mx) + Math.abs(o.mz)) { o.mx = q.mx; o.mz = q.mz; }
     if (Math.abs(q.aim) > Math.abs(o.aim)) { o.aim = q.aim; o.analog = q.analog; }
-    o.aimAbs += q.aimAbs; o.lvl += q.lvl; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.hop = o.hop || q.hop; o.recall = o.recall || q.recall;
+    o.aimAbs += q.aimAbs; o.elev += q.elev; o.level = o.level || q.level; o.fire = o.fire || q.fire; o.shield = o.shield || q.shield; o.hop = o.hop || q.hop; o.recall = o.recall || q.recall;
   }
-  o.lvl = clamp(o.lvl, -1, 1);
   return o;
 };
 
@@ -150,6 +149,8 @@ function render(dt) {
     FX.sparks.mat.uniforms.uPR.value = pixelRatio * v.h / 720; CITY.dust.uniforms.uPR.value = pixelRatio * v.h / 720;
     if (postOK) { sceneRT.viewport.set(x, y, w, h); sceneRT.scissor.set(x, y, w, h); sceneRT.scissorTest = true; renderer.setRenderTarget(sceneRT); }
     else { renderer.setRenderTarget(null); renderer.setScissorTest(true); renderer.setViewport(v.x, H - v.y - v.h, v.w, v.h); renderer.setScissor(v.x, H - v.y - v.h, v.w, v.h); }
+    // your own barrier is see-through to you: it would only block your view of the duel
+    for (let b = 0; b < bulwarkGroup.children.length; b++) bulwarkGroup.children[b].visible = !(v.p && BULWARKS[b] && BULWARKS[b].st === v.p.slot);
     renderer.render(scene, v.cam);
     if (i === 0) renderer.shadowMap.needsUpdate = false;
   }
@@ -187,7 +188,7 @@ function tick(dt, doRender) {
   for (const v of views) { updateView(v, dt); if (doRender) updateHud(v); }
   netTick();
   if (doRender) render(dt);
-  KP.clear(); MOUSE.dx = 0; MOUSE.wheel = 0;
+  KP.clear(); MOUSE.dx = 0; MOUSE.dy = 0; MOUSE.wheel = 0;
   if (!booted && doRender) { booted = true; setTimeout(() => $('#boot').classList.add('gone'), 200); }
 }
 function frame(now) {

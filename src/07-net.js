@@ -129,8 +129,8 @@ function onNetPeers(ch) {
 // ---- outgoing ----
 function netEvent(arr) { if (!NET.room) return; NET.out.push({ at: performance.now(), e: [NET.myId + (evSeq++).toString(36), ...arr] }); }
 function encBody(p) {
-  return [r2(p.x), r2(p.y), r2(p.z), r3(p.yaw), r3(p.aimYaw), p.lvl, MODES.indexOf(p.mode), p.lives, p.heat, p.shieldOn ? 1 : 0, p.charge > 0 ? (p.charge >= D_CHARGE ? 2 : 1) : 0, p.discsHome,
-    r2(p.vx), r2(p.vz), p.onGround ? 1 : 0, Math.round(p.flash * 10), p.stun > 0 ? 1 : 0, Math.round(p.shieldE), p.invuln > 0 ? 1 : 0];
+  return [r2(p.x), r2(p.y), r2(p.z), r3(p.yaw), r3(p.aimYaw), r2(p.aimElev), MODES.indexOf(p.mode), p.lives, p.heat, p.shieldOn ? 1 : 0, p.charge > 0 ? (p.charge >= D_CHARGE ? 2 : 1) : 0, p.discsHome,
+    r2(p.vx), r2(p.vz), p.onGround ? 1 : 0, Math.round(p.flash * 10), p.stun > 0 ? 1 : 0, p.defl, p.invuln > 0 ? 1 : 0, p.teeter > 0 ? 1 : 0];
 }
 function encDiscs(p) { return p.discs.map(d => d.state === 'home' ? 0 : [d.state === 'fly' ? 1 : 2, r2(d.pos.x), r2(d.pos.y), r2(d.pos.z), r2(d.vel.x), r2(d.vel.y), r2(d.vel.z), d.power ? 1 : 0]); }
 const encStats = p => [p.stats.hits, p.stats.rings, p.stats.kos, p.stats.defl];
@@ -199,19 +199,19 @@ function netRecv(dt) {
 }
 function applyEvent(ev) {
   const k = ev[1];
-  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1)); }
+  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), !!ev[7]); }
   else if (k === 'd') { const p = players[ev[2]]; if (p && p.local) shieldStruck(p, !!ev[3]); else if (p) p.rig.shieldMat.uniforms.uHit.value = 1; }
   else if (k === 'r') { ringBreak(num(ev[2]), num(ev[3]), num(ev[4])); }
   else if (k === 'b') { WALLFW.breakBlock(num(ev[2])); }
-  else if (k === 'k') { const p = players[ev[2]]; if (p && p.local) { p.stats.kos++; popFor(p, 'KNOCKOUT!'); } }
+  else if (k === 'k') { const p = players[ev[2]]; if (p && p.local) { p.stats.kos++; p.defl = DEFLECTS; popFor(p, 'KNOCKOUT! DEFLECTOR FULL'); } }
 }
 function applyRemote(p, b, d, st, at) {
   if (!Array.isArray(b) || b.length < 15) return;
   const n = p.net || (p.net = { x: p.x, y: p.y, z: p.z, at: 0, fl: 0 });
   if (n.at === at && n.b === b) return;
   n.b = b; n.at = at; n.x = num(b[0]); n.y = num(b[1]); n.z = num(b[2]); n.yaw = num(b[3]); n.aim = num(b[4]); n.vx = num(b[12]); n.vz = num(b[13]);
-  p.lvl = num(b[5], 1); p.lives = num(b[7]); p.heat = num(b[8]); p.shieldOn = !!b[9]; p.charge = b[10] === 2 ? D_CHARGE : b[10] === 1 ? 0.1 : 0; p.discsHome = num(b[11]);
-  p.onGround = !!b[14]; if (num(b[15]) > n.fl) p.flash = 1; n.fl = num(b[15]); p.stun = b[16] ? 0.2 : 0; p.shieldE = num(b[17], 100); p.invuln = b[18] ? 0.5 : 0;
+  p.aimElev = num(b[5], ELEV_LEVEL); p.lives = num(b[7]); p.heat = num(b[8]); p.shieldOn = !!b[9]; p.charge = b[10] === 2 ? D_CHARGE : b[10] === 1 ? 0.1 : 0; p.discsHome = num(b[11]);
+  p.onGround = !!b[14]; if (num(b[15]) > n.fl) p.flash = 1; n.fl = num(b[15]); p.stun = b[16] ? 0.2 : 0; p.defl = num(b[17], DEFLECTS); p.shieldE = p.defl / DEFLECTS * 100; p.teeter = b[19] ? 0.3 : 0; p.invuln = b[18] ? 0.5 : 0;
   const mode = MODES[num(b[6])] || 'play';
   if (mode !== p.mode) {
     if (mode === 'fall' && p.mode === 'play') { SFX.fall(p); p.fallT = 0; }
@@ -244,7 +244,7 @@ function remoteDiscStep(d, dt) {
   d.state = v[0] === 1 ? 'fly' : 'ret';
   _ov.copy(d.vel); d.vel.set(v[4], v[5], v[6]);
   // a sharp change of direction means it bounced off something: show it here too
-  if (_ov.lengthSq() > 4 && _ov.dot(d.vel) < _ov.lengthSq() * 0.2 && d.ghostT <= 0) { sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 14, 7, 0.45); SFX.bounce(d.pos); d.ghostT = 0.15; const r = Math.hypot(d.pos.x, d.pos.z); if (r > R_BOUNCE - 1) wallFlash(d.pos.x, d.pos.y, d.pos.z, d.owner.color); if (d.pos.y > YC - 1) ceilFlash(d.pos.x, d.pos.z, d.owner.color); }
+  if (_ov.lengthSq() > 4 && _ov.dot(d.vel) < _ov.lengthSq() * 0.2 && d.ghostT <= 0) { sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 14, 7, 0.45); SFX.bounce(d.pos); d.ghostT = 0.15; if (Math.abs(d.pos.x) > BOX.hx - 1.2 || Math.abs(d.pos.z) > BOX.hz - 1.2) wallFlash(d.pos.x, d.pos.y, d.pos.z, d.owner.color); if (d.pos.y > YC - 1) ceilFlash(d.pos.x, d.pos.z, d.owner.color); }
   d.ghostT -= dt;
   d.pos.addScaledVector(d.vel, dt);
   const ex = tx - d.pos.x, ey = ty - d.pos.y, ez = tz - d.pos.z;

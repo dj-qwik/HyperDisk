@@ -163,9 +163,12 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .meter .bar { height: 6px; background: rgba(255,255,255,.08); clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%); }
 .meter .fill { height: 100%; width: 50%; background: var(--c); box-shadow: 0 0 10px var(--c); transition: width .08s linear; }
 .meter.heat .fill { background: linear-gradient(90deg, var(--amber), var(--hot), #ff2040); }
-.elev { display: flex; flex-direction: column; gap: 3px; align-items: center; }
-.elev i { font-style: normal; font-family: 'Orbitron'; font-weight: 700; font-size: 9px; letter-spacing: .2em; padding: 2px 6px; color: var(--faint); border: 1px solid rgba(255,255,255,.08); min-width: 46px; text-align: center; }
-.elev i.on { color: #05030c; background: var(--c); border-color: var(--c); box-shadow: 0 0 10px var(--c); }
+.elev { display: flex; align-items: center; gap: 7px; }
+.elev .eg { position: relative; width: 8px; height: 46px; border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); background: rgba(255,255,255,.04); }
+.elev .eg u { position: absolute; left: -3px; right: -3px; bottom: calc(2.32 / 17.3 * 100%); height: 1px; background: rgba(255,255,255,.35); }
+.elev .eg b { position: absolute; left: -4px; right: -4px; height: 4px; margin-bottom: -2px; background: #9ff4ff; box-shadow: 0 0 8px #3c8bff; }
+.elev .eg.ceil { border-top: 3px solid #9ff4ff; }
+.elev i { font-style: normal; font-family: 'Orbitron'; font-weight: 700; font-size: 9px; letter-spacing: .18em; color: #9ff4ff; min-width: 58px; }
 .view .msg { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-family: 'Orbitron'; font-weight: 900; font-style: italic; letter-spacing: .14em; color: #fff; }
 .view .msg .big { font-size: clamp(26px, 5vw, 60px); text-shadow: 0 0 20px var(--c), 0 0 44px var(--c); }
 .view .msg .sm { font-size: 12px; letter-spacing: .4em; margin-top: 8px; color: var(--c); font-style: normal; }
@@ -181,7 +184,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .ntag .l i { width: 7px; height: 8px; background: var(--c); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
 .ntag .l i.gone { background: rgba(255,255,255,.18); }
 .view.small .who .n { font-size: 12px; } .view.small .meter { width: 84px; } .view.small .discs i { width: 15px; height: 15px; } .view.small .discs i::after { inset: 3.5px; }
-.view.small .bot { gap: 10px; bottom: 8px; } .view.small .elev i { font-size: 7.5px; min-width: 36px; padding: 1px 4px; }
+.view.small .bot { gap: 10px; bottom: 8px; } .view.small .elev i { font-size: 7.5px; min-width: 44px; } .view.small .elev .eg { height: 34px; }
 
 /* ---------- modals ---------- */
 .modal { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2,1,8,.45); }
@@ -256,8 +259,9 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><th></th><th>CONTROLLER</th><th>KEYS 1</th><th>KEYS 2</th></tr>
         <tr><td>Join</td><td>A</td><td><kbd>Space</kbd></td><td><kbd>/</kbd></td></tr>
         <tr><td>Move</td><td>Left stick</td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td><kbd>I</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></td></tr>
-        <tr><td>Aim</td><td>Right stick</td><td><kbd>Q</kbd> <kbd>E</kbd> or mouse</td><td><kbd>←</kbd> <kbd>→</kbd></td></tr>
-        <tr><td>Elevation</td><td>RB / LB, D-pad</td><td><kbd>R</kbd> <kbd>F</kbd> or wheel</td><td><kbd>↑</kbd> <kbd>↓</kbd></td></tr>
+        <tr><td>Aim (crosshair left/right)</td><td>Right stick ← →</td><td><kbd>Q</kbd> <kbd>E</kbd> or mouse</td><td><kbd>←</kbd> <kbd>→</kbd></td></tr>
+        <tr><td>Aim line up/down (onto the ceiling)</td><td>Right stick ↑ ↓, RB / LB</td><td><kbd>R</kbd> <kbd>F</kbd>, mouse or wheel</td><td><kbd>↑</kbd> <kbd>↓</kbd></td></tr>
+        <tr><td>Level the aim line</td><td>Click right stick</td><td><kbd>V</kbd></td><td><kbd>;</kbd></td></tr>
         <tr><td>Throw (hold = power)</td><td>RT</td><td><kbd>Space</kbd> or click</td><td><kbd>/</kbd> <kbd>Enter</kbd></td></tr>
         <tr><td>Deflector</td><td>LT or B</td><td><kbd>Shift</kbd> or right-click</td><td><kbd>.</kbd> <kbd>R-Shift</kbd></td></tr>
         <tr><td>Hop</td><td>A</td><td><kbd>C</kbd></td><td><kbd>U</kbd></td></tr>
