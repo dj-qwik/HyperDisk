@@ -28,10 +28,10 @@ const PCSS = ['#1650ff', '#ff1414', '#ff6a00', '#a020ff'];
 const PNAME = ['NOVA', 'VEX', 'KAIRO', 'JINX'];
 const CPU_NAMES = ['RAZOR', 'HALCYON', 'GHOSTWIRE', 'MANTIS', 'SPECTRE', 'OKAMI', 'NULLSET', 'VANTA', 'ZERO-9', 'KESTREL', 'SABLE', 'ONYX'];
 const SKILLS = [
-  { name: 'ROOKIE', react: 0.62, turn: 2.6, noise: 0.12, block: 0.22, dodge: 0.25, bank: 0, power: 0.05, lead: 0.0, think: 0.75, spread: 0.07, gap: 4.2, settle: 1.0, maxOut: 1, minScore: -1.6 },
-  { name: 'RUNNER', react: 0.4, turn: 4.0, noise: 0.065, block: 0.5, dodge: 0.45, bank: 0.1, power: 0.15, lead: 0.5, think: 0.5, spread: 0.04, gap: 3.3, settle: 0.8, maxOut: 1, minScore: -1.2 },
-  { name: 'ELITE', react: 0.24, turn: 6.0, noise: 0.03, block: 0.75, dodge: 0.65, bank: 0.3, power: 0.3, lead: 0.85, think: 0.32, spread: 0.02, gap: 2.6, settle: 0.6, maxOut: 2, minScore: -0.9 },
-  { name: 'NIGHTMARE', react: 0.14, turn: 9.0, noise: 0.012, block: 0.93, dodge: 0.85, bank: 0.45, power: 0.42, lead: 1.0, think: 0.2, spread: 0.008, gap: 2.1, settle: 0.5, maxOut: 2, minScore: -0.7 }
+  { name: 'ROOKIE', react: 0.62, turn: 2.6, noise: 0.12, block: 0.22, dodge: 0.25, bank: 0.55, power: 0.05, lead: 0.0, think: 0.75, spread: 0.07, gap: 4.2, settle: 1.0, maxOut: 1, minScore: -1.6 },
+  { name: 'RUNNER', react: 0.4, turn: 4.0, noise: 0.065, block: 0.5, dodge: 0.45, bank: 0.7, power: 0.15, lead: 0.5, think: 0.5, spread: 0.04, gap: 3.3, settle: 0.8, maxOut: 1, minScore: -1.2 },
+  { name: 'ELITE', react: 0.24, turn: 6.0, noise: 0.03, block: 0.75, dodge: 0.65, bank: 0.8, power: 0.3, lead: 0.85, think: 0.32, spread: 0.02, gap: 2.6, settle: 0.6, maxOut: 2, minScore: -0.9 },
+  { name: 'NIGHTMARE', react: 0.14, turn: 9.0, noise: 0.012, block: 0.93, dodge: 0.85, bank: 0.9, power: 0.42, lead: 1.0, think: 0.2, spread: 0.008, gap: 2.1, settle: 0.5, maxOut: 2, minScore: -0.7 }
 ];
 const ARENAS = [
   { id: 'rings', name: 'HALO RINGS', desc: 'One podium, three rings. Shatter the rings or knock them off the edge.', triad: false, lifts: false, wall: false },

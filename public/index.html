@@ -481,10 +481,10 @@ const PCSS = ['#1650ff', '#ff1414', '#ff6a00', '#a020ff'];
 const PNAME = ['NOVA', 'VEX', 'KAIRO', 'JINX'];
 const CPU_NAMES = ['RAZOR', 'HALCYON', 'GHOSTWIRE', 'MANTIS', 'SPECTRE', 'OKAMI', 'NULLSET', 'VANTA', 'ZERO-9', 'KESTREL', 'SABLE', 'ONYX'];
 const SKILLS = [
-  { name: 'ROOKIE', react: 0.62, turn: 2.6, noise: 0.12, block: 0.22, dodge: 0.25, bank: 0, power: 0.05, lead: 0.0, think: 0.75, spread: 0.07, gap: 4.2, settle: 1.0, maxOut: 1, minScore: -1.6 },
-  { name: 'RUNNER', react: 0.4, turn: 4.0, noise: 0.065, block: 0.5, dodge: 0.45, bank: 0.1, power: 0.15, lead: 0.5, think: 0.5, spread: 0.04, gap: 3.3, settle: 0.8, maxOut: 1, minScore: -1.2 },
-  { name: 'ELITE', react: 0.24, turn: 6.0, noise: 0.03, block: 0.75, dodge: 0.65, bank: 0.3, power: 0.3, lead: 0.85, think: 0.32, spread: 0.02, gap: 2.6, settle: 0.6, maxOut: 2, minScore: -0.9 },
-  { name: 'NIGHTMARE', react: 0.14, turn: 9.0, noise: 0.012, block: 0.93, dodge: 0.85, bank: 0.45, power: 0.42, lead: 1.0, think: 0.2, spread: 0.008, gap: 2.1, settle: 0.5, maxOut: 2, minScore: -0.7 }
+  { name: 'ROOKIE', react: 0.62, turn: 2.6, noise: 0.12, block: 0.22, dodge: 0.25, bank: 0.55, power: 0.05, lead: 0.0, think: 0.75, spread: 0.07, gap: 4.2, settle: 1.0, maxOut: 1, minScore: -1.6 },
+  { name: 'RUNNER', react: 0.4, turn: 4.0, noise: 0.065, block: 0.5, dodge: 0.45, bank: 0.7, power: 0.15, lead: 0.5, think: 0.5, spread: 0.04, gap: 3.3, settle: 0.8, maxOut: 1, minScore: -1.2 },
+  { name: 'ELITE', react: 0.24, turn: 6.0, noise: 0.03, block: 0.75, dodge: 0.65, bank: 0.8, power: 0.3, lead: 0.85, think: 0.32, spread: 0.02, gap: 2.6, settle: 0.6, maxOut: 2, minScore: -0.9 },
+  { name: 'NIGHTMARE', react: 0.14, turn: 9.0, noise: 0.012, block: 0.93, dodge: 0.85, bank: 0.9, power: 0.42, lead: 1.0, think: 0.2, spread: 0.008, gap: 2.1, settle: 0.5, maxOut: 2, minScore: -0.7 }
 ];
 const ARENAS = [
   { id: 'rings', name: 'HALO RINGS', desc: 'One podium, three rings. Shatter the rings or knock them off the edge.', triad: false, lifts: false, wall: false },
@@ -3239,6 +3239,50 @@ function simShot(p, yaw, lvl, tgt, power, lead) {
   }
   return { miss: best, ringHit, blocked, time: tt };
 }
+// CPU footwork when nothing urgent is going on: strafe across the podium like a duelist, relocate,
+// plant for a moment, and on a triad run and hop between its three podiums.
+function botMove(p, B, sk, q, st, padHealth, dt) {
+  const margin = 0.7 + p.heat * 0.14;
+  const solidAt = (x, z) => { const s = supportAt(x, z, 0); return s && s.pad.rings[s.ring].state === 0 && Math.hypot(x - s.pad.x, z - s.pad.z) < s.pad.R - margin ? s : null; };
+  B.hopCD = (B.hopCD == null ? 2 + Math.random() * 3 : B.hopCD) - dt;
+  const M = B.wander;
+  if (M) M.t -= dt;
+  const arrived = M && Math.hypot(p.x - M.x, p.z - M.z) < (M.kind === 'hop' ? 0.6 : 0.25);
+  const invalid = M && (M.kind === 'hop' ? !M.pad.rings.some(r => r.state === 0) : !solidAt(M.x, M.z));
+  if (!M || M.t <= 0 || invalid || (arrived && M.kind !== 'plant')) {
+    // which way is "across" for strafing: perpendicular to the line to the current target (or the arena centre)
+    const T = B.target || null, tx = T ? T.x : 0, tz = T ? T.z : 0;
+    let ax = tx - p.x, az = tz - p.z; const al = Math.hypot(ax, az) || 1; ax /= al; az /= al;
+    const px = -az, pz = ax, r = Math.random();
+    let next = null;
+    // hop to another podium of my own station every so often (more often for better CPUs)
+    const others = st.pads.filter(o => o !== q && Math.abs(o.y - q.y) < 1.1 && o.rings[0].state === 0 && padHealth(o) > 1.8 && Math.hypot(o.x - q.x, o.z - q.z) < 7);
+    if (others.length && B.hopCD <= 0 && r < 0.3 + p.skill * 0.08) {
+      const o = others[Math.floor(Math.random() * others.length)], a = Math.random() * TAU, rr = Math.random() * 0.7;
+      next = { kind: 'hop', pad: o, x: o.x + Math.cos(a) * rr, z: o.z + Math.sin(a) * rr, t: 3.5 };
+      B.hopCD = 5 - p.skill * 0.8 + Math.random() * 5;
+    } else if (r < 0.14) {
+      next = { kind: 'plant', x: p.x, z: p.z, t: 0.35 + Math.random() * 0.6 };   // stand and set the feet for a throw
+    } else {
+      // strafe run: sideways, 1.2-3 m, flipping direction when it would run out of floor
+      const dir = (M && M.kind === 'strafe' && Math.random() < 0.75) ? -M.dir : (Math.random() < 0.5 ? 1 : -1);
+      for (let tries = 0; tries < 8 && !next; tries++) {
+        const d = (tries < 4 ? dir : -dir) * (1.2 + Math.random() * 1.8) * (tries % 4 < 2 ? 1 : 0.6);
+        const fwd = (Math.random() - 0.5) * 1.2;           // a little in/out drift so it's not a perfect line
+        const x = p.x + px * d + ax * fwd, z = p.z + pz * d + az * fwd;
+        if (solidAt(x, z)) next = { kind: 'strafe', dir: Math.sign(d), x, z, t: 2.2 };
+      }
+      if (!next) {   // nowhere to strafe: relocate to any good spot on this podium
+        for (let tries = 0; tries < 12 && !next; tries++) {
+          const a = Math.random() * TAU, rr = Math.random() * (q.R - margin), x = q.x + Math.cos(a) * rr, z = q.z + Math.sin(a) * rr;
+          if (Math.hypot(x - p.x, z - p.z) > 1 && solidAt(x, z)) next = { kind: 'relocate', x, z, t: 2.5 };
+        }
+      }
+    }
+    B.wander = next || { kind: 'plant', x: p.x, z: p.z, t: 0.5 };
+  }
+  return B.wander;
+}
 function botInput(p, dt) {
   const sk = SKILLS[p.skill], B = p.bot;
   const inp = { mx: 0, mz: 0, aim: 0, aimAbs: 0, aimTo: null, turn: sk.turn, lvl: 0, fire: false, shield: false, hop: false, recall: false, analog: false };
@@ -3300,7 +3344,8 @@ function botInput(p, dt) {
     }
   }
   if (B.safe) { B.safe.t -= dt; const r = B.safe.ring; if (B.safe.t <= 0 || r.state !== 0 || Math.hypot(p.x - B.safe.x, p.z - B.safe.z) < 0.3) B.safe = null; }
-  if (!goal && !B.safe && myRing && (myRing.state === 1 || dEdge < 0.9 + p.heat * 0.15)) {
+  const hopping = B.wander && B.wander.kind === 'hop' && B.wander.t > 0;   // a deliberate run at the edge to jump across
+  if (!goal && !B.safe && myRing && (myRing.state === 1 || (!hopping && dEdge < 0.9 + p.heat * 0.15))) {
     let best = null;
     for (const r of q0.rings) if (r.state === 0 && r !== myRing) { const mid = ringMid(r); const cost = Math.abs(mid - curD) + (mid > curD ? 0.8 : 0); if (!best || cost < best.cost) best = { r, mid, cost }; }
     if (!best && myRing.state === 0) best = { r: myRing, mid: ringMid(myRing) * 0.85, cost: 0 };
@@ -3312,21 +3357,13 @@ function botInput(p, dt) {
     B.safe.t = Math.max(B.safe.t, 0.7);
   }
   if (!goal && !B.threat && Math.random() < 0.98) { const g = puGoalFor(p, sk); if (g && Math.random() < 0.5 + p.skill * 0.15) goal = g; }
-  if (!goal) {
-    B.wanderT -= dt;
-    const bad = B.wander && (!B.wander.ring || B.wander.ring.state !== 0);
-    if (B.wanderT <= 0 || !B.wander || bad) {
-      const q = q0 || pad, solid = q.rings.filter(r => r.state === 0);
-      if (solid.length) {
-        const r = solid[Math.floor(Math.random() * Math.min(solid.length, 2))], a = Math.random() * TAU, rr = r.rIn < 0.01 ? Math.random() * r.rOut * 0.6 : lerp(r.rIn + 0.15, r.rOut - 0.15, Math.random());
-        B.wander = { x: q.x + Math.cos(a) * rr, z: q.z + Math.sin(a) * rr, ring: r };
-      } else B.wander = { x: p.x, z: p.z, ring: null };
-      B.wanderT = 1.2 + Math.random() * 2.2;
-    }
-    goal = B.wander;
-  }
-  B.lastGoal = goal === B.wander ? 'wander' : 'safe'; let gx = goal.x - p.x, gz = goal.z - p.z; const gl = Math.hypot(gx, gz);
-  let wx = gl > 0.2 ? gx / gl * Math.min(1, gl * 1.5) : 0, wz = gl > 0.2 ? gz / gl * Math.min(1, gl * 1.5) : 0;
+  if (!goal) { goal = botMove(p, B, sk, q0 || pad, st, padHealth, dt); }
+  B.lastGoal = goal === B.wander ? 'move:' + (B.wander && B.wander.kind) : 'safe'; let gx = goal.x - p.x, gz = goal.z - p.z; const gl = Math.hypot(gx, gz);
+  // run flat out toward the spot, easing off only in the last half metre (a hop needs a firm push at the edge)
+  const ease = goal.kind === 'hop' ? 1 : Math.min(1, gl * 2.2);
+  let wx = gl > 0.12 ? gx / gl * ease : 0, wz = gl > 0.12 ? gz / gl * ease : 0;
+  // about to throw: ease off the footwork to steady the aim (unless running for safety or mid-hop)
+  if (goal.kind !== 'hop' && goal === B.wander && B.nextShot != null && B.nextShot < 0.4 && p.discsHome > 0) { wx *= 0.3; wz *= 0.3; }
   if (B.dodge && B.dodge.t > 0 && !B.safe) { B.dodge.t -= dt; wx = B.dodge.x; wz = B.dodge.z; }
   // world move -> stick (relative to aim)
   const fx = Math.sin(p.aimYaw), fz = Math.cos(p.aimYaw), rx = -Math.cos(p.aimYaw), rz = Math.sin(p.aimYaw);
@@ -3343,6 +3380,8 @@ function botInput(p, dt) {
   }
   const T = B.target;
   B.think -= dt;
+  // once the aim is settling on a plan, commit to it instead of re-planning mid-aim
+  if (B.think <= 0 && B.plan && B.steady > 0.12 && B.plan.score > sk.minScore) B.think = 0.25;
   if (B.think <= 0 || !B.plan) {
     B.think = sk.think * (0.7 + Math.random() * 0.6);
     const base = Math.atan2(T.x - p.x, T.z - p.z), cands = [];
@@ -3352,7 +3391,7 @@ function botInput(p, dt) {
     handPos(p, _hp);
     const yaws = [[base, 0], [base + 0.02, 0], [base - 0.02, 0]];
     const blockedAhead = BULWARKS.some(b => b.st === T.slot) || WALLFW.on;
-    if (Math.random() < sk.bank || T.shieldOn || blockedAhead) {
+    {
       const wx = BOX.hx - WALL_IN, wz = BOX.hz - WALL_IN;
       for (const [mx, mz] of [[2 * wx - T.x, T.z], [-2 * wx - T.x, T.z], [T.x, 2 * wz - T.z], [T.x, -2 * wz - T.z]]) {
         const by = Math.atan2(mx - _hp.x, mz - _hp.z); yaws.push([by, 1], [by + 0.015, 1], [by - 0.015, 1]);
@@ -3365,13 +3404,18 @@ function botInput(p, dt) {
       // a throw that connects beats one that only chips a ring; a ring is only worth it when they're standing on it
       let score = r.miss < 0.7 ? 1.0 - r.miss * 0.5 : -r.miss;
       if (lvl === 0) { const onIt = tsup && r.ringHit === tsup.ring && tsup.pad.rings[tsup.ring].rIn > 0.01; score = r.ringHit != null ? (onIt ? 1.15 : 0.05) : -r.miss - 0.5; }
-      if (lvl === 2) score -= blockedAhead ? 0 : 0.25;
-      if (bank) score += T.shieldOn ? 0.6 : -0.15; else if (T.shieldOn) score -= 0.8;
-      score += (Math.random() - 0.5) * 0.6;
-      cands.push({ yaw: yw, lvl, power, score });
+      if (lvl === 2) score += blockedAhead ? 0.1 : sk.bank * 0.12;   // a ceiling lob is a bank shot too
+      if (bank) score += T.shieldOn ? 0.6 : 0; else if (T.shieldOn) score -= 0.8;
+      score += (Math.random() - 0.5) * 0.3;
+      cands.push({ yaw: yw, lvl, power, score, bank });
     }
     cands.sort((a, b) => b.score - a.score);
-    B.plan = cands[0] || { yaw: base, lvl: 2, power: false, score: -9 };
+    // pick the best straight throw and the best bank (off a wall or the ceiling), then favour the bank
+    // whenever it's a real chance: how strongly depends on skill (sk.bank)
+    const bestS = cands.find(c => !c.bank && c.lvl !== 2), bestB = cands.find(c => c.bank || c.lvl === 2);
+    let pick = cands[0];
+    if (bestS && bestB) pick = (bestB.score > bestS.score - 0.45 && Math.random() < sk.bank) ? bestB : (bestS.score >= bestB.score - 0.3 ? bestS : bestB);
+    B.plan = pick || { yaw: base, lvl: 2, power: false, score: -9 };
   }
   const plan = B.plan;
   inp.aimTo = plan.yaw + B.noise * sk.noise; p.lvl = plan.lvl;
@@ -3385,7 +3429,7 @@ function botInput(p, dt) {
     B.steady = err < 0.05 + sk.spread ? (B.steady || 0) + dt : 0;
     const out = 3 - p.discsHome;
     if (B.nextShot <= 0 && B.steady >= sk.settle && p.discsHome > 0 && out < sk.maxOut && p.cool <= 0 && !inp.shield && plan.score > sk.minScore) {
-      inp.fire = true; B.holdFire = 0.05; B.plan = null; B.steady = 0;
+      inp.fire = true; B.holdFire = 0.05; B.shots = B.shots || { straight: 0, wall: 0, ceil: 0 }; B.shots[plan.bank ? 'wall' : plan.lvl === 2 ? 'ceil' : 'straight']++; B.plan = null; B.steady = 0;
       B.nextShot = sk.gap * (0.75 + Math.random() * 0.6);
     } else if (B.nextShot <= -2.5 && plan.score <= sk.minScore) { B.plan = null; B.think = 0; }   // no clean shot for a while: re-plan
   }
