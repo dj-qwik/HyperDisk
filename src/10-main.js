@@ -210,7 +210,7 @@ function frame(now) {
 }
 
 // debug/test hook
-window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, render, startFall, MUSIC, PU, grantPowerup, spawnPowerup, addPowerup, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
+window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, render, startFall, CITY, MUSIC, PU, grantPowerup, spawnPowerup, addPowerup, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
 
 resize();
 toLobby();
