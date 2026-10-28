@@ -182,7 +182,8 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
       r = 66 + Math.pow(rnd(), 1.3) * 150; a = rnd() * TAU;
       w = 6 + rnd() * 10 + (r > 110 ? rnd() * 10 : 0); d = 6 + rnd() * 10; top = -14 + Math.pow(rnd(), 1.7) * 95 + (r > 100 ? rnd() * 40 : 0);
       tries++;
-    } while (tries < 12 && HIGHWAYS.some(([R, y]) => Math.abs(r - R) < 8 + Math.max(w, d) * 0.72 && top > y - 3));
+    } while (tries < 16 && (HIGHWAYS.some(([R, y]) => Math.abs(r - R) < 8 + Math.max(w, d) * 0.72 && top > y - 3) ||
+      towers.some(t => Math.hypot(Math.cos(a) * r - t.x, Math.sin(a) * r - t.z) < (Math.max(w, d) + Math.max(t.w, t.d)) * 0.5)));
     const bottom = -110, rot = -a + (rnd() - 0.5) * 0.3, seed = rnd();
     const style = rnd() * 4 | 0, round = rnd() < 0.13;
     const nc = rnd() < 0.55 ? neonCols[rnd() * neonCols.length | 0] : [0, 0, 0];
@@ -200,8 +201,8 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
       if (k === 0) towers.push({ a, r, top: yTop, w: cw, d: cd, x: P.x, z: P.z });
       if (last) roofs.push({ x: P.x, z: P.z, y: yTop, w: Sv.x, d: Sv.z, q: Q.clone(), cyl: isCyl });
       // a setback ledge between tiers
-      if (!last) { const lm = new THREE.Matrix4().compose(new THREE.Vector3(P.x, yTop + 0.3, P.z), Q, new THREE.Vector3(cw + 0.6, 0.6, cd + 0.6)); props.push(lm); }
-      y0 = yTop; ox += (rnd() - 0.5) * cw * 0.2; oz += (rnd() - 0.5) * cd * 0.2; cw *= 0.6 + rnd() * 0.25; cd *= 0.6 + rnd() * 0.25;
+      if (!last) { const lm = new THREE.Matrix4().compose(new THREE.Vector3(P.x, yTop + 0.24, P.z), Q, new THREE.Vector3(cw + 0.6, 0.6, cd + 0.6)); props.push(lm); }
+      y0 = yTop; ox += (rnd() - 0.5) * cw * 0.14; oz += (rnd() - 0.5) * cd * 0.14; cw *= 0.6 + rnd() * 0.2; cd *= 0.6 + rnd() * 0.2;
     }
     if (r < 140 && top > 0 && i % 3 === 0) CITY.spots.push({ a, r, top: towers[towers.length - 1].top, w, d, rot });
   }
@@ -212,12 +213,12 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
     for (let j = 0; j < nP; j++) {
       const bw = 1.2 + rnd() * Math.min(4, rf.w * 0.35), bd = 1.2 + rnd() * Math.min(4, rf.d * 0.35), bh = 0.8 + rnd() * 2.6;
       const off = new THREE.Vector3((rnd() - 0.5) * (rf.w - bw) * 0.8, 0, (rnd() - 0.5) * (rf.d - bd) * 0.8).applyQuaternion(rf.q);
-      props.push(new THREE.Matrix4().compose(new THREE.Vector3(rf.x + off.x, rf.y + bh / 2, rf.z + off.z), rf.q, new THREE.Vector3(bw, bh, bd)));
+      const sink = 0.04 + rnd() * 0.2; props.push(new THREE.Matrix4().compose(new THREE.Vector3(rf.x + off.x, rf.y + bh / 2 - sink, rf.z + off.z), rf.q, new THREE.Vector3(bw + rnd() * 0.17, bh + rnd() * 0.23, bd + rnd() * 0.19)));
     }
     if (rnd() < 0.55) {
       const mh = 4 + rnd() * (rf.y > 40 ? 22 : 10), off = new THREE.Vector3((rnd() - 0.5) * lx, 0, (rnd() - 0.5) * lz).applyQuaternion(rf.q);
       const mx = rf.x + off.x, mz = rf.z + off.z;
-      masts.push(new THREE.Matrix4().compose(new THREE.Vector3(mx, rf.y + mh / 2, mz), rf.q, new THREE.Vector3(0.22, mh, 0.22)));
+      masts.push(new THREE.Matrix4().compose(new THREE.Vector3(mx, rf.y + mh / 2 - 0.12, mz), rf.q, new THREE.Vector3(0.22, mh, 0.22)));
       masts.push(new THREE.Matrix4().compose(new THREE.Vector3(mx, rf.y + mh * 0.35, mz), rf.q, new THREE.Vector3(0.9, 0.12, 0.9)));
       beacons.push([mx, rf.y + mh + 0.15, mz, rnd()]);
       if (mh > 12) beacons.push([mx, rf.y + mh * 0.55, mz, rnd()]);
@@ -297,7 +298,7 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
     for (let i = 0; i < n; i++) {
       const a = (i + 0.5) / n * TAU, h = y - 1.68 + 110;
       pyl.push(new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * R, y - 1.68 - h / 2, Math.sin(a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a), new THREE.Vector3(2.2, h, 3.6)));
-      pyl.push(new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * R, y - 2.5, Math.sin(a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a), new THREE.Vector3(10, 1.6, 2.6)));
+      pyl.push(new THREE.Matrix4().compose(new THREE.Vector3(Math.cos(a) * R, y - 2.62, Math.sin(a) * R), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -a), new THREE.Vector3(10, 1.6, 2.6)));
     }
   }
   const pm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), deckMat, pyl.length); pyl.forEach((m, i) => pm.setMatrixAt(i, m)); pm.frustumCulled = false; world.add(pm);
@@ -372,9 +373,9 @@ const HOLO = new THREE.Group();
     car: {
       body: [{ g: rb(1.9, 0.55, 4.4, 0.22), m: MX(0, 0, 0) }, { g: rb(1.75, 0.38, 1.3, 0.16), m: MX(0, -0.04, 2.2, 0.22) },
         { g: rb(1.45, 0.52, 2.1, 0.24), m: MX(0, 0.42, -0.25), c: GLASS }, { g: box(0.16, 0.26, 3.5), m: MX(0.98, -0.2, 0), c: DARK }, { g: box(0.16, 0.26, 3.5), m: MX(-0.98, -0.2, 0), c: DARK },
-        { g: box(1.8, 0.06, 0.45), m: MX(0, 0.4, -2.05, -0.15) }, { g: box(0.08, 0.3, 0.3), m: MX(0.7, 0.25, -2.05) }, { g: box(0.08, 0.3, 0.3), m: MX(-0.7, 0.25, -2.05) },
+        { g: box(1.8, 0.06, 0.45), m: MX(0, 0.4, -2.05, -0.15) }, { g: box(0.08, 0.24, 0.3), m: MX(0.7, 0.3, -2.05) }, { g: box(0.08, 0.24, 0.3), m: MX(-0.7, 0.3, -2.05) },
         ...pods([1.12, -1.12], [1.35, -1.45], 0.3, 1.0, -0.08)],
-      lights: [{ g: box(0.55, 0.07, 0.06), m: MX(0.55, 0.06, 2.83), c: WHITE }, { g: box(0.55, 0.07, 0.06), m: MX(-0.55, 0.06, 2.83), c: WHITE }, { g: box(1.75, 0.07, 0.06), m: MX(0, 0.14, -2.22), c: RED }],
+      lights: [{ g: box(0.55, 0.07, 0.06), m: MX(0.55, 0.06, 2.88), c: WHITE }, { g: box(0.55, 0.07, 0.06), m: MX(-0.55, 0.06, 2.88), c: WHITE }, { g: box(1.75, 0.07, 0.06), m: MX(0, 0.14, -2.22), c: RED }],
       accent: [{ g: box(0.03, 0.04, 3.4), m: MX(0.965, 0.06, 0) }, { g: box(0.03, 0.04, 3.4), m: MX(-0.965, 0.06, 0) }, { g: cyl(0.2, 0.2, 0.02, 10), m: MX(1.12, -0.42, 1.35) }, { g: cyl(0.2, 0.2, 0.02, 10), m: MX(-1.12, -0.42, 1.35) }, { g: cyl(0.2, 0.2, 0.02, 10), m: MX(1.12, -0.42, -1.45) }, { g: cyl(0.2, 0.2, 0.02, 10), m: MX(-1.12, -0.42, -1.45) }],
       half: 2.3, width: 1.8, paints: [[0.05, 0.05, 0.06], [0.75, 0.76, 0.8], [0.35, 0.02, 0.03], [0.04, 0.08, 0.22], [0.22, 0.23, 0.26], [0.02, 0.02, 0.02]], neon: [[0.2, 0.6, 2.6], [2.6, 0.1, 0.3], [0.0, 2.2, 1.8], [1.6, 0.2, 2.6], [2.6, 1.0, 0.1]]
     },
@@ -397,8 +398,8 @@ const HOLO = new THREE.Group();
       half: 1.3, width: 0.6, paints: [[0.04, 0.04, 0.05], [0.5, 0.02, 0.03], [0.7, 0.7, 0.72]], neon: [[0.0, 2.2, 1.8], [2.6, 0.1, 0.3], [1.6, 0.2, 2.6]]
     }
   };
-  TYPES.cab = Object.assign({}, TYPES.car, { accent: [...TYPES.car.accent, { g: box(0.7, 0.22, 0.32), m: MX(0, 0.8, -0.3) }], paints: [[0.85, 0.55, 0.02]], neon: [[2.8, 1.8, 0.2], [0.2, 2.2, 2.6]] });
-  TYPES.patrol = Object.assign({}, TYPES.car, { accent: [...TYPES.car.accent, { g: box(0.42, 0.1, 0.25), m: MX(0.25, 0.73, -0.3) }, { g: box(0.42, 0.1, 0.25), m: MX(-0.25, 0.73, -0.3) }], paints: [[0.03, 0.03, 0.04], [0.7, 0.72, 0.76]], neon: [[2.6, 0.1, 0.1]] });
+  TYPES.cab = Object.assign({}, TYPES.car, { accent: [...TYPES.car.accent, { g: box(0.7, 0.22, 0.32), m: MX(0, 0.83, -0.3) }], paints: [[0.85, 0.55, 0.02]], neon: [[2.8, 1.8, 0.2], [0.2, 2.2, 2.6]] });
+  TYPES.patrol = Object.assign({}, TYPES.car, { accent: [...TYPES.car.accent, { g: box(0.42, 0.1, 0.25), m: MX(0.25, 0.76, -0.3) }, { g: box(0.42, 0.1, 0.25), m: MX(-0.25, 0.76, -0.3) }], paints: [[0.03, 0.03, 0.04], [0.7, 0.72, 0.76]], neon: [[2.6, 0.1, 0.1]] });
   const bodyMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.75, roughness: 0.3, envMapIntensity: 1.4 });
   const lightMat = new THREE.MeshBasicMaterial({ vertexColors: true });
   const accMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -521,7 +522,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   for (const y of ringYs) {
     const prof = [[R, 0.55], [R - 1.5, 0.55], [R - 1.5, 0.38], [R - 0.95, 0.38], [R - 0.95, -0.38], [R - 1.5, -0.38], [R - 1.5, -0.55], [R, -0.55]].map(q => new THREE.Vector2(q[0], q[1] + y));
     girderGeos.push({ g: new THREE.LatheGeometry(prof, 96) });
-    for (let i = 0; i < 64; i++) { const a = i / 64 * TAU; for (const dy of [0.56, -0.56]) { facing(a); onWall(a, R - 1.25, y + dy); M4.compose(P, Q, Sc); bolts.push(M4.clone()); } }
+    for (let i = 0; i < 64; i++) { const a = i / 64 * TAU; for (const dy of [0.58]) { facing(a); onWall(a, R - 1.25, y + dy); M4.compose(P, Q, Sc); bolts.push(M4.clone()); } }
   }
   { const gm = new THREE.Mesh(geoMerge(girderGeos), steel); gm.receiveShadow = true; ARENA.add(gm); }
   inst(new THREE.BoxGeometry(0.1, 0.06, 0.1), darkSteel, bolts);
@@ -529,16 +530,16 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   // vertical columns and X-bracing between the girders
   const cols = 20, colM = [], braceM = [];
   for (let i = 0; i < cols; i++) {
-    const a = i / cols * TAU; facing(a); onWall(a, R - 0.5, (SHAFT.top + SHAFT.bottom) / 2); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); colM.push(M4.clone());
+    const a = i / cols * TAU; facing(a); onWall(a, R - 0.5, (SHAFT.top - 0.35 + SHAFT.bottom) / 2); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); colM.push(M4.clone());
     const a2 = (i + 1) / cols * TAU, am = (a + a2) / 2, chord = 2 * (R - 0.35) * Math.sin(Math.PI / cols);
     for (let k = 0; k < ringYs.length - 1; k++) {
       if (rnd() < 0.25) continue;
       const y0 = ringYs[k] - 0.6, y1 = ringYs[k + 1] + 0.6, len = Math.hypot(chord, y0 - y1), tilt = Math.atan2(y0 - y1, chord);
-      for (const sgn of [1, -1]) { E.set(0, Math.PI / 2 - am, sgn * tilt, 'YXZ'); Q.setFromEuler(E); onWall(am, R - 0.35, (y0 + y1) / 2); Sc.set(len, 1, 1); M4.compose(P, Q, Sc); braceM.push(M4.clone()); }
+      for (const sgn of [1, -1]) { E.set(0, Math.PI / 2 - am, sgn * tilt, 'YXZ'); Q.setFromEuler(E); onWall(am, R - 0.3 - (sgn < 0 ? 0.17 : 0), (y0 + y1) / 2); Sc.set(len, 1, 1); M4.compose(P, Q, Sc); braceM.push(M4.clone()); }
     }
   }
   Sc.set(1, 1, 1);
-  inst(new THREE.BoxGeometry(0.9, H, 0.8), darkSteel, colM);
+  inst(new THREE.BoxGeometry(0.9, H - 0.35, 0.8), darkSteel, colM);
   inst(new THREE.BoxGeometry(1, 0.22, 0.14), steel, braceM);
 
   // ---- everything on the walls is laid out bay by bay (the bays are the gaps between the 20 columns),
@@ -558,7 +559,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
     // a clamp strap across the bundle under every girder, stood off from the wall
     for (const y of ringYs) {
       facing(a); onWall(a, d, y - 2.9); Sc.set(n * sp + 0.3, 0.16, 0.5); M4.compose(P, Q, Sc); straps.push(M4.clone());
-      for (const off of [-(n * sp) / 2, (n * sp) / 2]) { const aa = alongWall(a, off, d); facing(aa); onWall(aa, (d + R - 0.95) / 2, y - 2.9); Sc.set(0.12, 0.12, R - 0.95 - d); M4.compose(P, Q, Sc); standoffs.push(M4.clone()); }
+      for (const off of [-(n * sp) / 2, (n * sp) / 2]) { const aa = alongWall(a, off, d); facing(aa); onWall(aa, (d + 0.26 + R - 0.95) / 2, y - 2.9); Sc.set(0.1, 0.1, R - 0.95 - d - 0.26); M4.compose(P, Q, Sc); standoffs.push(M4.clone()); }
     }
   });
   Sc.set(1, 1, 1);
@@ -570,9 +571,9 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   const trays = [], cables = [], clips = [];
   TRAYS.forEach(bay => {
     const a = bayA(bay), d = R - 1.05, ytop = SHAFT.top - 0.4, ybot = SHAFT.grid - 1, len = ytop - ybot;
-    facing(a); onWall(a, d + 0.05, (ytop + ybot) / 2); Sc.set(1.0, len, 0.1); M4.compose(P, Q, Sc); trays.push(M4.clone());
-    for (const s2 of [-0.48, 0.48]) { const aa = alongWall(a, s2, d); facing(aa); onWall(aa, d - 0.1, (ytop + ybot) / 2); Sc.set(0.05, len, 0.25); M4.compose(P, Q, Sc); trays.push(M4.clone()); }
-    for (let j = 0; j < 6; j++) { const aa = alongWall(a, -0.35 + j * 0.14, d); facing(aa); onWall(aa, d - 0.1, (ytop + ybot) / 2); Sc.set(0.09, len, 0.09); M4.compose(P, Q, Sc); cables.push(M4.clone()); }
+    facing(a); onWall(a, d + 0.05, (ytop + ybot) / 2); Sc.set(1.0, len - 0.06, 0.1); M4.compose(P, Q, Sc); trays.push(M4.clone());
+    for (const s2 of [-0.48, 0.48]) { const aa = alongWall(a, s2, d); facing(aa); onWall(aa, d - 0.1, (ytop + ybot) / 2); Sc.set(0.05, len + 0.06, 0.25); M4.compose(P, Q, Sc); trays.push(M4.clone()); }
+    for (let j = 0; j < 6; j++) { const aa = alongWall(a, -0.35 + j * 0.14, d); facing(aa); onWall(aa, d - 0.1, (ytop + ybot) / 2); Sc.set(0.09, len - 0.14, 0.09); M4.compose(P, Q, Sc); cables.push(M4.clone()); }
     for (const y of ringYs) { facing(a); onWall(a, d - 0.2, y - 3.2); Sc.set(1.1, 0.12, 0.08); M4.compose(P, Q, Sc); clips.push(M4.clone()); }
   });
   Sc.set(1, 1, 1);
@@ -590,14 +591,14 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
     }
     const posts = [], diag = [];
     for (let x = -len / 2 + 0.6; x < len / 2; x += 1.6) {
-      for (const z of [-0.78, 0.78]) { M4.makeTranslation(x, 0.55, z); posts.push(M4.clone()); }
+      for (const z of [-0.74, 0.74]) { M4.makeTranslation(x, 0.55, z); posts.push(M4.clone()); }
       for (const z of [-0.55, 0.55]) { E.set(0, 0, ((x / 1.6 | 0) % 2 ? 1 : -1) * 0.9); Q.setFromEuler(E); P.set(x + 0.8, -0.45, z); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); diag.push(M4.clone()); }
     }
     const pm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, 1.1, 0.06), steel, posts.length); posts.forEach((m, i) => pm.setMatrixAt(i, m)); g.add(pm);
-    const dm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 1.15, 0.08), darkSteel, diag.length); diag.forEach((m, i) => dm.setMatrixAt(i, m)); g.add(dm);
+    const dm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 1.15, 0.05), darkSteel, diag.length); diag.forEach((m, i) => dm.setMatrixAt(i, m)); g.add(dm);
     // a work lamp hanging under the middle of each gantry
     const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 0.3, 12), darkSteel); lamp.position.set(len * 0.15, -1.2, 0); g.add(lamp);
-    const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.26, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd8a8).multiplyScalar(2.2) })); bulb.rotation.x = Math.PI / 2; bulb.position.set(len * 0.15, -1.36, 0); g.add(bulb);
+    const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.26, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffd8a8).multiplyScalar(2.2) })); bulb.rotation.x = Math.PI / 2; bulb.position.set(len * 0.15, -1.39, 0); g.add(bulb);
     g.position.y = y; g.rotation.y = ang; ARENA.add(g);
   }
   // junction boxes: tidy banks of matching cabinets in the remaining bays, each with a row of status lights
@@ -640,7 +641,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   for (let i = 0; i < 8; i++) {
     const a = (i + 0.5) / 8 * TAU, g = new THREE.Group(); onWall(a, R - 2.1, -7.2); g.position.copy(P);
     const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.42, 0.5, 14), darkSteel); g.add(housing);
-    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.36, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffe2bf).multiplyScalar(2.4) })); lens.rotation.x = Math.PI / 2; lens.position.y = -0.26; g.add(lens);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.36, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffe2bf).multiplyScalar(2.4) })); lens.rotation.x = Math.PI / 2; lens.position.y = -0.29; g.add(lens);
     const cone = new THREE.Mesh(coneGeo, coneMat); g.add(cone);
     g.rotation.z = Math.cos(a) * 0.22; g.rotation.x = -Math.sin(a) * 0.22; ARENA.add(g);
   }
@@ -713,7 +714,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   });
   // emitter heads round the wall where the beams are anchored
   const emit = [];
-  for (let i = 0; i < 64; i++) { const a = i / 64 * TAU; facing(a); onWall(a, R - 0.35, SHAFT.grid); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); emit.push(M4.clone()); }
+  for (let i = 0; i < 64; i++) { const a = i / 64 * TAU; facing(a); onWall(a, R - 0.4, SHAFT.grid); Sc.set(1, 1, 1); M4.compose(P, Q, Sc); emit.push(M4.clone()); }
   inst(new THREE.BoxGeometry(0.5, 0.35, 0.6), darkSteel, emit);
   const emG = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 0.12, 0.72), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x30ff60).multiplyScalar(2.6) }), emit.length);
   emit.forEach((m, i) => emG.setMatrixAt(i, m)); ARENA.add(emG);
@@ -821,9 +822,9 @@ function buildCourt() {
   wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0x5a12ff); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0x5a12ff);
   wall(2 * hx, 0, hz, Math.PI, 1, 0x5a12ff); wall(2 * hx, 0, -hz, 0, 1, 0x5a12ff);
   // frame beams along every edge of the box
-  const beam = (len, x, y, z, axis, color, k) => { const s = [0.14, 0.14, 0.14]; s[axis] = len; const m = new THREE.Mesh(new THREE.BoxGeometry(s[0], s[1], s[2]), emissiveMat(color, k)); m.position.set(x, y, z); g.add(m); };
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x5a12ff, 3);
-  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x5a12ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0x5a12ff, 2.6); }
+  const beam = (len, x, y, z, axis, color, k, th) => { const s = [th || 0.14, th || 0.14, th || 0.14]; s[axis] = len; const m = new THREE.Mesh(new THREE.BoxGeometry(s[0], s[1], s[2]), emissiveMat(color, k)); m.position.set(x, y, z); g.add(m); };
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H + 0.04, sx * hx, yMid, sz * hz, 1, 0x5a12ff, 3, 0.17);
+  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x5a12ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0x5a12ff, 2.6, 0.155); }
   ARENA.add(g); COURT.g = g;
   for (const l of RIMS) l.position.set(l.userData.sx * (hx - 1.5), 7, l.userData.sz * (hz - 1.5));
   buildCeiling();
@@ -854,9 +855,9 @@ function buildCeiling() {
   const s = 1.55, plates = [], rOcc = 7.5;
   for (let q = -30; q <= 30; q++) for (let r = -30; r <= 30; r++) {
     const x = s * Math.sqrt(3) * (q + r / 2), z = s * 1.5 * r, d = Math.hypot(x, z);
-    if (Math.abs(x) < BOX.hx - s * 0.6 && Math.abs(z) < BOX.hz - s * 0.6 && d > rOcc + 0.8) plates.push([x, z, d]);
+    if (Math.abs(x) < BOX.hx - s * 1.05 && Math.abs(z) < BOX.hz - s * 1.05 && d > rOcc + 0.8) plates.push([x, z, d]);
   }
-  const plateGeo = new THREE.CylinderGeometry(s * 0.97, s * 0.97, 0.22, 6); plateGeo.rotateY(Math.PI / 6);
+  const plateGeo = new THREE.CylinderGeometry(s * 0.97, s * 0.97, 0.22, 6);   // pointy along z, matching the axial grid
   const plateMat = new THREE.MeshStandardMaterial({ color: 0x0a0b12, metalness: 0.9, roughness: 0.22, transparent: true, opacity: 0.94 });
   const seamGeo = new THREE.RingGeometry(s * 0.955, s * 1.0, 6, 1); seamGeo.rotateX(Math.PI / 2); seamGeo.rotateY(Math.PI / 6);
   const seamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });

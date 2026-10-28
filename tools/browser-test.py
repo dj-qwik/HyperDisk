@@ -28,7 +28,7 @@ with sync_playwright() as pw:
     for s in steps:
         if 'wait' in s: pg.wait_for_timeout(s['wait'])
         if 'js' in s:
-            try: v = pg.evaluate(s['js']); print('js ->', json.dumps(v)[:2000] if v is not None else None)
+            try: v = pg.evaluate(s['js']); print('js ->', (json.dumps(v) if os.environ.get('FULL') else json.dumps(v)[:2000]) if v is not None else None)
             except Exception as e: print('js error', e)
         if 'key' in s: pg.keyboard.press(s['key'])
         if 'down' in s: pg.keyboard.down(s['down'])

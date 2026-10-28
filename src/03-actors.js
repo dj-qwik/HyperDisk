@@ -102,11 +102,11 @@ function buildBulwarks(on) {
     const fx = Math.sin(st.yaw), fz = Math.cos(st.yaw), cx = st.x + fx * 4.6, cz = st.z + fz * 4.6;
     BULWARKS.push({ st: st.i, x: cx, z: cz, fx, fz, rx: -fz, rz: fx, hw, top });
     const g = new THREE.Group(); g.position.set(cx, 0, cz); g.rotation.y = st.yaw;
-    const slab = new THREE.Mesh(rbox(hw * 2, top + 0.6, 0.5, 0.12), new THREE.MeshStandardMaterial({ color: 0x14161e, metalness: 0.85, roughness: 0.35, normalMap: HULLT.nrm, map: HULLT.map, emissiveMap: HULLT.em, emissive: new THREE.Color(st.color).multiplyScalar(0.9) }));
+    const slab = new THREE.Mesh(rbox(hw * 2 - 0.04, top + 0.52, 0.5, 0.12), new THREE.MeshStandardMaterial({ color: 0x14161e, metalness: 0.85, roughness: 0.35, normalMap: HULLT.nrm, map: HULLT.map, emissiveMap: HULLT.em, emissive: new THREE.Color(st.color).multiplyScalar(0.9) }));
     slab.position.y = (top - 0.6) / 2; slab.castShadow = true; slab.receiveShadow = true; g.add(slab);
     const c = new THREE.Color(st.color);
     for (const y of [-0.55, top]) { const e = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 0.06, 0.07, 0.56), emissiveMat(c, 3)); e.position.y = y; g.add(e); }
-    for (const x of [-hw, hw]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.07, top + 0.62, 0.56), emissiveMat(c, 3)); e.position.set(x, (top - 0.6) / 2, 0); g.add(e); }
+    for (const x of [-hw, hw]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.09, top + 0.74, 0.6), emissiveMat(c, 3)); e.position.set(x, (top - 0.6) / 2, 0); g.add(e); }
     const under = new THREE.Mesh(new THREE.ConeGeometry(0.9, 2.2, 6, 1, true), glowMat(c, 1.6, 0.5)); under.rotation.x = Math.PI; under.position.y = -1.7; g.add(under);
     bulwarkGroup.add(g);
   }
@@ -198,7 +198,8 @@ const WALLFW = {
     const geo = new THREE.BoxGeometry(TAU * RB / this.cols - 0.22, this.half * 2 - 0.08, 0.55);
     const mat = new THREE.MeshBasicMaterial({ map: BLOCKT, color: new THREE.Color(0xff2200).multiplyScalar(1.25), transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const gmat = new THREE.MeshStandardMaterial({ color: 0x220a04, metalness: 0.4, roughness: 0.1, transparent: true, opacity: 0.35 });
-    this.im = new THREE.InstancedMesh(geo, mat, n); this.glass = new THREE.InstancedMesh(geo, gmat, n);
+    const ggeo = new THREE.BoxGeometry(TAU * RB / this.cols - 0.28, this.half * 2 - 0.14, 0.49);   // glass core just inside the glowing shell
+    this.im = new THREE.InstancedMesh(geo, mat, n); this.glass = new THREE.InstancedMesh(ggeo, gmat, n);
     this.im.frustumCulled = this.glass.frustumCulled = false; this.im.renderOrder = 3;
     for (let i = 0; i < n; i++) this.blocks.push({ c: i % this.cols, r: (i / this.cols) | 0, state: 0, t: 0 });
     scene.add(this.glass, this.im);
@@ -518,7 +519,7 @@ function makeRunner(color) {
   // spare discs on the back dock, and the disc held in the throwing (right) hand
   const dock = new THREE.Group(); dock.position.set(0, 0.0, -0.17); B.chest.add(dock);
   const dockDiscs = [];
-  for (let i = 0; i < 3; i++) { const d = makeDiscMesh(color, 0.36); d.userData.rimM.color.multiplyScalar(0.45); d.userData.haloM.opacity = 0.15; d.rotation.x = Math.PI / 2; d.position.set(0, 0, -0.03 - i * 0.032); dock.add(d); dockDiscs.push(d); }
+  for (let i = 0; i < 3; i++) { const d = makeDiscMesh(color, 0.36); d.userData.rimM.color.multiplyScalar(0.45); d.userData.haloM.opacity = 0.15; d.rotation.x = Math.PI / 2; d.position.set(0, 0, -0.035 - i * 0.058); dock.add(d); dockDiscs.push(d); }
   const handDisc = makeDiscMesh(color, 0.62); handDisc.position.set(0, -0.08, 0.05); handDisc.rotation.z = Math.PI / 2; handDisc.visible = false; B.handR.add(handDisc);
   // deflector: a hex-lattice energy shell in front of the body
   const shieldMat = new THREE.ShaderMaterial({
