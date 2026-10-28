@@ -132,7 +132,8 @@ function encBody(p) {
   return [r2(p.x), r2(p.y), r2(p.z), r3(p.yaw), r3(p.aimYaw), r2(p.aimElev), MODES.indexOf(p.mode), p.lives, p.heat, p.shieldOn ? 1 : 0, p.charge > 0 ? (p.charge >= D_CHARGE ? 2 : 1) : 0, p.discsHome,
     r2(p.vx), r2(p.vz), p.onGround ? 1 : 0, Math.round(p.flash * 10), p.stun > 0 ? 1 : 0, p.defl, p.invuln > 0 ? 1 : 0, p.teeter > 0 ? 1 : 0];
 }
-function encDiscs(p) { return p.discs.map(d => d.state === 'home' ? 0 : [d.state === 'fly' ? 1 : 2, r2(d.pos.x), r2(d.pos.y), r2(d.pos.z), r2(d.vel.x), r2(d.vel.y), r2(d.vel.z), d.power ? 1 : 0]); }
+const MOD_CODES = { split: 1, boom: 2, oc: 3, seek: 4 }, MOD_NAMES = [null, 'split', 'boom', 'oc', 'seek'];
+function encDiscs(p) { return p.allDiscs.map(d => d.state === 'home' ? 0 : [d.state === 'fly' ? 1 : 2, r2(d.pos.x), r2(d.pos.y), r2(d.pos.z), r2(d.vel.x), r2(d.vel.y), r2(d.vel.z), d.power ? 1 : 0, MOD_CODES[d.mod] || 0, d.target ? d.target.slot : -1, d.child ? 1 : 0]); }
 const encStats = p => [p.stats.hits, p.stats.rings, p.stats.kos, p.stats.defl];
 function netTick() {
   if (!NET.room) return;
@@ -146,7 +147,7 @@ function netTick() {
   if (NET.role === 'host') {
     if (state === 'lobby') pres.g = { lob: { ro: hostLobbyRoster(), ar: S.arena, lv: S.lives, sk: S.skill, cpus: S.cpus } };
     else pres.g = { m: { rid: NET.curRid, cfg: lastCfg, ph: PHASES.indexOf(state), pt: r2(phaseT), t: r2(matchT), w: winner ? winner.slot : -1,
-      bots: players.filter(p => p.kind === 'cpu').map(p => [p.slot, encBody(p), encDiscs(p), encStats(p)]) } };
+      bots: players.filter(p => p.kind === 'cpu').map(p => [p.slot, encBody(p), encDiscs(p), encStats(p)]), pu: encPowerups() } };
   } else pres.g = null;
   NET.room.presence(pres).catch(() => {});
 }
@@ -156,7 +157,7 @@ function netStartMatch() {
   const ro = hostLobbyRoster().map(r => r.slice());
   ro[0][0] = NET.myPeer;
   const ar = ARENAS[S.arena].id === 'random' ? Math.floor(Math.random() * (ARENAS.length - 1)) : S.arena;
-  startMatch({ ro, ar, lv: S.lives, sk: S.skill, rid: NET.curRid });
+  startMatch({ ro, ar, lv: S.lives, sk: S.skill, rid: NET.curRid, pu: S.pu });
   NET.lastSend = 0; netTick();
 }
 
@@ -182,6 +183,7 @@ function netRecv(dt) {
         if (ph === 'play' && (state === 'intro' || state === 'count')) { if (state === 'intro') toCount(); toPlay(); }
         if (ph === 'end' && state !== 'end') endMatch(m.w);
         for (const b of m.bots || []) { const p = players[b[0]]; if (p && !p.local) applyRemote(p, b[1], b[2], b[3], h.at); }
+        syncPowerups(m.pu);
       }
     }
     if (performance.now() - NET.hostSeenAt > 9000 && performance.now() - NET.joinedAt > 9000) { netLeave('Lost the host.'); return; }
@@ -199,10 +201,12 @@ function netRecv(dt) {
 }
 function applyEvent(ev) {
   const k = ev[1];
-  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), clamp(num(ev[7], 1), 0, 2)); }
+  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), clamp(num(ev[7], 1), 0, 2), clamp(num(ev[8], 1), 0, 2), !!ev[9]); }
   else if (k === 'd') { const p = players[ev[2]]; if (p && p.local) shieldStruck(p, !!ev[3]); else if (p) p.rig.shieldMat.uniforms.uHit.value = 1; }
   else if (k === 'r') { ringBreak(num(ev[2]), num(ev[3]), num(ev[4])); }
   else if (k === 'b') { WALLFW.breakBlock(num(ev[2])); }
+  else if (k === 'o') { const p = players[ev[2]]; if (p && p.local) shieldDisable(p); }
+  else if (k === 'u') { if (NET.role === 'host') removePowerup(num(ev[2])); }
   else if (k === 'k') { const p = players[ev[2]]; if (p && p.local) { p.stats.kos++; p.defl = DEFLECTS; popFor(p, 'KNOCKOUT! DEFLECTOR FULL'); } }
 }
 function applyRemote(p, b, d, st, at) {
@@ -220,7 +224,7 @@ function applyRemote(p, b, d, st, at) {
     if (!(state === 'end' && p === winner)) p.mode = mode;
   }
   if (Array.isArray(st)) { p.stats.hits = num(st[0]); p.stats.rings = num(st[1]); p.stats.kos = Math.max(p.stats.kos, num(st[2])); p.stats.defl = num(st[3]); }
-  if (Array.isArray(d)) d.forEach((v, i) => { const dc = p.discs[i]; if (dc) dc.net = { v, at }; });
+  if (Array.isArray(d)) d.forEach((v, i) => { const dc = p.allDiscs[i]; if (dc) dc.net = { v, at }; });
 }
 function remoteBodyStep(p, dt) {
   const n = p.net; if (!n) return;
@@ -237,10 +241,15 @@ const _ov = new THREE.Vector3();
 function remoteDiscStep(d, dt) {
   const n = d.net; if (!n) return;
   const v = n.v;
-  if (!Array.isArray(v)) { if (d.state !== 'home') { d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false; } return; }
+  if (!Array.isArray(v)) { if (d.state !== 'home') { d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false; d.warned = false; if (d.mod || d.child) { d.mod = null; d.child = false; setDiscLook(d); } } return; }
+  // what's loaded into it (split / explosive / overclock / seeker) and who a seeker is after
+  const mod = MOD_NAMES[num(v[8])] || null, child = !!v[10];
+  if (mod !== d.mod || child !== !!d.child) { d.mod = mod; d.child = child; setDiscLook(d); }
+  d.target = num(v[9], -1) >= 0 ? players[num(v[9])] || null : null;
+  if (d.mod === 'seek' && d.target && d.target.local && !d.warned) { d.warned = true; popFor(d.target, 'SEEKER INCOMING!', true); SFX.seekLock(d.target); }
   const age = Math.min(0.15, (performance.now() - n.at) / 1000);
   const tx = v[1] + v[4] * age, ty = v[2] + v[5] * age, tz = v[3] + v[6] * age;
-  if (d.state === 'home') { d.state = v[0] === 1 ? 'fly' : 'ret'; d.pos.set(tx, ty, tz); d.vel.set(v[4], v[5], v[6]); d.mesh.visible = true; d.trail.reset(d.pos); d.trail.mesh.visible = true; d.power = !!v[7]; d.mesh.scale.setScalar(d.power ? 0.95 : 0.78); d.owner.throwT = 0.28; SFX.throwDisc(d.power, d.owner); return; }
+  if (d.state === 'home') { d.state = v[0] === 1 ? 'fly' : 'ret'; d.pos.set(tx, ty, tz); d.vel.set(v[4], v[5], v[6]); d.mesh.visible = true; d.trail.reset(d.pos); d.trail.mesh.visible = true; d.power = !!v[7]; setDiscLook(d); if (!d.extra) { d.owner.throwT = 0.28; SFX.throwDisc(d.power || d.mod === 'boom', d.owner); } return; }
   d.state = v[0] === 1 ? 'fly' : 'ret';
   _ov.copy(d.vel); d.vel.set(v[4], v[5], v[6]);
   // a sharp change of direction means it bounced off something: show it here too

@@ -76,7 +76,7 @@ function makePlayer(slot, kind, ctl, name, color) {
     yaw: 0, aimYaw: 0, lvl: 1, aimElev: ELEV_LEVEL, mode: 'idle', lives: S.lives, heat: 0, stun: 0, invuln: 0, flash: 0,
     shieldE: 100, defl: DEFLECTS, teeter: 0, edgePush: 0, edgeDx: 0, edgeDz: 0, leaping: false, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
     fallT: 0, deadT: 0, lastHitBy: -1, lastHitAt: -99, stride: 0, animT: Math.random() * 10,
-    stats: { hits: 0, rings: 0, kos: 0, defl: 0, thrown: 0 }, bot: null, skill: S.skill,
+    stats: { hits: 0, rings: 0, kos: 0, defl: 0, thrown: 0 }, bot: null, skill: S.skill, weapon: null, anchorT: 0,
     net: null, shake: 0, popQ: []
   };
   scene.add(p.rig.root);
@@ -85,13 +85,21 @@ function makePlayer(slot, kind, ctl, name, color) {
       mesh: makeDiscMesh(PCOL[slot], 1), trail: new Trail(PCOL[slot], 13, 0.07), spin: Math.random() * 6, clashT: 0, seen: false, ghostT: 0 };
     d.mesh.visible = false; d.trail.mesh.visible = false; scene.add(d.mesh); p.discs.push(d); DISCS.push(d);
   }
+  // spare discs for SPLIT DISC fragments: they fly once and then fizzle out instead of coming home
+  p.extras = [];
+  for (let k = 0; k < 4; k++) {
+    const d = { id: slot * 10 + 3 + k, k: 3 + k, owner: p, extra: true, state: 'home', pos: new THREE.Vector3(), vel: new THREE.Vector3(), bounces: 0, t: 0, power: false, deflected: false, immune: null, immuneT: 0,
+      mesh: makeDiscMesh(PCOL[slot], 1), trail: new Trail(PCOL[slot], 10, 0.05), spin: Math.random() * 6, clashT: 0, seen: false, ghostT: 0 };
+    d.mesh.visible = false; d.trail.mesh.visible = false; scene.add(d.mesh); p.extras.push(d); DISCS.push(d);
+  }
+  p.allDiscs = p.discs.concat(p.extras);
   if (kind === 'cpu') p.bot = { think: 0, plan: null, target: null, tgtT: 0, threat: null, react: 0, shieldT: 0, dodge: null, wander: null, wanderT: 0, noise: 0, noiseV: 0, holdFire: 0, decided: new Set() };
   return p;
 }
 function disposePlayer(p) {
   scene.remove(p.rig.root);
   p.rig.root.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
-  for (const d of p.discs) { scene.remove(d.mesh); d.trail.dispose(); const i = DISCS.indexOf(d); if (i >= 0) DISCS.splice(i, 1); }
+  for (const d of p.allDiscs) { scene.remove(d.mesh); d.trail.dispose(); const i = DISCS.indexOf(d); if (i >= 0) DISCS.splice(i, 1); }
 }
 function stationOf(p) { return STATIONS[p.slot]; }
 function homePad(p) { const st = stationOf(p); return st.pads[st.pads.length === 3 ? 1 : 0]; }
@@ -249,20 +257,53 @@ function throwDisc(p, power) {
   d.vel.set(_ap.x - d.pos.x, _ap.y - d.pos.y, _ap.z - d.pos.z).normalize().multiplyScalar(power ? D_POWER : D_SPEED);
   d.state = 'fly'; d.t = 0; d.bounces = 0; d.power = power; d.deflected = false; d.immune = p; d.immuneT = 0.35; d.clashT = 0; d.ghostT = 0;
   d.mesh.visible = true; d.mesh.scale.setScalar(power ? 0.95 : 0.78); d.trail.reset(d.pos); d.trail.mesh.visible = true; d.trail.mat.uniforms.uA.value = power ? 1.5 : 1;
+  d.mod = null; d.child = false; d.didSplit = false; d.travel = 0; d.ocUsed = false; d.target = null; d.beepT = 0;
+  if (p.weapon && p.weapon.n > 0) {
+    d.mod = p.weapon.type; p.weapon.n--; if (p.weapon.n <= 0) p.weapon = null;
+    if (d.mod === 'seek') {
+      d.target = aimTarget(p, p.aimYaw) || nearestFacing(p);
+      d.vel.setLength(SEEK_SPEED);
+      if (d.target) { popFor(d.target, 'SEEKER INCOMING!', true); SFX.seekLock(d.target); }
+    }
+  }
+  setDiscLook(d);
   p.discsHome--; p.throwT = 0.28; p.cool = D_COOL; p.stats.thrown++;
-  SFX.throwDisc(power, p);
+  SFX.throwDisc(power || d.mod === 'boom', p);
 }
-function recallDiscs(p) { let n = 0; for (const d of p.discs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; n++; } if (n) SFX.recall(p); }
-function dockDisc(d) { d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false; d.owner.discsHome = Math.min(3, d.owner.discsHome + 1); }
+// the rival most in front of you (for a seeker thrown with nobody under the crosshair)
+function nearestFacing(p) {
+  let best = null, bd = 1e9;
+  for (const o of players) { if (o === p || o.mode !== 'play') continue; const a = Math.abs(angDiff(p.aimYaw, Math.atan2(o.x - p.x, o.z - p.z))); if (a < bd) { bd = a; best = o; } }
+  return best;
+}
+// colour/size of a disc by what's loaded into it
+function setDiscLook(d) {
+  const u = d.mesh.userData, M = MOD_LOOK[d.mod] || null, c = M ? new THREE.Color(M.color) : u.c;
+  u.rimM.color.copy(c).multiplyScalar(M ? M.glow : 3.4); u.faceM.emissive.copy(c).multiplyScalar(2.2); u.haloM.color.copy(c).multiplyScalar(2);
+  d.trail.mat.uniforms.uC.value.copy(c);
+  d.mesh.scale.setScalar(d.child ? 0.5 : d.mod ? 0.9 : 0.78);
+}
+function recallDiscs(p) { let n = 0; for (const d of p.allDiscs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; n++; } if (n) SFX.recall(p); }
+function dockDisc(d) {
+  const wasHome = d.state === 'home';
+  d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false;
+  if (d.mod || d.child) { d.mod = null; d.child = false; setDiscLook(d); }
+  if (d.extra) { if (!wasHome) sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 10, 3, 0.35, 0.05); return; }   // fragments fizzle out
+  d.owner.discsHome = Math.min(3, d.owner.discsHome + 1);
+}
 
 function updateDisc(d, dt) {
   const p = d.owner;
+  // other players' discs come from the network, including the moment they're thrown (they start 'home')
+  if (!p.local) { remoteDiscStep(d, dt); d.spin += dt * 24; return; }
   if (d.state === 'home') return;
   d.spin += dt * (d.power ? 34 : 24);
-  if (!p.local) { remoteDiscStep(d, dt); return; }
   d.t += dt; d.immuneT -= dt; d.clashT -= dt;
   const steps = 2, h = dt / steps;
   for (let s = 0; s < steps && d.state !== 'home'; s++) {
+    if (d.state === 'ret' && d.extra) { dockDisc(d); return; }
+    if (d.state === 'fly' && d.mod === 'split' && !d.didSplit) { d.travel += d.vel.length() * h; if (d.travel >= SPLIT_AT) splitDisc(d); }
+    if (d.state === 'fly' && d.mod === 'seek' && d.target && d.t < SEEK_TIME) steerSeeker(d, h);
     if (d.state === 'ret') {
       const ownerUp = p.mode === 'play' || p.mode === 'idle' || p.mode === 'win';
       if (ownerUp) handPos(p, _tmp); else { const pad = homePad(p); _tmp.set(pad.x, pad.y + 1, pad.z); }
@@ -279,6 +320,29 @@ function updateDisc(d, dt) {
     if (d.state !== 'home') discVsBodies(d);
     if (d.state !== 'home') discVsDiscs(d);
   }
+}
+function splitDisc(d) {
+  d.didSplit = true; d.child = true; setDiscLook(d);
+  const p = d.owner;
+  for (const ang of [-SPLIT_ANGLE, SPLIT_ANGLE]) {
+    const e = p.extras.find(x => x.state === 'home'); if (!e) break;
+    const c = Math.cos(ang), s = Math.sin(ang);
+    e.pos.copy(d.pos); e.vel.set(d.vel.x * c + d.vel.z * s, d.vel.y, -d.vel.x * s + d.vel.z * c);
+    e.state = 'fly'; e.t = 0; e.bounces = d.bounces; e.power = false; e.deflected = false; e.immune = p; e.immuneT = 0.3; e.clashT = 0.15; d.clashT = 0.15;
+    e.mod = null; e.child = true; e.didSplit = true; setDiscLook(e); e.mesh.visible = true; e.trail.reset(e.pos); e.trail.mesh.visible = true;
+  }
+  sparks(d.pos.x, d.pos.y, d.pos.z, MOD_LOOK.split.color, 24, 6, 0.4, 0.06); SFX.split(d.pos);
+}
+// seeker: swings its heading toward the target's chest at a limited turn rate, so a sidestep or a shield still beats it
+const _sk = new THREE.Vector3();
+function steerSeeker(d, h) {
+  const t = d.target; if (t.mode !== 'play') { d.target = null; return; }
+  _sk.set(t.x - d.pos.x, t.y + CHEST_Y - d.pos.y, t.z - d.pos.z); const dist = _sk.length(); if (dist < 0.01) return;
+  _sk.divideScalar(dist);
+  const v = d.vel, sp = v.length() || SEEK_SPEED; _n.copy(v).divideScalar(sp);
+  const ang = Math.acos(clamp(_n.dot(_sk), -1, 1)), maxA = SEEK_TURN * h;
+  if (ang > 1e-4) _n.lerp(_sk, Math.min(1, maxA / ang)).normalize();
+  v.copy(_n).multiplyScalar(SEEK_SPEED);
 }
 function onDiscEnv(d, e) {
   const c = d.owner.color, x = d.pos.x, y = d.pos.y, z = d.pos.z;
@@ -303,19 +367,35 @@ function discVsBodies(d) {
     if (o === d.owner && !d.deflected) continue;
     if (o === d.immune && d.immuneT > 0) continue;
     // deflector first: it is bigger than the body
-    if (o.shieldOn && inShield(o, d.pos.x, d.pos.y, d.pos.z) && shieldFacing(o, d.pos.x, d.pos.z)) {
+    if (o.shieldOn && !d.ocUsed && inShield(o, d.pos.x, d.pos.y, d.pos.z) && shieldFacing(o, d.pos.x, d.pos.z)) {
+      if (d.mod === 'oc') {
+        // OVERCLOCK: the disc burns straight through and knocks the shield offline
+        d.ocUsed = true;
+        if (o.local) shieldDisable(o); else netEvent(['o', o.slot]);
+        sparks(d.pos.x, d.pos.y, d.pos.z, MOD_LOOK.oc.color, 40, 10, 0.6, 0.08); shockRing(d.pos.x, d.pos.y, d.pos.z, d.vel.x, d.vel.y, d.vel.z, MOD_LOOK.oc.color, 2.6, 0.4);
+        popFor(d.owner, 'SHIELD SHATTERED'); SFX.shieldBreak(o); continue;
+      }
       _n.set(d.pos.x - o.x, d.pos.y - (o.y + SHIELD_Y), d.pos.z - o.z).normalize();
       const vn = d.vel.dot(_n); if (vn < 0) d.vel.addScaledVector(_n, -2 * vn);
       d.vel.multiplyScalar(1.06); d.pos.copy(_n).multiplyScalar(SHIELD_R + 0.05).add(_tmp.set(o.x, o.y + SHIELD_Y, o.z));
       d.deflected = true; d.immune = o; d.immuneT = 0.4; d.state = 'fly'; d.bounces = Math.min(d.bounces, 1); d.t = Math.min(d.t, 1.5);
       if (o.local) shieldStruck(o, d.power); else netEvent(['d', o.slot, d.power ? 1 : 0]);
       sparks(d.pos.x, d.pos.y, d.pos.z, o.color, 26, 9, 0.5, 0.07); shockRing(d.pos.x, d.pos.y, d.pos.z, _n.x, _n.y, _n.z, o.color, 1.6, 0.35);
+      if (d.mod === 'boom') {
+        // EXPLOSIVE: blocked, but the blast still shoves you a little
+        const bx = -_n.x, bz = -_n.z, bl = Math.hypot(bx, bz) || 1;
+        if (o.local) applyHit(o, bx / bl, bz / bl, false, d.owner.slot, 1, BOOM_BLOCKED, true); else netEvent(['h', o.slot, +(bx / bl).toFixed(3), +(bz / bl).toFixed(3), 0, d.owner.slot, 1, BOOM_BLOCKED, 1]);
+        explode(d); d.mod = null; setDiscLook(d);
+      }
+      if (d.mod === 'seek') { d.mod = null; d.target = null; setDiscLook(d); }
       SFX.deflect(d.pos); return;
     }
     if (hitsBody(o, d.pos.x, d.pos.y, d.pos.z, D_R * 0.8)) {
       const hl = Math.hypot(d.vel.x, d.vel.z) || 1, dx = d.vel.x / hl, dz = d.vel.z / hl;
-      const zone = hitZone(o, d.pos.x, d.pos.y, d.pos.z, d.vel.x, d.vel.z);
-      if (o.local) applyHit(o, dx, dz, d.power, d.owner.slot, zone); else netEvent(['h', o.slot, +dx.toFixed(3), +dz.toFixed(3), d.power ? 1 : 0, d.owner.slot, zone]);
+      const zone = hitZone(o, d.pos.x, d.pos.y, d.pos.z, d.vel.x, d.vel.z), mul = d.child ? SPLIT_MUL : d.mod === 'boom' ? BOOM_MUL : 1;
+      if (o.local) applyHit(o, dx, dz, d.power, d.owner.slot, zone, mul); else netEvent(['h', o.slot, +dx.toFixed(3), +dz.toFixed(3), d.power ? 1 : 0, d.owner.slot, zone, mul, 0]);
+      if (d.mod === 'boom') explode(d);
+      if (d.mod) { d.mod = null; d.target = null; setDiscLook(d); }
       if (o !== d.owner) { d.owner.stats.hits++; if (zone === 0) d.owner.stats.heads = (d.owner.stats.heads || 0) + 1; popFor(d.owner, (d.bounces && zone < 2 ? 'BANK ' : '') + ZONES[zone].name); }
       sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 40, 10, 0.7, 0.09); sparks(d.pos.x, d.pos.y, d.pos.z, 0xffffff, 12, 6, 0.4, 0.06);
       d.vel.set(-d.vel.x * 0.3, 5, -d.vel.z * 0.3); d.state = 'ret'; d.t = 0; d.immune = o; d.immuneT = 1;
@@ -348,19 +428,39 @@ function updateDiscVisual(d, dt) {
   d.mesh.rotateY(d.spin);
   d.trail.push(d.pos);
   if (d.power && Math.random() < 0.6) sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 1, 1.5, 0.35, 0.05);
+  if (d.mod) {
+    const M = MOD_LOOK[d.mod], u = d.mesh.userData, t = uTime.value;
+    if (d.mod === 'seek') {
+      const on = Math.sin(t * 34) > 0; u.rimM.color.setRGB(on ? 6 : 2.4, on ? 6 : 0.1, on ? 6 : 0.1); u.haloM.color.setRGB(on ? 4 : 1.5, on ? 1 : 0, on ? 1 : 0);
+      d.mesh.scale.setScalar(0.95 + (on ? 0.35 : 0)); if (Math.random() < 0.8) sparks(d.pos.x, d.pos.y, d.pos.z, on ? 0xffffff : 0xff1414, 1, 1.2, 0.3, 0.07);
+      d.beepT -= dt; if (d.beepT <= 0) { d.beepT = 0.16; SFX.seekBeep(d.pos); }
+    } else if (d.mod === 'boom') { if (Math.random() < 0.9) sparks(d.pos.x, d.pos.y, d.pos.z, Math.random() < 0.5 ? 0xff6a00 : 0xff2a0a, 2, 2.5, 0.4, 0.07); }
+    else if (d.mod === 'oc') { u.rimM.color.copy(new THREE.Color(M.color)).multiplyScalar(3 + Math.random() * 3); if (Math.random() < 0.7) sparks(d.pos.x, d.pos.y, d.pos.z, 0xffffff, 1, 4, 0.18, 0.04); }
+  }
 }
 const UP = new THREE.Vector3(0, 1, 0);
 
 /* ================= getting hit ================= */
-function applyHit(o, dx, dz, power, bySlot, zone) {
+function applyHit(o, dx, dz, power, bySlot, zone, mul, blocked) {
   if (o.mode !== 'play' || o.invuln > 0) return;
-  const Z = ZONES[zone == null ? 1 : zone] || ZONES[1];
-  const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * Z.kb;
-  o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + Z.heat * (power ? 2 : 1));
+  const Z = ZONES[zone == null ? 1 : zone] || ZONES[1], m = (mul == null ? 1 : mul) * (o.anchorT > 0 ? ANCHOR_MUL : 1);
+  const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * Z.kb * m;
+  o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + Z.heat * (power ? 2 : 1) * m);
+  if (blocked) { o.flash = 0.4; o.shake = 0.25; viewFlash(o, 0xff6a00, 0.4); popFor(o, 'BLAST'); return; }
   o.stun = zone === 0 ? 0.5 : zone === 2 ? 0.22 : 0.36; o.flash = 1; o.charge = 0; o.shieldOn = false; o.lastHitBy = bySlot; o.lastHitAt = matchT; o.shake = zone === 0 ? 0.6 : zone === 2 ? 0.2 : 0.35;
   viewFlash(o, 0xff1030, zone === 0 ? 1 : zone === 2 ? 0.45 : 0.7);
   popFor(o, zone === 0 ? 'HEAD HIT' : zone === 2 ? 'GLANCED' : 'HIT');
   SFX.hurt(o);
+}
+// OVERCLOCK hit: the shield drops and can't come back up for a few seconds (no block used)
+function shieldDisable(o) {
+  o.shieldOn = false; o.shieldCD = OC_DOWN; o.stun = Math.max(o.stun, 0.15); o.flash = 0.6;
+  popFor(o, 'SHIELD OFFLINE'); viewFlash(o, 0xffe600, 0.6); SFX.shieldBreak(o);
+}
+function explode(d) {
+  const x = d.pos.x, y = d.pos.y, z = d.pos.z;
+  sparks(x, y, z, 0xff6a00, 70, 13, 0.8, 0.12); sparks(x, y, z, 0xffe600, 30, 8, 0.6, 0.09); sparks(x, y, z, 0xffffff, 14, 5, 0.4, 0.07);
+  shockRing(x, y, z, 0, 1, 0, 0xff6a00, 4.2, 0.55); shockRing(x, y, z, d.vel.x, d.vel.y, d.vel.z, 0xff2a0a, 3, 0.45); SFX.explode(d.pos);
 }
 // the deflector has DEFLECTS uses per life; a power disc costs two
 function shieldStruck(o, power) {
@@ -386,7 +486,7 @@ function stepPlayer(p, inp, dt) {
   }
   if (p.mode !== 'play') return;
   const live = state === 'play' || DEMO;
-  p.stun = Math.max(0, p.stun - dt); p.invuln = Math.max(0, p.invuln - dt); p.cool = Math.max(0, p.cool - dt); p.throwT = Math.max(0, p.throwT - dt); p.shieldCD = Math.max(0, p.shieldCD - dt);
+  p.anchorT = Math.max(0, p.anchorT - dt); p.stun = Math.max(0, p.stun - dt); p.invuln = Math.max(0, p.invuln - dt); p.cool = Math.max(0, p.cool - dt); p.throwT = Math.max(0, p.throwT - dt); p.shieldCD = Math.max(0, p.shieldCD - dt);
   const ctl = live && p.stun <= 0;
 
   // aim
@@ -516,14 +616,15 @@ function startFall(p, fromAir) {
   p.mode = 'fall'; p.fallT = 0; p.onGround = false; p.vy = fromAir ? p.vy : 0.5; if (!DEMO) p.lives = Math.max(0, p.lives - 1);
   p.shieldOn = false; p.charge = 0;
   if (p.lastHitBy >= 0 && matchT - p.lastHitAt < 5) { const k = players[p.lastHitBy]; if (k && k !== p) { if (k.local) { k.stats.kos++; k.defl = DEFLECTS; popFor(k, 'KNOCKOUT! DEFLECTOR FULL'); } else netEvent(['k', k.slot]); } }
-  for (const d of p.discs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; }
+  for (const d of p.allDiscs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; }
+  p.weapon = null; p.anchorT = 0;
   SFX.fall(p);
   popFor(p, p.lives > 0 ? 'FLATLINED' : 'ELIMINATED', true);
 }
 function respawn(p) {
   restoreStation(stationOf(p)); placeAtHome(p);
   p.mode = 'play'; p.heat = 0; p.stun = 0; p.invuln = 1.8; p.shieldE = 100; p.defl = DEFLECTS; p.teeter = 0; p.shieldOn = false; p.charge = 0; p.lastHitBy = -1;
-  for (const d of p.discs) if (d.state !== 'home') dockDisc(d);
+  for (const d of p.allDiscs) if (d.state !== 'home') dockDisc(d);
   p.discsHome = 3;
   sparks(p.x, p.y + 1, p.z, p.color, 50, 6, 0.8, 0.08); shockRing(p.x, p.y + 0.05, p.z, 0, 1, 0, p.color, 4, 0.6); SFX.respawn(p);
 }
@@ -578,7 +679,7 @@ function botInput(p, dt) {
       if (!B.choice) {
         const front = Math.abs(angDiff(p.yaw, Math.atan2(threat.pos.x - p.x, threat.pos.z - p.z))) < SHIELD_ARC * 0.9;
         const r = Math.random();
-        B.choice = (front && p.defl > 0 && p.discsHome > 0 && r < sk.block * (p.defl <= 2 ? (threat.power ? 1 : 0.4) : 1)) ? 'shield' : (Math.random() < sk.dodge ? 'dodge' : 'none');
+        B.choice = (front && p.defl > 0 && p.discsHome > 0 && r < (threat.mod === 'seek' ? Math.min(1, sk.block + 0.25) : sk.block) * (p.defl <= 2 ? (threat.power ? 1 : 0.4) : 1)) ? 'shield' : (Math.random() < sk.dodge ? 'dodge' : 'none');
         if (B.choice === 'dodge') {
           const vx = threat.vel.x, vz = threat.vel.z, l = Math.hypot(vx, vz) || 1; let sx = -vz / l, sz = vx / l;
           if (!supportAt(p.x + sx * 1.2, p.z + sz * 1.2, 0)) { sx = -sx; sz = -sz; }
@@ -620,6 +721,7 @@ function botInput(p, dt) {
     // a vanished ring in the way? just keep pushing: the auto-jump carries us across
     B.safe.t = Math.max(B.safe.t, 0.7);
   }
+  if (!goal && !B.threat && Math.random() < 0.98) { const g = puGoalFor(p, sk); if (g && Math.random() < 0.5 + p.skill * 0.15) goal = g; }
   if (!goal) {
     B.wanderT -= dt;
     const bad = B.wander && (!B.wander.ring || B.wander.ring.state !== 0);

@@ -76,7 +76,7 @@ function makeView(p, kind) {
   if (p && kind === 'player') {
     el.style.setProperty('--c', p.css);
     el.innerHTML = `<div class="frame"></div><div class="tags"></div>
-      <div class="who"><span class="n">${p.name}</span><span class="lives"></span></div>
+      <div class="who"><span class="n">${p.name}</span><span class="lives"></span><span class="puchip"></span></div>
       <div class="chg"></div><div class="msg"></div>
       <div class="bot">
         <div class="meter shield"><div class="t"><span>SHIELD</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
@@ -88,7 +88,7 @@ function makeView(p, kind) {
   viewsEl.appendChild(el); v.el = el;
   v.q = s => el.querySelector(s);
   if (p && kind === 'player') {
-    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg') };
+    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg'), pu: v.q('.puchip') };
   }
   v.tagLayer = v.q('.tags');
   return v;
@@ -183,6 +183,7 @@ function updateHud(v) {
     const H = v.hud;
     if (L.lives !== p.lives) { L.lives = p.lives; H.lives.innerHTML = Array.from({ length: Math.max(S.lives, p.lives) }, (_, i) => `<i class="${i < p.lives ? '' : 'gone'}"></i>`).join(''); }
     if (L.sh !== p.defl) { L.sh = p.defl; H.shield.style.width = (p.defl / DEFLECTS * 100) + '%'; H.dv.textContent = p.defl; H.shield.style.opacity = p.defl > 0 ? 1 : 0.3; }
+    { const chips = puChip(p), k = chips.map(c => c[0]).join('|'); if (L.pu !== k) { L.pu = k; H.pu.innerHTML = chips.map(([t, c]) => `<i style="--pc:#${new THREE.Color(c).getHexString()}">${t}</i>`).join(''); } }
     const hv = Math.round(p.heat / 8 * 100); if (L.hv !== hv) { L.hv = hv; H.heat.style.width = hv + '%'; H.hv.textContent = Math.round(100 + p.heat * KB_HEAT * 100) + '%'; }
     const dh = p.discsHome - (p.shieldOn && p.discsHome > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
     // elevation gauge: where the aim line sits between the bottom of the walls and the ceiling

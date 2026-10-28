@@ -152,6 +152,9 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .view .who { position: absolute; left: 14px; top: 12px; display: flex; align-items: center; gap: 10px; }
 .view .who .n { font-family: 'Orbitron'; font-weight: 900; font-size: 15px; letter-spacing: .16em; color: var(--c); text-shadow: 0 0 10px var(--c); }
 .lives { display: flex; gap: 4px; }
+.puchip { display: flex; gap: 6px; }
+.puchip i { font-style: normal; font-family: 'Orbitron'; font-weight: 900; font-size: 10px; letter-spacing: .14em; padding: 3px 8px; color: #fff; background: color-mix(in srgb, var(--pc) 55%, #000); border: 1px solid var(--pc); box-shadow: 0 0 12px var(--pc); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 4px var(--pc); } }
 .lives i { width: 12px; height: 13px; background: var(--c); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); box-shadow: 0 0 8px var(--c); }
 .lives i.gone { background: rgba(255,255,255,.12); }
 .view .bot { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 16px; }
@@ -203,6 +206,9 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .ill { width: 100%; max-width: 560px; height: auto; display: block; margin: 2px auto 4px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.06); }
 .ill .t { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: .08em; fill: #c9d3ff; font-weight: 700; }
 .ill .t.r { fill: #ff6b6b; }
+.pulist { list-style: none; padding-left: 0 !important; }
+.pulist li.pu { display: flex; align-items: flex-start; gap: 10px; }
+.pulist li.pu i { flex: 0 0 22px; height: 24px; margin-top: 1px; background: var(--pc); box-shadow: 0 0 10px var(--pc); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
 .howfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
 
 /* ---------- modals ---------- */
@@ -265,6 +271,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
       <div class="opt"><span class="k">LIVES</span><span class="pick"><button data-o="lives" data-d="-1">◀</button><span class="v" id="vLives"></span><button data-o="lives" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">CPU RIVALS</span><span class="pick"><button data-o="cpus" data-d="-1">◀</button><span class="v" id="vCpus"></span><button data-o="cpus" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">CPU SKILL</span><span class="pick"><button data-o="skill" data-d="-1">◀</button><span class="v" id="vSkill"></span><button data-o="skill" data-d="1">▶</button></span></div>
+      <div class="opt"><span class="k">POWER-UPS</span><span class="pick"><button data-o="pu" data-d="-1">◀</button><span class="v" id="vPu"></span><button data-o="pu" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">GRAPHICS</span><span class="pick"><button data-o="quality" data-d="-1">◀</button><span class="v" id="vQuality"></span><button data-o="quality" data-d="1">▶</button></span></div>
     </div>
 
@@ -286,7 +293,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
   <div id="howto" class="modal live" hidden>
     <div class="panel how">
       <div class="howhead"><h2>HOW TO PLAY</h2><button class="x live" id="howClose" title="Close (Esc / B)">×</button></div>
-      <div class="howtabs" id="howTabs"><button data-t="0" class="on">GOAL</button><button data-t="1">WHAT KNOCKS YOU OUT</button><button data-t="2">AIM &amp; THROW</button><button data-t="3">DEFEND</button><button data-t="4">CONTROLS</button></div>
+      <div class="howtabs" id="howTabs"><button data-t="0" class="on">GOAL</button><button data-t="1">WHAT KNOCKS YOU OUT</button><button data-t="2">AIM &amp; THROW</button><button data-t="3">DEFEND</button><button data-t="5">POWER-UPS</button><button data-t="4">CONTROLS</button></div>
       <div class="howpage" data-p="0">
         <svg viewBox="0 0 320 120" class="ill" aria-hidden="true">
           <ellipse cx="60" cy="88" rx="44" ry="13" fill="none" stroke="#1650ff" stroke-width="3"/><ellipse cx="60" cy="88" rx="28" ry="8" fill="none" stroke="#1650ff" stroke-width="2"/><ellipse cx="60" cy="88" rx="12" ry="3.5" fill="#1650ff"/>
@@ -346,9 +353,14 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
           <li><b>Shield:</b> <b>hold the throw button</b> and you raise a disc over your head; a shield opens from it and bounces discs away. Tap to throw, hold to shield. You need <b>at least one disc in hand</b> to shield, it only covers <b>your front</b>, and you get <b>7 blocks per life</b>. Knock a rival out to refill them.</li>
           <li><b>Smash their disc</b> out of the air with yours: both are destroyed and you get yours straight back.</li>
           <li><b>Missed discs come back</b> off the far wall and can hit you from behind, where the deflector can't help.</li>
-          <li><b>You can't walk off a platform.</b> To cross to another of your platforms, or over a gap where a ring shattered, hold toward it at the edge for half a second and you leap over. Nobody can hit you mid-leap.</li>
+          <li><b>You can't walk off a platform.</b> To cross to another of your platforms, or over a gap where a ring shattered, hold toward it at the edge for a quarter second and you leap over. Nobody can hit you mid-leap.</li>
           <li><b>Recall</b> calls all your discs home at once.</li>
         </ul>
+      </div>
+      <div class="howpage" data-p="5" hidden>
+        <p class="lead">Power-ups appear on the podiums now and then. <b>Walk over one to take it</b>; it works straight away. Up to 2 are out at once, and each vanishes after 20 seconds (it blinks when it's about to go).</p>
+        <ul class="pulist"><li class="pu"><i style="--pc:#1650ff"></i><span><b>SPLIT DISC</b> Your next <b>2 discs</b> split into three as they leave your podium. Each piece hits a bit softer.</span></li><li class="pu"><i style="--pc:#ff6a00"></i><span><b>EXPLOSIVE</b> Next <b>3 discs</b> explode for <b>1.5×</b> knockback. A shield blocks it, but the blast still shoves.</span></li><li class="pu"><i style="--pc:#ffe600"></i><span><b>OVERCLOCK</b> Next <b>2 discs</b> burn straight through a shield and knock it <b>offline for 3 s</b>.</span></li><li class="pu"><i style="--pc:#ff1414"></i><span><b>SEEKER</b> Your next disc <b>hunts the rival you face</b>. It blinks and beeps so they can raise a shield in time.</span></li><li class="pu"><i style="--pc:#a020ff"></i><span><b>ANCHOR</b> For <b>10 s</b> you take <b>half</b> the knockback and OVERLOAD.</span></li><li class="pu"><i style="--pc:#00d5ff"></i><span><b>SHIELD CELL</b> <b>+3</b> shield blocks.</span></li></ul>
+        <p class="small" style="margin-top:8px">Picking up a new disc power-up replaces the one you're carrying. Your active power-ups show next to your name. Turn them off in the lobby under POWER-UPS.</p>
       </div>
       <div class="howpage" data-p="4" hidden>
         <table class="keys">
@@ -360,7 +372,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><td>Level the aim line</td><td>Click right stick</td><td><kbd>V</kbd></td><td><kbd>;</kbd></td></tr>
         <tr><td>Throw (tap)</td><td>RT</td><td><kbd>Space</kbd> or click</td><td><kbd>/</kbd> <kbd>Enter</kbd></td></tr>
         <tr><td>Shield (hold throw)</td><td>Hold RT (or LT / B)</td><td>Hold <kbd>Space</kbd> / click (or <kbd>Shift</kbd>)</td><td>Hold <kbd>/</kbd> (or <kbd>.</kbd>)</td></tr>
-        <tr><td>Jump to next platform</td><td colspan="3">Hold toward it at the edge for half a second</td></tr>
+        <tr><td>Jump to next platform</td><td colspan="3">Hold toward it at the edge for a quarter second</td></tr>
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>

@@ -72,6 +72,12 @@ const SFX = {
   catchDisc() { tone({ f0: 2000, dur: 0.05, vol: 0.05, type: 'square', lp: 5000 }); tone({ f0: 120, dur: 0.06, vol: 0.12 }); },
   fall() { tone({ f0: 900, f1: 60, dur: 1.3, vol: 0.14, type: 'sawtooth', lp: 1600, verb: 0.5 }); noise({ f0: 1500, f1: 200, dur: 1.2, vol: 0.12, verb: 0.4 }); },
   shatter() { noise({ f0: 2500, f1: 300, dur: 0.9, vol: 0.32, q: 0.6, verb: 0.6 }); tone({ f0: 80, f1: 30, dur: 0.9, vol: 0.35, type: 'sine' }); for (let i = 0; i < 6; i++) tone({ f0: 1200 + Math.random() * 2000, dur: 0.05, vol: 0.05, type: 'square', delay: Math.random() * 0.3 }); },
+  powerup() { [523, 784, 1046, 1568].forEach((f, i) => tone({ f0: f, dur: 0.18, vol: 0.08, type: 'square', lp: 5000, delay: i * 0.05, verb: 0.3 })); },
+  puSpawn() { tone({ f0: 1200, f1: 2400, dur: 0.25, vol: 0.05, type: 'sine', verb: 0.5 }); tone({ f0: 1800, f1: 3600, dur: 0.25, vol: 0.03, type: 'sine', delay: 0.08, verb: 0.5 }); },
+  split(pos) { const s = spatial(pos); [700, 900, 1100].forEach((f, i) => tone({ f0: f, f1: f * 1.6, dur: 0.12, vol: 0.07 * s.v, type: 'sawtooth', lp: 3000, delay: i * 0.02 })); },
+  explode(pos) { const s = spatial(pos); noise({ f0: 900, f1: 80, dur: 0.7, vol: 0.45 * s.v, q: 0.5, verb: 0.5 }); tone({ f0: 90, f1: 28, dur: 0.6, vol: 0.5 * s.v, type: 'sine' }); },
+  seekLock() { for (let i = 0; i < 3; i++) tone({ f0: 1760, dur: 0.07, vol: 0.09, type: 'square', lp: 6000, delay: i * 0.1 }); },
+  seekBeep(pos) { const s = spatial(pos); tone({ f0: 2200, dur: 0.04, vol: 0.05 * s.v, type: 'square', lp: 6000, pan: s.pan }); },
   respawn() { [330, 494, 659, 988].forEach((f, i) => tone({ f0: f, dur: 0.25, vol: 0.06, type: 'triangle', delay: i * 0.05, verb: 0.3 })); }
 };
 

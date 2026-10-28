@@ -70,6 +70,16 @@ const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.
 // body tuning
 const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
+// power-ups
+const SPLIT_AT = 1.6, SPLIT_ANGLE = 0.26, SPLIT_MUL = 0.7;          // split once clear of your pad; each fragment hits at 70%
+const BOOM_MUL = 1.5, BOOM_BLOCKED = 0.15;                         // explosive: 1.5x, and 15% even through a shield
+const OC_DOWN = 3.0;                                               // overclock: shield offline this long
+const SEEK_SPEED = 19, SEEK_TURN = 2.6, SEEK_TIME = 3.2;           // seeker: slower than a normal disc so you can react
+const ANCHOR_MUL = 0.5, ANCHOR_TIME = 10;                          // anchor: half knockback and OVERLOAD for 10 s
+const PU_MAX = 2, PU_LIFE = 20, PU_FIRST = 7, PU_GAP = [8, 14];
+const MOD_LOOK = {
+  split: { color: 0x1650ff, glow: 3.4 }, boom: { color: 0xff6a00, glow: 4 }, oc: { color: 0xffe600, glow: 4 }, seek: { color: 0xff1414, glow: 4 }
+};
 const SHIELD_HOLD = 0.22;   // hold the throw button this long and the disc goes up as a shield instead
 const SHIELD_Y = 1.25;      // shield centre height (it forms from the disc held over your head)
 // where a disc lands decides how hard it hits: knockback multiplier and OVERLOAD added
@@ -78,13 +88,13 @@ const ZONES = [
   { name: 'CHEST HIT', kb: 1.0, heat: 1.0 },
   { name: 'GLANCING BLOW', kb: 0.6, heat: 0.5 }
 ];
-const AUTO_JUMP_HOLD = 0.5, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
+const AUTO_JUMP_HOLD = 0.25, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
 const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 
 /* ================= settings ================= */
 const S = {
   arena: store.get('arena', 0), lives: store.get('lives', 3), cpus: store.get('cpus', 1), skill: store.get('skill', 1),
-  guide: store.get('guide', true), quality: store.get('quality', IS_TOUCH ? 0 : 1), music: store.get('music', true)
+  guide: store.get('guide', true), pu: store.get('pu', true), quality: store.get('quality', IS_TOUCH ? 0 : 1), music: store.get('music', true)
 };
 if (!(S.quality in QUALS)) S.quality = 1;
 

@@ -17,9 +17,10 @@ Zero-g disc duels above a neon megacity. Stand on a floating podium of concentri
 | **How to Play** | The lobby's HOW TO PLAY button (H, or X on a controller) explains all of this with diagrams. |
 | **Hits** | Every hit wears you down: it shoves you toward the edge and charges your OVERLOAD, so the next hit shoves you further. Where it lands matters: a headshot hits hardest (×1.45 shove, +1.75 OVERLOAD), a chest hit is the baseline, and a glancing blow to the arms or legs only nudges you (×0.6, +0.5). Losing a life resets OVERLOAD. |
 | **Shield** | Tap throw to throw; hold it and you raise a disc over your head and a shield opens from it. You need a disc in hand to shield. It covers your front, 7 blocks per life; knock a rival out to refill. Bank shots go around it. |
-| **Edges** | You can't walk off a platform. To cross to another of your platforms (or over a hole in your rings), hold toward it at the edge for half a second and you leap over; nobody can hit you mid-leap. Shoved just past the rim by a hit, you teeter: push back toward your podium to save yourself. |
+| **Edges** | You can't walk off a platform. To cross to another of your platforms (or over a hole in your rings), hold toward it at the edge for a quarter second and you leap over; nobody can hit you mid-leap. Shoved just past the rim by a hit, you teeter: push back toward your podium to save yourself. |
 | **Disc vs disc** | Smash a rival's disc out of the air and yours is straight back in your hand. |
 | **Recall** | Calls every disc you have in the air back to your hand. |
+| **Power-ups** | Appear at random on the runners' podiums (max 2 at once, 20 s each, blinking before they go). Walk over one to take it. SPLIT DISC: next 2 discs split into three as they leave your podium. EXPLOSIVE: next 3 discs hit for 1.5x, and still shove 15% through a shield. OVERCLOCK: next 2 discs burn through a shield and knock it offline for 3 s. SEEKER: next disc homes on the rival you face, blinking and beeping so they can shield it. ANCHOR: 10 s of half knockback and OVERLOAD. SHIELD CELL: +3 shield blocks. Toggle in the lobby. |
 
 Arenas (all available from the start): **Halo Rings** (one podium, three rings), **Triad** (three podiums, hop between them), **Pistons** (podiums rise and fall), **Firewall** (a spinning wall of blocks between you), **Bulwark** (a barrier guards each podium: bank or lob), **Overdrive** (pistons and firewall).
 
@@ -34,7 +35,7 @@ Arenas (all available from the start): **Halo Rings** (one podium, three rings),
 | Level the aim line | Click right stick | V | ; |
 | Throw | Tap RT | Tap Space / left click | Tap / or Enter |
 | Shield | Hold RT (or LT / B) | Hold Space / click (or Shift) | Hold / (or .) |
-| Jump to another platform | Hold toward it at the edge for half a second | same | same |
+| Jump to another platform | Hold toward it at the edge for a quarter second | same | same |
 | Recall | X / Y | X | O |
 | Pause | Start | Esc / P | Esc / P |
 

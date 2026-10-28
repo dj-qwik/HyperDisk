@@ -152,6 +152,9 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .view .who { position: absolute; left: 14px; top: 12px; display: flex; align-items: center; gap: 10px; }
 .view .who .n { font-family: 'Orbitron'; font-weight: 900; font-size: 15px; letter-spacing: .16em; color: var(--c); text-shadow: 0 0 10px var(--c); }
 .lives { display: flex; gap: 4px; }
+.puchip { display: flex; gap: 6px; }
+.puchip i { font-style: normal; font-family: 'Orbitron'; font-weight: 900; font-size: 10px; letter-spacing: .14em; padding: 3px 8px; color: #fff; background: color-mix(in srgb, var(--pc) 55%, #000); border: 1px solid var(--pc); box-shadow: 0 0 12px var(--pc); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 4px var(--pc); } }
 .lives i { width: 12px; height: 13px; background: var(--c); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); box-shadow: 0 0 8px var(--c); }
 .lives i.gone { background: rgba(255,255,255,.12); }
 .view .bot { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 16px; }
@@ -203,6 +206,9 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .ill { width: 100%; max-width: 560px; height: auto; display: block; margin: 2px auto 4px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.06); }
 .ill .t { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: .08em; fill: #c9d3ff; font-weight: 700; }
 .ill .t.r { fill: #ff6b6b; }
+.pulist { list-style: none; padding-left: 0 !important; }
+.pulist li.pu { display: flex; align-items: flex-start; gap: 10px; }
+.pulist li.pu i { flex: 0 0 22px; height: 24px; margin-top: 1px; background: var(--pc); box-shadow: 0 0 10px var(--pc); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
 .howfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
 
 /* ---------- modals ---------- */
@@ -265,6 +271,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
       <div class="opt"><span class="k">LIVES</span><span class="pick"><button data-o="lives" data-d="-1">◀</button><span class="v" id="vLives"></span><button data-o="lives" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">CPU RIVALS</span><span class="pick"><button data-o="cpus" data-d="-1">◀</button><span class="v" id="vCpus"></span><button data-o="cpus" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">CPU SKILL</span><span class="pick"><button data-o="skill" data-d="-1">◀</button><span class="v" id="vSkill"></span><button data-o="skill" data-d="1">▶</button></span></div>
+      <div class="opt"><span class="k">POWER-UPS</span><span class="pick"><button data-o="pu" data-d="-1">◀</button><span class="v" id="vPu"></span><button data-o="pu" data-d="1">▶</button></span></div>
       <div class="opt"><span class="k">GRAPHICS</span><span class="pick"><button data-o="quality" data-d="-1">◀</button><span class="v" id="vQuality"></span><button data-o="quality" data-d="1">▶</button></span></div>
     </div>
 
@@ -286,7 +293,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
   <div id="howto" class="modal live" hidden>
     <div class="panel how">
       <div class="howhead"><h2>HOW TO PLAY</h2><button class="x live" id="howClose" title="Close (Esc / B)">×</button></div>
-      <div class="howtabs" id="howTabs"><button data-t="0" class="on">GOAL</button><button data-t="1">WHAT KNOCKS YOU OUT</button><button data-t="2">AIM &amp; THROW</button><button data-t="3">DEFEND</button><button data-t="4">CONTROLS</button></div>
+      <div class="howtabs" id="howTabs"><button data-t="0" class="on">GOAL</button><button data-t="1">WHAT KNOCKS YOU OUT</button><button data-t="2">AIM &amp; THROW</button><button data-t="3">DEFEND</button><button data-t="5">POWER-UPS</button><button data-t="4">CONTROLS</button></div>
       <div class="howpage" data-p="0">
         <svg viewBox="0 0 320 120" class="ill" aria-hidden="true">
           <ellipse cx="60" cy="88" rx="44" ry="13" fill="none" stroke="#1650ff" stroke-width="3"/><ellipse cx="60" cy="88" rx="28" ry="8" fill="none" stroke="#1650ff" stroke-width="2"/><ellipse cx="60" cy="88" rx="12" ry="3.5" fill="#1650ff"/>
@@ -346,9 +353,14 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
           <li><b>Shield:</b> <b>hold the throw button</b> and you raise a disc over your head; a shield opens from it and bounces discs away. Tap to throw, hold to shield. You need <b>at least one disc in hand</b> to shield, it only covers <b>your front</b>, and you get <b>7 blocks per life</b>. Knock a rival out to refill them.</li>
           <li><b>Smash their disc</b> out of the air with yours: both are destroyed and you get yours straight back.</li>
           <li><b>Missed discs come back</b> off the far wall and can hit you from behind, where the deflector can't help.</li>
-          <li><b>You can't walk off a platform.</b> To cross to another of your platforms, or over a gap where a ring shattered, hold toward it at the edge for half a second and you leap over. Nobody can hit you mid-leap.</li>
+          <li><b>You can't walk off a platform.</b> To cross to another of your platforms, or over a gap where a ring shattered, hold toward it at the edge for a quarter second and you leap over. Nobody can hit you mid-leap.</li>
           <li><b>Recall</b> calls all your discs home at once.</li>
         </ul>
+      </div>
+      <div class="howpage" data-p="5" hidden>
+        <p class="lead">Power-ups appear on the podiums now and then. <b>Walk over one to take it</b>; it works straight away. Up to 2 are out at once, and each vanishes after 20 seconds (it blinks when it's about to go).</p>
+        <ul class="pulist"><li class="pu"><i style="--pc:#1650ff"></i><span><b>SPLIT DISC</b> Your next <b>2 discs</b> split into three as they leave your podium. Each piece hits a bit softer.</span></li><li class="pu"><i style="--pc:#ff6a00"></i><span><b>EXPLOSIVE</b> Next <b>3 discs</b> explode for <b>1.5×</b> knockback. A shield blocks it, but the blast still shoves.</span></li><li class="pu"><i style="--pc:#ffe600"></i><span><b>OVERCLOCK</b> Next <b>2 discs</b> burn straight through a shield and knock it <b>offline for 3 s</b>.</span></li><li class="pu"><i style="--pc:#ff1414"></i><span><b>SEEKER</b> Your next disc <b>hunts the rival you face</b>. It blinks and beeps so they can raise a shield in time.</span></li><li class="pu"><i style="--pc:#a020ff"></i><span><b>ANCHOR</b> For <b>10 s</b> you take <b>half</b> the knockback and OVERLOAD.</span></li><li class="pu"><i style="--pc:#00d5ff"></i><span><b>SHIELD CELL</b> <b>+3</b> shield blocks.</span></li></ul>
+        <p class="small" style="margin-top:8px">Picking up a new disc power-up replaces the one you're carrying. Your active power-ups show next to your name. Turn them off in the lobby under POWER-UPS.</p>
       </div>
       <div class="howpage" data-p="4" hidden>
         <table class="keys">
@@ -360,7 +372,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><td>Level the aim line</td><td>Click right stick</td><td><kbd>V</kbd></td><td><kbd>;</kbd></td></tr>
         <tr><td>Throw (tap)</td><td>RT</td><td><kbd>Space</kbd> or click</td><td><kbd>/</kbd> <kbd>Enter</kbd></td></tr>
         <tr><td>Shield (hold throw)</td><td>Hold RT (or LT / B)</td><td>Hold <kbd>Space</kbd> / click (or <kbd>Shift</kbd>)</td><td>Hold <kbd>/</kbd> (or <kbd>.</kbd>)</td></tr>
-        <tr><td>Jump to next platform</td><td colspan="3">Hold toward it at the edge for half a second</td></tr>
+        <tr><td>Jump to next platform</td><td colspan="3">Hold toward it at the edge for a quarter second</td></tr>
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>
@@ -462,6 +474,16 @@ const D_SPEED = 27, D_POWER = 38, D_RET = 33, D_MAXB = 3, D_MAXT = 4.6, D_R = 0.
 // body tuning
 const RUN = 4.7, GRAV = 24, HOP_V = 8.2, HOP_H = 4.3, KB_BASE = 8.4, KB_HEAT = 0.42, KB_POWER = 1.45, FRICT = 4.2;
 const SHIELD_DRAIN = 46, SHIELD_REGEN = 15, SHIELD_MIN = 14, SHIELD_ARC = 1.3, SHIELD_R = 1.45;
+// power-ups
+const SPLIT_AT = 1.6, SPLIT_ANGLE = 0.26, SPLIT_MUL = 0.7;          // split once clear of your pad; each fragment hits at 70%
+const BOOM_MUL = 1.5, BOOM_BLOCKED = 0.15;                         // explosive: 1.5x, and 15% even through a shield
+const OC_DOWN = 3.0;                                               // overclock: shield offline this long
+const SEEK_SPEED = 19, SEEK_TURN = 2.6, SEEK_TIME = 3.2;           // seeker: slower than a normal disc so you can react
+const ANCHOR_MUL = 0.5, ANCHOR_TIME = 10;                          // anchor: half knockback and OVERLOAD for 10 s
+const PU_MAX = 2, PU_LIFE = 20, PU_FIRST = 7, PU_GAP = [8, 14];
+const MOD_LOOK = {
+  split: { color: 0x1650ff, glow: 3.4 }, boom: { color: 0xff6a00, glow: 4 }, oc: { color: 0xffe600, glow: 4 }, seek: { color: 0xff1414, glow: 4 }
+};
 const SHIELD_HOLD = 0.22;   // hold the throw button this long and the disc goes up as a shield instead
 const SHIELD_Y = 1.25;      // shield centre height (it forms from the disc held over your head)
 // where a disc lands decides how hard it hits: knockback multiplier and OVERLOAD added
@@ -470,13 +492,13 @@ const ZONES = [
   { name: 'CHEST HIT', kb: 1.0, heat: 1.0 },
   { name: 'GLANCING BLOW', kb: 0.6, heat: 0.5 }
 ];
-const AUTO_JUMP_HOLD = 0.5, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
+const AUTO_JUMP_HOLD = 0.25, AUTO_JUMP_T = 0.62;   // push into an edge this long to leap; time in the air
 const RING_FLASH = 1.6, RING_GONE = 9, RING_REFORM = 0.8;
 
 /* ================= settings ================= */
 const S = {
   arena: store.get('arena', 0), lives: store.get('lives', 3), cpus: store.get('cpus', 1), skill: store.get('skill', 1),
-  guide: store.get('guide', true), quality: store.get('quality', IS_TOUCH ? 0 : 1), music: store.get('music', true)
+  guide: store.get('guide', true), pu: store.get('pu', true), quality: store.get('quality', IS_TOUCH ? 0 : 1), music: store.get('music', true)
 };
 if (!(S.quality in QUALS)) S.quality = 1;
 
@@ -1826,7 +1848,7 @@ function makePlayer(slot, kind, ctl, name, color) {
     yaw: 0, aimYaw: 0, lvl: 1, aimElev: ELEV_LEVEL, mode: 'idle', lives: S.lives, heat: 0, stun: 0, invuln: 0, flash: 0,
     shieldE: 100, defl: DEFLECTS, teeter: 0, edgePush: 0, edgeDx: 0, edgeDz: 0, leaping: false, tdx: 0, tdz: 0, shieldOn: false, shieldCD: 0, charge: 0, fireWas: false, throwT: 0, cool: 0, discsHome: 3, discs: [],
     fallT: 0, deadT: 0, lastHitBy: -1, lastHitAt: -99, stride: 0, animT: Math.random() * 10,
-    stats: { hits: 0, rings: 0, kos: 0, defl: 0, thrown: 0 }, bot: null, skill: S.skill,
+    stats: { hits: 0, rings: 0, kos: 0, defl: 0, thrown: 0 }, bot: null, skill: S.skill, weapon: null, anchorT: 0,
     net: null, shake: 0, popQ: []
   };
   scene.add(p.rig.root);
@@ -1835,13 +1857,21 @@ function makePlayer(slot, kind, ctl, name, color) {
       mesh: makeDiscMesh(PCOL[slot], 1), trail: new Trail(PCOL[slot], 13, 0.07), spin: Math.random() * 6, clashT: 0, seen: false, ghostT: 0 };
     d.mesh.visible = false; d.trail.mesh.visible = false; scene.add(d.mesh); p.discs.push(d); DISCS.push(d);
   }
+  // spare discs for SPLIT DISC fragments: they fly once and then fizzle out instead of coming home
+  p.extras = [];
+  for (let k = 0; k < 4; k++) {
+    const d = { id: slot * 10 + 3 + k, k: 3 + k, owner: p, extra: true, state: 'home', pos: new THREE.Vector3(), vel: new THREE.Vector3(), bounces: 0, t: 0, power: false, deflected: false, immune: null, immuneT: 0,
+      mesh: makeDiscMesh(PCOL[slot], 1), trail: new Trail(PCOL[slot], 10, 0.05), spin: Math.random() * 6, clashT: 0, seen: false, ghostT: 0 };
+    d.mesh.visible = false; d.trail.mesh.visible = false; scene.add(d.mesh); p.extras.push(d); DISCS.push(d);
+  }
+  p.allDiscs = p.discs.concat(p.extras);
   if (kind === 'cpu') p.bot = { think: 0, plan: null, target: null, tgtT: 0, threat: null, react: 0, shieldT: 0, dodge: null, wander: null, wanderT: 0, noise: 0, noiseV: 0, holdFire: 0, decided: new Set() };
   return p;
 }
 function disposePlayer(p) {
   scene.remove(p.rig.root);
   p.rig.root.traverse(o => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
-  for (const d of p.discs) { scene.remove(d.mesh); d.trail.dispose(); const i = DISCS.indexOf(d); if (i >= 0) DISCS.splice(i, 1); }
+  for (const d of p.allDiscs) { scene.remove(d.mesh); d.trail.dispose(); const i = DISCS.indexOf(d); if (i >= 0) DISCS.splice(i, 1); }
 }
 function stationOf(p) { return STATIONS[p.slot]; }
 function homePad(p) { const st = stationOf(p); return st.pads[st.pads.length === 3 ? 1 : 0]; }
@@ -1999,20 +2029,53 @@ function throwDisc(p, power) {
   d.vel.set(_ap.x - d.pos.x, _ap.y - d.pos.y, _ap.z - d.pos.z).normalize().multiplyScalar(power ? D_POWER : D_SPEED);
   d.state = 'fly'; d.t = 0; d.bounces = 0; d.power = power; d.deflected = false; d.immune = p; d.immuneT = 0.35; d.clashT = 0; d.ghostT = 0;
   d.mesh.visible = true; d.mesh.scale.setScalar(power ? 0.95 : 0.78); d.trail.reset(d.pos); d.trail.mesh.visible = true; d.trail.mat.uniforms.uA.value = power ? 1.5 : 1;
+  d.mod = null; d.child = false; d.didSplit = false; d.travel = 0; d.ocUsed = false; d.target = null; d.beepT = 0;
+  if (p.weapon && p.weapon.n > 0) {
+    d.mod = p.weapon.type; p.weapon.n--; if (p.weapon.n <= 0) p.weapon = null;
+    if (d.mod === 'seek') {
+      d.target = aimTarget(p, p.aimYaw) || nearestFacing(p);
+      d.vel.setLength(SEEK_SPEED);
+      if (d.target) { popFor(d.target, 'SEEKER INCOMING!', true); SFX.seekLock(d.target); }
+    }
+  }
+  setDiscLook(d);
   p.discsHome--; p.throwT = 0.28; p.cool = D_COOL; p.stats.thrown++;
-  SFX.throwDisc(power, p);
+  SFX.throwDisc(power || d.mod === 'boom', p);
 }
-function recallDiscs(p) { let n = 0; for (const d of p.discs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; n++; } if (n) SFX.recall(p); }
-function dockDisc(d) { d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false; d.owner.discsHome = Math.min(3, d.owner.discsHome + 1); }
+// the rival most in front of you (for a seeker thrown with nobody under the crosshair)
+function nearestFacing(p) {
+  let best = null, bd = 1e9;
+  for (const o of players) { if (o === p || o.mode !== 'play') continue; const a = Math.abs(angDiff(p.aimYaw, Math.atan2(o.x - p.x, o.z - p.z))); if (a < bd) { bd = a; best = o; } }
+  return best;
+}
+// colour/size of a disc by what's loaded into it
+function setDiscLook(d) {
+  const u = d.mesh.userData, M = MOD_LOOK[d.mod] || null, c = M ? new THREE.Color(M.color) : u.c;
+  u.rimM.color.copy(c).multiplyScalar(M ? M.glow : 3.4); u.faceM.emissive.copy(c).multiplyScalar(2.2); u.haloM.color.copy(c).multiplyScalar(2);
+  d.trail.mat.uniforms.uC.value.copy(c);
+  d.mesh.scale.setScalar(d.child ? 0.5 : d.mod ? 0.9 : 0.78);
+}
+function recallDiscs(p) { let n = 0; for (const d of p.allDiscs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; n++; } if (n) SFX.recall(p); }
+function dockDisc(d) {
+  const wasHome = d.state === 'home';
+  d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false;
+  if (d.mod || d.child) { d.mod = null; d.child = false; setDiscLook(d); }
+  if (d.extra) { if (!wasHome) sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 10, 3, 0.35, 0.05); return; }   // fragments fizzle out
+  d.owner.discsHome = Math.min(3, d.owner.discsHome + 1);
+}
 
 function updateDisc(d, dt) {
   const p = d.owner;
+  // other players' discs come from the network, including the moment they're thrown (they start 'home')
+  if (!p.local) { remoteDiscStep(d, dt); d.spin += dt * 24; return; }
   if (d.state === 'home') return;
   d.spin += dt * (d.power ? 34 : 24);
-  if (!p.local) { remoteDiscStep(d, dt); return; }
   d.t += dt; d.immuneT -= dt; d.clashT -= dt;
   const steps = 2, h = dt / steps;
   for (let s = 0; s < steps && d.state !== 'home'; s++) {
+    if (d.state === 'ret' && d.extra) { dockDisc(d); return; }
+    if (d.state === 'fly' && d.mod === 'split' && !d.didSplit) { d.travel += d.vel.length() * h; if (d.travel >= SPLIT_AT) splitDisc(d); }
+    if (d.state === 'fly' && d.mod === 'seek' && d.target && d.t < SEEK_TIME) steerSeeker(d, h);
     if (d.state === 'ret') {
       const ownerUp = p.mode === 'play' || p.mode === 'idle' || p.mode === 'win';
       if (ownerUp) handPos(p, _tmp); else { const pad = homePad(p); _tmp.set(pad.x, pad.y + 1, pad.z); }
@@ -2029,6 +2092,29 @@ function updateDisc(d, dt) {
     if (d.state !== 'home') discVsBodies(d);
     if (d.state !== 'home') discVsDiscs(d);
   }
+}
+function splitDisc(d) {
+  d.didSplit = true; d.child = true; setDiscLook(d);
+  const p = d.owner;
+  for (const ang of [-SPLIT_ANGLE, SPLIT_ANGLE]) {
+    const e = p.extras.find(x => x.state === 'home'); if (!e) break;
+    const c = Math.cos(ang), s = Math.sin(ang);
+    e.pos.copy(d.pos); e.vel.set(d.vel.x * c + d.vel.z * s, d.vel.y, -d.vel.x * s + d.vel.z * c);
+    e.state = 'fly'; e.t = 0; e.bounces = d.bounces; e.power = false; e.deflected = false; e.immune = p; e.immuneT = 0.3; e.clashT = 0.15; d.clashT = 0.15;
+    e.mod = null; e.child = true; e.didSplit = true; setDiscLook(e); e.mesh.visible = true; e.trail.reset(e.pos); e.trail.mesh.visible = true;
+  }
+  sparks(d.pos.x, d.pos.y, d.pos.z, MOD_LOOK.split.color, 24, 6, 0.4, 0.06); SFX.split(d.pos);
+}
+// seeker: swings its heading toward the target's chest at a limited turn rate, so a sidestep or a shield still beats it
+const _sk = new THREE.Vector3();
+function steerSeeker(d, h) {
+  const t = d.target; if (t.mode !== 'play') { d.target = null; return; }
+  _sk.set(t.x - d.pos.x, t.y + CHEST_Y - d.pos.y, t.z - d.pos.z); const dist = _sk.length(); if (dist < 0.01) return;
+  _sk.divideScalar(dist);
+  const v = d.vel, sp = v.length() || SEEK_SPEED; _n.copy(v).divideScalar(sp);
+  const ang = Math.acos(clamp(_n.dot(_sk), -1, 1)), maxA = SEEK_TURN * h;
+  if (ang > 1e-4) _n.lerp(_sk, Math.min(1, maxA / ang)).normalize();
+  v.copy(_n).multiplyScalar(SEEK_SPEED);
 }
 function onDiscEnv(d, e) {
   const c = d.owner.color, x = d.pos.x, y = d.pos.y, z = d.pos.z;
@@ -2053,19 +2139,35 @@ function discVsBodies(d) {
     if (o === d.owner && !d.deflected) continue;
     if (o === d.immune && d.immuneT > 0) continue;
     // deflector first: it is bigger than the body
-    if (o.shieldOn && inShield(o, d.pos.x, d.pos.y, d.pos.z) && shieldFacing(o, d.pos.x, d.pos.z)) {
+    if (o.shieldOn && !d.ocUsed && inShield(o, d.pos.x, d.pos.y, d.pos.z) && shieldFacing(o, d.pos.x, d.pos.z)) {
+      if (d.mod === 'oc') {
+        // OVERCLOCK: the disc burns straight through and knocks the shield offline
+        d.ocUsed = true;
+        if (o.local) shieldDisable(o); else netEvent(['o', o.slot]);
+        sparks(d.pos.x, d.pos.y, d.pos.z, MOD_LOOK.oc.color, 40, 10, 0.6, 0.08); shockRing(d.pos.x, d.pos.y, d.pos.z, d.vel.x, d.vel.y, d.vel.z, MOD_LOOK.oc.color, 2.6, 0.4);
+        popFor(d.owner, 'SHIELD SHATTERED'); SFX.shieldBreak(o); continue;
+      }
       _n.set(d.pos.x - o.x, d.pos.y - (o.y + SHIELD_Y), d.pos.z - o.z).normalize();
       const vn = d.vel.dot(_n); if (vn < 0) d.vel.addScaledVector(_n, -2 * vn);
       d.vel.multiplyScalar(1.06); d.pos.copy(_n).multiplyScalar(SHIELD_R + 0.05).add(_tmp.set(o.x, o.y + SHIELD_Y, o.z));
       d.deflected = true; d.immune = o; d.immuneT = 0.4; d.state = 'fly'; d.bounces = Math.min(d.bounces, 1); d.t = Math.min(d.t, 1.5);
       if (o.local) shieldStruck(o, d.power); else netEvent(['d', o.slot, d.power ? 1 : 0]);
       sparks(d.pos.x, d.pos.y, d.pos.z, o.color, 26, 9, 0.5, 0.07); shockRing(d.pos.x, d.pos.y, d.pos.z, _n.x, _n.y, _n.z, o.color, 1.6, 0.35);
+      if (d.mod === 'boom') {
+        // EXPLOSIVE: blocked, but the blast still shoves you a little
+        const bx = -_n.x, bz = -_n.z, bl = Math.hypot(bx, bz) || 1;
+        if (o.local) applyHit(o, bx / bl, bz / bl, false, d.owner.slot, 1, BOOM_BLOCKED, true); else netEvent(['h', o.slot, +(bx / bl).toFixed(3), +(bz / bl).toFixed(3), 0, d.owner.slot, 1, BOOM_BLOCKED, 1]);
+        explode(d); d.mod = null; setDiscLook(d);
+      }
+      if (d.mod === 'seek') { d.mod = null; d.target = null; setDiscLook(d); }
       SFX.deflect(d.pos); return;
     }
     if (hitsBody(o, d.pos.x, d.pos.y, d.pos.z, D_R * 0.8)) {
       const hl = Math.hypot(d.vel.x, d.vel.z) || 1, dx = d.vel.x / hl, dz = d.vel.z / hl;
-      const zone = hitZone(o, d.pos.x, d.pos.y, d.pos.z, d.vel.x, d.vel.z);
-      if (o.local) applyHit(o, dx, dz, d.power, d.owner.slot, zone); else netEvent(['h', o.slot, +dx.toFixed(3), +dz.toFixed(3), d.power ? 1 : 0, d.owner.slot, zone]);
+      const zone = hitZone(o, d.pos.x, d.pos.y, d.pos.z, d.vel.x, d.vel.z), mul = d.child ? SPLIT_MUL : d.mod === 'boom' ? BOOM_MUL : 1;
+      if (o.local) applyHit(o, dx, dz, d.power, d.owner.slot, zone, mul); else netEvent(['h', o.slot, +dx.toFixed(3), +dz.toFixed(3), d.power ? 1 : 0, d.owner.slot, zone, mul, 0]);
+      if (d.mod === 'boom') explode(d);
+      if (d.mod) { d.mod = null; d.target = null; setDiscLook(d); }
       if (o !== d.owner) { d.owner.stats.hits++; if (zone === 0) d.owner.stats.heads = (d.owner.stats.heads || 0) + 1; popFor(d.owner, (d.bounces && zone < 2 ? 'BANK ' : '') + ZONES[zone].name); }
       sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 40, 10, 0.7, 0.09); sparks(d.pos.x, d.pos.y, d.pos.z, 0xffffff, 12, 6, 0.4, 0.06);
       d.vel.set(-d.vel.x * 0.3, 5, -d.vel.z * 0.3); d.state = 'ret'; d.t = 0; d.immune = o; d.immuneT = 1;
@@ -2098,19 +2200,39 @@ function updateDiscVisual(d, dt) {
   d.mesh.rotateY(d.spin);
   d.trail.push(d.pos);
   if (d.power && Math.random() < 0.6) sparks(d.pos.x, d.pos.y, d.pos.z, d.owner.color, 1, 1.5, 0.35, 0.05);
+  if (d.mod) {
+    const M = MOD_LOOK[d.mod], u = d.mesh.userData, t = uTime.value;
+    if (d.mod === 'seek') {
+      const on = Math.sin(t * 34) > 0; u.rimM.color.setRGB(on ? 6 : 2.4, on ? 6 : 0.1, on ? 6 : 0.1); u.haloM.color.setRGB(on ? 4 : 1.5, on ? 1 : 0, on ? 1 : 0);
+      d.mesh.scale.setScalar(0.95 + (on ? 0.35 : 0)); if (Math.random() < 0.8) sparks(d.pos.x, d.pos.y, d.pos.z, on ? 0xffffff : 0xff1414, 1, 1.2, 0.3, 0.07);
+      d.beepT -= dt; if (d.beepT <= 0) { d.beepT = 0.16; SFX.seekBeep(d.pos); }
+    } else if (d.mod === 'boom') { if (Math.random() < 0.9) sparks(d.pos.x, d.pos.y, d.pos.z, Math.random() < 0.5 ? 0xff6a00 : 0xff2a0a, 2, 2.5, 0.4, 0.07); }
+    else if (d.mod === 'oc') { u.rimM.color.copy(new THREE.Color(M.color)).multiplyScalar(3 + Math.random() * 3); if (Math.random() < 0.7) sparks(d.pos.x, d.pos.y, d.pos.z, 0xffffff, 1, 4, 0.18, 0.04); }
+  }
 }
 const UP = new THREE.Vector3(0, 1, 0);
 
 /* ================= getting hit ================= */
-function applyHit(o, dx, dz, power, bySlot, zone) {
+function applyHit(o, dx, dz, power, bySlot, zone, mul, blocked) {
   if (o.mode !== 'play' || o.invuln > 0) return;
-  const Z = ZONES[zone == null ? 1 : zone] || ZONES[1];
-  const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * Z.kb;
-  o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + Z.heat * (power ? 2 : 1));
+  const Z = ZONES[zone == null ? 1 : zone] || ZONES[1], m = (mul == null ? 1 : mul) * (o.anchorT > 0 ? ANCHOR_MUL : 1);
+  const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * Z.kb * m;
+  o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + Z.heat * (power ? 2 : 1) * m);
+  if (blocked) { o.flash = 0.4; o.shake = 0.25; viewFlash(o, 0xff6a00, 0.4); popFor(o, 'BLAST'); return; }
   o.stun = zone === 0 ? 0.5 : zone === 2 ? 0.22 : 0.36; o.flash = 1; o.charge = 0; o.shieldOn = false; o.lastHitBy = bySlot; o.lastHitAt = matchT; o.shake = zone === 0 ? 0.6 : zone === 2 ? 0.2 : 0.35;
   viewFlash(o, 0xff1030, zone === 0 ? 1 : zone === 2 ? 0.45 : 0.7);
   popFor(o, zone === 0 ? 'HEAD HIT' : zone === 2 ? 'GLANCED' : 'HIT');
   SFX.hurt(o);
+}
+// OVERCLOCK hit: the shield drops and can't come back up for a few seconds (no block used)
+function shieldDisable(o) {
+  o.shieldOn = false; o.shieldCD = OC_DOWN; o.stun = Math.max(o.stun, 0.15); o.flash = 0.6;
+  popFor(o, 'SHIELD OFFLINE'); viewFlash(o, 0xffe600, 0.6); SFX.shieldBreak(o);
+}
+function explode(d) {
+  const x = d.pos.x, y = d.pos.y, z = d.pos.z;
+  sparks(x, y, z, 0xff6a00, 70, 13, 0.8, 0.12); sparks(x, y, z, 0xffe600, 30, 8, 0.6, 0.09); sparks(x, y, z, 0xffffff, 14, 5, 0.4, 0.07);
+  shockRing(x, y, z, 0, 1, 0, 0xff6a00, 4.2, 0.55); shockRing(x, y, z, d.vel.x, d.vel.y, d.vel.z, 0xff2a0a, 3, 0.45); SFX.explode(d.pos);
 }
 // the deflector has DEFLECTS uses per life; a power disc costs two
 function shieldStruck(o, power) {
@@ -2136,7 +2258,7 @@ function stepPlayer(p, inp, dt) {
   }
   if (p.mode !== 'play') return;
   const live = state === 'play' || DEMO;
-  p.stun = Math.max(0, p.stun - dt); p.invuln = Math.max(0, p.invuln - dt); p.cool = Math.max(0, p.cool - dt); p.throwT = Math.max(0, p.throwT - dt); p.shieldCD = Math.max(0, p.shieldCD - dt);
+  p.anchorT = Math.max(0, p.anchorT - dt); p.stun = Math.max(0, p.stun - dt); p.invuln = Math.max(0, p.invuln - dt); p.cool = Math.max(0, p.cool - dt); p.throwT = Math.max(0, p.throwT - dt); p.shieldCD = Math.max(0, p.shieldCD - dt);
   const ctl = live && p.stun <= 0;
 
   // aim
@@ -2266,14 +2388,15 @@ function startFall(p, fromAir) {
   p.mode = 'fall'; p.fallT = 0; p.onGround = false; p.vy = fromAir ? p.vy : 0.5; if (!DEMO) p.lives = Math.max(0, p.lives - 1);
   p.shieldOn = false; p.charge = 0;
   if (p.lastHitBy >= 0 && matchT - p.lastHitAt < 5) { const k = players[p.lastHitBy]; if (k && k !== p) { if (k.local) { k.stats.kos++; k.defl = DEFLECTS; popFor(k, 'KNOCKOUT! DEFLECTOR FULL'); } else netEvent(['k', k.slot]); } }
-  for (const d of p.discs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; }
+  for (const d of p.allDiscs) if (d.state === 'fly') { d.state = 'ret'; d.t = 0; }
+  p.weapon = null; p.anchorT = 0;
   SFX.fall(p);
   popFor(p, p.lives > 0 ? 'FLATLINED' : 'ELIMINATED', true);
 }
 function respawn(p) {
   restoreStation(stationOf(p)); placeAtHome(p);
   p.mode = 'play'; p.heat = 0; p.stun = 0; p.invuln = 1.8; p.shieldE = 100; p.defl = DEFLECTS; p.teeter = 0; p.shieldOn = false; p.charge = 0; p.lastHitBy = -1;
-  for (const d of p.discs) if (d.state !== 'home') dockDisc(d);
+  for (const d of p.allDiscs) if (d.state !== 'home') dockDisc(d);
   p.discsHome = 3;
   sparks(p.x, p.y + 1, p.z, p.color, 50, 6, 0.8, 0.08); shockRing(p.x, p.y + 0.05, p.z, 0, 1, 0, p.color, 4, 0.6); SFX.respawn(p);
 }
@@ -2328,7 +2451,7 @@ function botInput(p, dt) {
       if (!B.choice) {
         const front = Math.abs(angDiff(p.yaw, Math.atan2(threat.pos.x - p.x, threat.pos.z - p.z))) < SHIELD_ARC * 0.9;
         const r = Math.random();
-        B.choice = (front && p.defl > 0 && p.discsHome > 0 && r < sk.block * (p.defl <= 2 ? (threat.power ? 1 : 0.4) : 1)) ? 'shield' : (Math.random() < sk.dodge ? 'dodge' : 'none');
+        B.choice = (front && p.defl > 0 && p.discsHome > 0 && r < (threat.mod === 'seek' ? Math.min(1, sk.block + 0.25) : sk.block) * (p.defl <= 2 ? (threat.power ? 1 : 0.4) : 1)) ? 'shield' : (Math.random() < sk.dodge ? 'dodge' : 'none');
         if (B.choice === 'dodge') {
           const vx = threat.vel.x, vz = threat.vel.z, l = Math.hypot(vx, vz) || 1; let sx = -vz / l, sz = vx / l;
           if (!supportAt(p.x + sx * 1.2, p.z + sz * 1.2, 0)) { sx = -sx; sz = -sz; }
@@ -2370,6 +2493,7 @@ function botInput(p, dt) {
     // a vanished ring in the way? just keep pushing: the auto-jump carries us across
     B.safe.t = Math.max(B.safe.t, 0.7);
   }
+  if (!goal && !B.threat && Math.random() < 0.98) { const g = puGoalFor(p, sk); if (g && Math.random() < 0.5 + p.skill * 0.15) goal = g; }
   if (!goal) {
     B.wanderT -= dt;
     const bad = B.wander && (!B.wander.ring || B.wander.ring.state !== 0);
@@ -2530,7 +2654,7 @@ function makeView(p, kind) {
   if (p && kind === 'player') {
     el.style.setProperty('--c', p.css);
     el.innerHTML = `<div class="frame"></div><div class="tags"></div>
-      <div class="who"><span class="n">${p.name}</span><span class="lives"></span></div>
+      <div class="who"><span class="n">${p.name}</span><span class="lives"></span><span class="puchip"></span></div>
       <div class="chg"></div><div class="msg"></div>
       <div class="bot">
         <div class="meter shield"><div class="t"><span>SHIELD</span><span class="dv">7</span></div><div class="bar"><div class="fill"></div></div></div>
@@ -2542,7 +2666,7 @@ function makeView(p, kind) {
   viewsEl.appendChild(el); v.el = el;
   v.q = s => el.querySelector(s);
   if (p && kind === 'player') {
-    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg') };
+    v.hud = { lives: v.q('.lives'), shield: v.q('.shield .fill'), heat: v.q('.heat .fill'), heatM: v.q('.meter.heat'), hv: v.q('.hv'), dv: v.q('.dv'), discs: [...el.querySelectorAll('.discs i')], eg: v.q('.eg b'), el: v.q('.el'), msg: v.q('.msg'), chg: v.q('.chg'), pu: v.q('.puchip') };
   }
   v.tagLayer = v.q('.tags');
   return v;
@@ -2637,6 +2761,7 @@ function updateHud(v) {
     const H = v.hud;
     if (L.lives !== p.lives) { L.lives = p.lives; H.lives.innerHTML = Array.from({ length: Math.max(S.lives, p.lives) }, (_, i) => `<i class="${i < p.lives ? '' : 'gone'}"></i>`).join(''); }
     if (L.sh !== p.defl) { L.sh = p.defl; H.shield.style.width = (p.defl / DEFLECTS * 100) + '%'; H.dv.textContent = p.defl; H.shield.style.opacity = p.defl > 0 ? 1 : 0.3; }
+    { const chips = puChip(p), k = chips.map(c => c[0]).join('|'); if (L.pu !== k) { L.pu = k; H.pu.innerHTML = chips.map(([t, c]) => `<i style="--pc:#${new THREE.Color(c).getHexString()}">${t}</i>`).join(''); } }
     const hv = Math.round(p.heat / 8 * 100); if (L.hv !== hv) { L.hv = hv; H.heat.style.width = hv + '%'; H.hv.textContent = Math.round(100 + p.heat * KB_HEAT * 100) + '%'; }
     const dh = p.discsHome - (p.shieldOn && p.discsHome > 0 ? 1 : 0); if (L.dh !== dh) { L.dh = dh; H.discs.forEach((e, i) => e.classList.toggle('out', i >= dh)); }
     // elevation gauge: where the aim line sits between the bottom of the walls and the ceiling
@@ -2731,7 +2856,7 @@ function renderLobby() {
   const ar = ARENAS[S.arena];
   $('#vArena').textContent = ar.name; $('#arenaDesc').textContent = ar.desc;
   $('#vLives').textContent = S.lives; $('#vCpus').textContent = S.cpus; $('#vSkill').textContent = SKILLS[S.skill].name;
-  $('#vQuality').textContent = QUALS[S.quality].name;
+  $('#vPu').textContent = S.pu ? 'ON' : 'OFF'; $('#vQuality').textContent = QUALS[S.quality].name;
   const canStart = online ? (NET.room && NET.role === 'host') : true;
   const st = $('#start'); st.disabled = !canStart;
   $('#startSub').textContent = online ? (NET.room ? (NET.role === 'host' ? 'PRESS ENTER OR START' : 'WAITING FOR HOST') : 'HOST OR JOIN A ROOM') : (LOBBY.humans.length ? 'PRESS ENTER OR START' : 'OR WATCH CPUS FIGHT');
@@ -2746,7 +2871,9 @@ const TIPS = [
   'Knocked to the edge? Push back toward your podium to save yourself.',
   'You get 7 deflects a life. Knock a rival out to refill them.',
   'Your disc can smash theirs out of the air, and you get it straight back.',
-  'To jump to another platform, hold toward it at the edge for half a second. Nobody can hit you mid-leap.'
+  'Power-ups appear on the podiums. Walk over one to grab it before it vanishes.',
+  'A blinking, beeping disc is a SEEKER coming for you. Get your shield up.',
+  'To jump to another platform, hold toward it at the edge for a quarter second. Nobody can hit you mid-leap.'
 ];
 function renderOnlineBox() {
   const box = $('#onlineBox');
@@ -2772,10 +2899,11 @@ function changeOpt(o, d) {
   if (o === 'cpus') S.cpus = clamp(S.cpus + d, 0, LOBBY.mode === 'local' ? 4 - Math.max(0, LOBBY.humans.length) : 3);
   if (o === 'skill') S.skill = clamp(S.skill + d, 0, SKILLS.length - 1);
   if (o === 'guide') S.guide = !S.guide;
+  if (o === 'pu') S.pu = !S.pu;
   if (o === 'quality') { S.quality = clamp(S.quality + d, 0, QUALS.length - 1); resize(); toast('GRAPHICS: ' + QUALS[S.quality].name + (S.quality !== store.get('quality', -1) ? ' · city density applies on reload' : '')); }
-  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality']) store.set(k, S[k]);
+  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality', 'pu']) store.set(k, S[k]);
   SFX.tick(); renderLobby();
-  if (o === 'arena' && state === 'lobby') startDemo();
+  if ((o === 'arena' || o === 'pu') && state === 'lobby') startDemo();
 }
 
 /* ================= match flow ================= */
@@ -2784,7 +2912,7 @@ function teardownPlayers() {
   players = []; DISCS.length = 0;
 }
 function startDemo() {
-  teardownPlayers(); DEMO = true;
+  teardownPlayers(); DEMO = true; clearPowerups(); PU.enabled = S.pu;
   const ar = ARENAS[S.arena].id === 'random' ? ARENAS[1] : ARENAS[S.arena];
   players = [makePlayer(0, 'cpu', null, 'DEMO-A'), makePlayer(1, 'cpu', null, 'DEMO-B')];
   players.forEach(p => { p.skill = 2; p.lives = 99; });
@@ -2804,7 +2932,7 @@ function toLobby() {
 // cfg: { ro: [[peer, 'h'|'c', name]], ar, lv, sk, rid }
 let lastCfg = null;
 function startMatch(cfg) {
-  lastCfg = cfg; teardownPlayers(); DEMO = false;
+  lastCfg = cfg; teardownPlayers(); DEMO = false; clearPowerups(); PU.enabled = cfg.pu !== false;
   const arena = ARENAS[cfg.ar];
   const online = !!NET.room;
   players = cfg.ro.map((r, i) => {
@@ -2878,7 +3006,7 @@ function startLocal() {
   if (LOBBY.mode === 'online') { if (NET.room && NET.role === 'host') netStartMatch(); return; }
   const ro = localRoster();
   const ar = ARENAS[S.arena].id === 'random' ? Math.floor(Math.random() * (ARENAS.length - 1)) : S.arena;
-  startMatch({ ro: ro.map(r => ['', r.kind === 'human' ? 'h' : 'c', r.name]), ctls: ro.map(r => r.ctl), ar, lv: S.lives, sk: S.skill });
+  startMatch({ ro: ro.map(r => ['', r.kind === 'human' ? 'h' : 'c', r.name]), ctls: ro.map(r => r.ctl), ar, lv: S.lives, sk: S.skill, pu: S.pu });
 }
 function setPaused(on) {
   if (state === 'lobby' || state === 'boot') return;
@@ -2907,10 +3035,11 @@ function countTick() {
 let howPage = 0;
 function showHow(on) { show('#howto', on); if (on) { setHowPage(0); SFX.tick(); } }
 function setHowPage(i) {
-  const pages = document.querySelectorAll('.howpage'); howPage = (i + pages.length) % pages.length;
-  pages.forEach((e, k) => e.hidden = k !== howPage);
-  document.querySelectorAll('#howTabs button').forEach((b, k) => b.classList.toggle('on', k === howPage));
-  $('#howNext').textContent = howPage === pages.length - 1 ? 'DONE' : 'NEXT ›';
+  // pages go in tab order (the tabs carry each page's number)
+  const tabs = [...document.querySelectorAll('#howTabs button')], order = tabs.map(b => +b.dataset.t); howPage = (i + order.length) % order.length;
+  document.querySelectorAll('.howpage').forEach(e => e.hidden = +e.dataset.p !== order[howPage]);
+  tabs.forEach((b, k) => b.classList.toggle('on', k === howPage));
+  $('#howNext').textContent = howPage === order.length - 1 ? 'DONE' : 'NEXT ›';
 }
 
 /* ---------- 07-net.js ---------- */
@@ -3048,7 +3177,8 @@ function encBody(p) {
   return [r2(p.x), r2(p.y), r2(p.z), r3(p.yaw), r3(p.aimYaw), r2(p.aimElev), MODES.indexOf(p.mode), p.lives, p.heat, p.shieldOn ? 1 : 0, p.charge > 0 ? (p.charge >= D_CHARGE ? 2 : 1) : 0, p.discsHome,
     r2(p.vx), r2(p.vz), p.onGround ? 1 : 0, Math.round(p.flash * 10), p.stun > 0 ? 1 : 0, p.defl, p.invuln > 0 ? 1 : 0, p.teeter > 0 ? 1 : 0];
 }
-function encDiscs(p) { return p.discs.map(d => d.state === 'home' ? 0 : [d.state === 'fly' ? 1 : 2, r2(d.pos.x), r2(d.pos.y), r2(d.pos.z), r2(d.vel.x), r2(d.vel.y), r2(d.vel.z), d.power ? 1 : 0]); }
+const MOD_CODES = { split: 1, boom: 2, oc: 3, seek: 4 }, MOD_NAMES = [null, 'split', 'boom', 'oc', 'seek'];
+function encDiscs(p) { return p.allDiscs.map(d => d.state === 'home' ? 0 : [d.state === 'fly' ? 1 : 2, r2(d.pos.x), r2(d.pos.y), r2(d.pos.z), r2(d.vel.x), r2(d.vel.y), r2(d.vel.z), d.power ? 1 : 0, MOD_CODES[d.mod] || 0, d.target ? d.target.slot : -1, d.child ? 1 : 0]); }
 const encStats = p => [p.stats.hits, p.stats.rings, p.stats.kos, p.stats.defl];
 function netTick() {
   if (!NET.room) return;
@@ -3062,7 +3192,7 @@ function netTick() {
   if (NET.role === 'host') {
     if (state === 'lobby') pres.g = { lob: { ro: hostLobbyRoster(), ar: S.arena, lv: S.lives, sk: S.skill, cpus: S.cpus } };
     else pres.g = { m: { rid: NET.curRid, cfg: lastCfg, ph: PHASES.indexOf(state), pt: r2(phaseT), t: r2(matchT), w: winner ? winner.slot : -1,
-      bots: players.filter(p => p.kind === 'cpu').map(p => [p.slot, encBody(p), encDiscs(p), encStats(p)]) } };
+      bots: players.filter(p => p.kind === 'cpu').map(p => [p.slot, encBody(p), encDiscs(p), encStats(p)]), pu: encPowerups() } };
   } else pres.g = null;
   NET.room.presence(pres).catch(() => {});
 }
@@ -3072,7 +3202,7 @@ function netStartMatch() {
   const ro = hostLobbyRoster().map(r => r.slice());
   ro[0][0] = NET.myPeer;
   const ar = ARENAS[S.arena].id === 'random' ? Math.floor(Math.random() * (ARENAS.length - 1)) : S.arena;
-  startMatch({ ro, ar, lv: S.lives, sk: S.skill, rid: NET.curRid });
+  startMatch({ ro, ar, lv: S.lives, sk: S.skill, rid: NET.curRid, pu: S.pu });
   NET.lastSend = 0; netTick();
 }
 
@@ -3098,6 +3228,7 @@ function netRecv(dt) {
         if (ph === 'play' && (state === 'intro' || state === 'count')) { if (state === 'intro') toCount(); toPlay(); }
         if (ph === 'end' && state !== 'end') endMatch(m.w);
         for (const b of m.bots || []) { const p = players[b[0]]; if (p && !p.local) applyRemote(p, b[1], b[2], b[3], h.at); }
+        syncPowerups(m.pu);
       }
     }
     if (performance.now() - NET.hostSeenAt > 9000 && performance.now() - NET.joinedAt > 9000) { netLeave('Lost the host.'); return; }
@@ -3115,10 +3246,12 @@ function netRecv(dt) {
 }
 function applyEvent(ev) {
   const k = ev[1];
-  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), clamp(num(ev[7], 1), 0, 2)); }
+  if (k === 'h') { const p = players[ev[2]]; if (p && p.local) applyHit(p, num(ev[3]), num(ev[4]), !!ev[5], num(ev[6], -1), clamp(num(ev[7], 1), 0, 2), clamp(num(ev[8], 1), 0, 2), !!ev[9]); }
   else if (k === 'd') { const p = players[ev[2]]; if (p && p.local) shieldStruck(p, !!ev[3]); else if (p) p.rig.shieldMat.uniforms.uHit.value = 1; }
   else if (k === 'r') { ringBreak(num(ev[2]), num(ev[3]), num(ev[4])); }
   else if (k === 'b') { WALLFW.breakBlock(num(ev[2])); }
+  else if (k === 'o') { const p = players[ev[2]]; if (p && p.local) shieldDisable(p); }
+  else if (k === 'u') { if (NET.role === 'host') removePowerup(num(ev[2])); }
   else if (k === 'k') { const p = players[ev[2]]; if (p && p.local) { p.stats.kos++; p.defl = DEFLECTS; popFor(p, 'KNOCKOUT! DEFLECTOR FULL'); } }
 }
 function applyRemote(p, b, d, st, at) {
@@ -3136,7 +3269,7 @@ function applyRemote(p, b, d, st, at) {
     if (!(state === 'end' && p === winner)) p.mode = mode;
   }
   if (Array.isArray(st)) { p.stats.hits = num(st[0]); p.stats.rings = num(st[1]); p.stats.kos = Math.max(p.stats.kos, num(st[2])); p.stats.defl = num(st[3]); }
-  if (Array.isArray(d)) d.forEach((v, i) => { const dc = p.discs[i]; if (dc) dc.net = { v, at }; });
+  if (Array.isArray(d)) d.forEach((v, i) => { const dc = p.allDiscs[i]; if (dc) dc.net = { v, at }; });
 }
 function remoteBodyStep(p, dt) {
   const n = p.net; if (!n) return;
@@ -3153,10 +3286,15 @@ const _ov = new THREE.Vector3();
 function remoteDiscStep(d, dt) {
   const n = d.net; if (!n) return;
   const v = n.v;
-  if (!Array.isArray(v)) { if (d.state !== 'home') { d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false; } return; }
+  if (!Array.isArray(v)) { if (d.state !== 'home') { d.state = 'home'; d.mesh.visible = false; d.trail.mesh.visible = false; d.warned = false; if (d.mod || d.child) { d.mod = null; d.child = false; setDiscLook(d); } } return; }
+  // what's loaded into it (split / explosive / overclock / seeker) and who a seeker is after
+  const mod = MOD_NAMES[num(v[8])] || null, child = !!v[10];
+  if (mod !== d.mod || child !== !!d.child) { d.mod = mod; d.child = child; setDiscLook(d); }
+  d.target = num(v[9], -1) >= 0 ? players[num(v[9])] || null : null;
+  if (d.mod === 'seek' && d.target && d.target.local && !d.warned) { d.warned = true; popFor(d.target, 'SEEKER INCOMING!', true); SFX.seekLock(d.target); }
   const age = Math.min(0.15, (performance.now() - n.at) / 1000);
   const tx = v[1] + v[4] * age, ty = v[2] + v[5] * age, tz = v[3] + v[6] * age;
-  if (d.state === 'home') { d.state = v[0] === 1 ? 'fly' : 'ret'; d.pos.set(tx, ty, tz); d.vel.set(v[4], v[5], v[6]); d.mesh.visible = true; d.trail.reset(d.pos); d.trail.mesh.visible = true; d.power = !!v[7]; d.mesh.scale.setScalar(d.power ? 0.95 : 0.78); d.owner.throwT = 0.28; SFX.throwDisc(d.power, d.owner); return; }
+  if (d.state === 'home') { d.state = v[0] === 1 ? 'fly' : 'ret'; d.pos.set(tx, ty, tz); d.vel.set(v[4], v[5], v[6]); d.mesh.visible = true; d.trail.reset(d.pos); d.trail.mesh.visible = true; d.power = !!v[7]; setDiscLook(d); if (!d.extra) { d.owner.throwT = 0.28; SFX.throwDisc(d.power || d.mod === 'boom', d.owner); } return; }
   d.state = v[0] === 1 ? 'fly' : 'ret';
   _ov.copy(d.vel); d.vel.set(v[4], v[5], v[6]);
   // a sharp change of direction means it bounced off something: show it here too
@@ -3242,6 +3380,12 @@ const SFX = {
   catchDisc() { tone({ f0: 2000, dur: 0.05, vol: 0.05, type: 'square', lp: 5000 }); tone({ f0: 120, dur: 0.06, vol: 0.12 }); },
   fall() { tone({ f0: 900, f1: 60, dur: 1.3, vol: 0.14, type: 'sawtooth', lp: 1600, verb: 0.5 }); noise({ f0: 1500, f1: 200, dur: 1.2, vol: 0.12, verb: 0.4 }); },
   shatter() { noise({ f0: 2500, f1: 300, dur: 0.9, vol: 0.32, q: 0.6, verb: 0.6 }); tone({ f0: 80, f1: 30, dur: 0.9, vol: 0.35, type: 'sine' }); for (let i = 0; i < 6; i++) tone({ f0: 1200 + Math.random() * 2000, dur: 0.05, vol: 0.05, type: 'square', delay: Math.random() * 0.3 }); },
+  powerup() { [523, 784, 1046, 1568].forEach((f, i) => tone({ f0: f, dur: 0.18, vol: 0.08, type: 'square', lp: 5000, delay: i * 0.05, verb: 0.3 })); },
+  puSpawn() { tone({ f0: 1200, f1: 2400, dur: 0.25, vol: 0.05, type: 'sine', verb: 0.5 }); tone({ f0: 1800, f1: 3600, dur: 0.25, vol: 0.03, type: 'sine', delay: 0.08, verb: 0.5 }); },
+  split(pos) { const s = spatial(pos); [700, 900, 1100].forEach((f, i) => tone({ f0: f, f1: f * 1.6, dur: 0.12, vol: 0.07 * s.v, type: 'sawtooth', lp: 3000, delay: i * 0.02 })); },
+  explode(pos) { const s = spatial(pos); noise({ f0: 900, f1: 80, dur: 0.7, vol: 0.45 * s.v, q: 0.5, verb: 0.5 }); tone({ f0: 90, f1: 28, dur: 0.6, vol: 0.5 * s.v, type: 'sine' }); },
+  seekLock() { for (let i = 0; i < 3; i++) tone({ f0: 1760, dur: 0.07, vol: 0.09, type: 'square', lp: 6000, delay: i * 0.1 }); },
+  seekBeep(pos) { const s = spatial(pos); tone({ f0: 2200, dur: 0.04, vol: 0.05 * s.v, type: 'square', lp: 6000, pan: s.pan }); },
   respawn() { [330, 494, 659, 988].forEach((f, i) => tone({ f0: f, dur: 0.25, vol: 0.06, type: 'triangle', delay: i * 0.05, verb: 0.3 })); }
 };
 
@@ -3309,7 +3453,167 @@ const MUSIC = {
   }
 };
 
-/* ---------- 09-main.js ---------- */
+/* ---------- 09-powerups.js ---------- */
+/* ================= power-ups ================= */
+// Random pickups that float over the runners' own podiums. Walk over one to take it: weapon power-ups
+// load into your next few throws, ANCHOR runs on a timer, SHIELD CELL is instant. At most PU_MAX are out
+// at once and each one lasts PU_LIFE seconds. Online, the host decides where they appear.
+const PU_TYPES = {
+  split:  { name: 'SPLIT DISC',  uses: 2, color: 0x1650ff, tip: 'Your next 2 discs split into three as they leave your podium.' },
+  boom:   { name: 'EXPLOSIVE',   uses: 3, color: 0xff6a00, tip: 'Next 3 discs explode: 1.5× knockback, and a blocked one still shoves.' },
+  oc:     { name: 'OVERCLOCK',   uses: 2, color: 0xffe600, tip: 'Next 2 discs burn through a shield and knock it offline.' },
+  seek:   { name: 'SEEKER',      uses: 1, color: 0xff1414, tip: 'Next disc hunts the rival you face. It blinks: they can shield it.' },
+  anchor: { name: 'ANCHOR',      time: ANCHOR_TIME, color: 0xa020ff, tip: 'For 10 s you take half the knockback and OVERLOAD.' },
+  cell:   { name: 'SHIELD CELL', color: 0x00d5ff, tip: '+3 shield blocks.' }
+};
+const PU_KEYS = Object.keys(PU_TYPES);
+const PU = { list: [], seq: 0, nextT: PU_FIRST, enabled: true, taken: new Set(), icons: {} };
+
+// icon art, drawn once per type
+function puIcon(type) {
+  if (PU.icons[type]) return PU.icons[type];
+  const N = 256, c = cnv(N, N), x = c.getContext('2d'), col = '#' + new THREE.Color(PU_TYPES[type].color).getHexString();
+  x.translate(N / 2, N / 2);
+  // hex badge
+  x.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + Math.PI / 6; x.lineTo(Math.cos(a) * 112, Math.sin(a) * 112); } x.closePath();
+  x.fillStyle = 'rgba(4,4,14,0.82)'; x.fill(); x.lineWidth = 12; x.strokeStyle = col; x.stroke();
+  x.lineWidth = 3; x.strokeStyle = '#ffffff'; x.globalAlpha = 0.5; x.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + Math.PI / 6; x.lineTo(Math.cos(a) * 92, Math.sin(a) * 92); } x.closePath(); x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = '#ffffff'; x.strokeStyle = '#ffffff'; x.lineCap = 'round'; x.lineJoin = 'round';
+  const arrow = (ang) => { x.save(); x.rotate(ang); x.lineWidth = 12; x.beginPath(); x.moveTo(0, 40); x.lineTo(0, -40); x.stroke(); x.beginPath(); x.moveTo(-20, -18); x.lineTo(0, -46); x.lineTo(20, -18); x.stroke(); x.restore(); };
+  if (type === 'split') { arrow(-0.55); arrow(0); arrow(0.55); }
+  else if (type === 'boom') { x.beginPath(); for (let i = 0; i < 16; i++) { const r = i % 2 ? 26 : 62, a = i / 16 * TAU; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); } x.closePath(); x.fill(); x.fillStyle = col; x.beginPath(); x.arc(0, 0, 18, 0, TAU); x.fill(); }
+  else if (type === 'oc') { x.beginPath(); x.moveTo(14, -66); x.lineTo(-30, 8); x.lineTo(-2, 8); x.lineTo(-14, 66); x.lineTo(32, -10); x.lineTo(4, -10); x.closePath(); x.fill(); }
+  else if (type === 'seek') { x.lineWidth = 10; x.beginPath(); x.arc(0, 0, 44, 0, TAU); x.stroke(); for (const a of [0, 1, 2, 3]) { x.save(); x.rotate(a * Math.PI / 2); x.beginPath(); x.moveTo(0, -66); x.lineTo(0, -30); x.stroke(); x.restore(); } x.beginPath(); x.arc(0, 0, 12, 0, TAU); x.fill(); }
+  else if (type === 'anchor') { x.lineWidth = 12; x.beginPath(); x.moveTo(0, -52); x.lineTo(0, 48); x.stroke(); x.beginPath(); x.arc(0, -60, 12, 0, TAU); x.stroke(); x.beginPath(); x.moveTo(-26, -26); x.lineTo(26, -26); x.stroke(); x.beginPath(); x.arc(0, 8, 44, 0.25, Math.PI - 0.25); x.stroke(); }
+  else if (type === 'cell') { x.beginPath(); x.moveTo(0, -62); x.lineTo(50, -40); x.lineTo(44, 18); x.lineTo(0, 62); x.lineTo(-44, 18); x.lineTo(-50, -40); x.closePath(); x.lineWidth = 11; x.stroke(); x.font = `900 64px ${FONT_D}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('+3', 0, 4); }
+  const t = texOf(c, true); PU.icons[type] = t; return t;
+}
+
+function makePuMesh(type) {
+  const g = new THREE.Group(), c = new THREE.Color(PU_TYPES[type].color);
+  const icon = new THREE.Sprite(new THREE.SpriteMaterial({ map: puIcon(type), color: new THREE.Color(1.6, 1.6, 1.6), transparent: true, depthWrite: false }));
+  icon.scale.set(1.0, 1.0, 1); icon.position.y = 0.95; icon.renderOrder = 6; g.add(icon);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.035, 8, 48), new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(3.2), transparent: true }));
+  ring.position.y = 0.95; g.add(ring);
+  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.02, 6, 48), ring.material); ring2.position.y = 0.95; g.add(ring2);
+  const pad = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.62, 6), new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(2.6), transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  pad.rotation.x = -Math.PI / 2; pad.position.y = 0.03; g.add(pad);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.55, 2.4, 24, 1, true), new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uC: { value: c }, uA: { value: 1 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+    fragmentShader: 'uniform vec3 uC; uniform float uA; varying vec2 vUv; void main(){ float a = (1.-vUv.y)*0.35*uA; gl_FragColor = vec4(uC*a, 1.); }'
+  }));
+  beam.position.y = 1.2; g.add(beam);
+  g.userData = { icon, ring, ring2, pad, beam };
+  scene.add(g); return g;
+}
+function disposePu(u) { if (!u.mesh) return; scene.remove(u.mesh); u.mesh.traverse(o => { if (o.geometry) o.geometry.dispose(); }); u.mesh = null; }
+function clearPowerups() { PU.list.forEach(disposePu); PU.list = []; PU.taken.clear(); PU.nextT = PU_FIRST; }
+function puPad(u) { const st = STATIONS[u.st]; return st && st.pads[u.pad]; }
+function puWorld(u, out) { const pad = puPad(u); if (!pad) return null; return out.set(pad.x + u.ox, pad.y, pad.z + u.oz); }
+
+// host / local: decide where the next one appears
+function spawnPowerup() {
+  const live = players.filter(p => p.mode === 'play'); if (!live.length || !STATIONS.length) return;
+  const p = live[Math.floor(Math.random() * live.length)], st = stationOf(p);
+  for (let tries = 0; tries < 12; tries++) {
+    const pad = st.pads[Math.floor(Math.random() * st.pads.length)];
+    const solid = pad.rings.filter(r => r.state === 0); if (!solid.length) continue;
+    const r = solid[Math.floor(Math.random() * solid.length)], a = Math.random() * TAU;
+    const rr = r.rIn < 0.01 ? Math.random() * r.rOut * 0.5 : lerp(r.rIn + 0.2, r.rOut - 0.2, Math.random());
+    const ox = Math.cos(a) * rr, oz = Math.sin(a) * rr;
+    if (Math.hypot(pad.x + ox - p.x, pad.z + oz - p.z) < 1.0) continue;               // not right under their feet
+    if (PU.list.some(u => u.st === st.i && u.pad === pad.idx && Math.hypot(u.ox - ox, u.oz - oz) < 1.4)) continue;
+    const type = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
+    addPowerup({ id: ++PU.seq + PU_ID_BASE, type, st: st.i, pad: pad.idx, ox, oz, age: 0 });
+    return;
+  }
+}
+const PU_ID_BASE = Math.floor(Math.random() * 1e6) * 100;
+function addPowerup(u) { u.mesh = makePuMesh(u.type); PU.list.push(u); SFX.puSpawn(); }
+function removePowerup(id) { const i = PU.list.findIndex(u => u.id === id); if (i < 0) return; disposePu(PU.list[i]); PU.list.splice(i, 1); }
+
+function grantPowerup(p, type) {
+  const T = PU_TYPES[type];
+  if (T.uses) p.weapon = { type, n: T.uses };
+  else if (type === 'anchor') p.anchorT = T.time;
+  else if (type === 'cell') p.defl = Math.min(DEFLECTS, p.defl + 3);
+  p.stats.pu = (p.stats.pu || 0) + 1;
+  popFor(p, T.name + (T.uses ? ' ×' + T.uses : ''), true);
+  sparks(p.x, p.y + 1, p.z, T.color, 40, 5, 0.7, 0.08); shockRing(p.x, p.y + 0.05, p.z, 0, 1, 0, T.color, 2.6, 0.5);
+  SFX.powerup(p);
+}
+
+const _pw = new THREE.Vector3();
+function updatePowerups(dt) {
+  const running = state === 'play' || DEMO, auth = !NET.room || NET.role === 'host';
+  if (!PU.enabled) { if (PU.list.length) clearPowerups(); return; }
+  if (running && auth) {
+    PU.nextT -= dt;
+    if (PU.nextT <= 0) { PU.nextT = rand(PU_GAP[0], PU_GAP[1]); if (PU.list.length < PU_MAX) spawnPowerup(); }
+    for (const u of PU.list.slice()) { u.age += dt; if (u.age >= PU_LIFE) { sparksAt(u); removePowerup(u.id); } }
+  } else if (running) for (const u of PU.list) u.age += dt;
+  // pickups: any local runner walking through one
+  if (running) for (const p of players) {
+    if (!p.local || p.mode !== 'play') continue;
+    for (const u of PU.list) {
+      if (PU.taken.has(u.id) || !puWorld(u, _pw)) continue;
+      if (Math.hypot(p.x - _pw.x, p.z - _pw.z) < 0.8 && Math.abs(p.y - _pw.y) < 0.8) {
+        grantPowerup(p, u.type); PU.taken.add(u.id);
+        if (auth) { removePowerup(u.id); break; } else { netEvent(['u', u.id]); disposePu(u); break; }
+      }
+    }
+  }
+  // visuals
+  const t = uTime.value;
+  for (const u of PU.list) {
+    if (!u.mesh) continue; if (!puWorld(u, _pw)) { u.mesh.visible = false; continue; }
+    const pad = puPad(u), ring = pad.rings.find(r => { const d = Math.hypot(u.ox, u.oz); return d >= r.rIn - 0.05 && d <= r.rOut + 0.05; });
+    const late = PU_LIFE - u.age, blink = late < 4 ? Math.sin(t * (8 + (4 - late) * 5)) > 0 : true;
+    u.mesh.visible = blink && !(ring && ring.state === 2) && !PU.taken.has(u.id);
+    u.mesh.position.copy(_pw);
+    const U = u.mesh.userData, bob = Math.sin(t * 2.6 + u.id) * 0.12, pop = Math.min(1, u.age * 3);
+    U.icon.position.y = 0.95 + bob; U.ring.position.y = U.ring2.position.y = 0.95 + bob;
+    U.icon.scale.setScalar(pop); U.ring.rotation.set(t * 1.7, t * 1.1, 0); U.ring2.rotation.set(-t * 1.3, 0, t * 2.1);
+    U.pad.rotation.z = t * 0.8;
+  }
+}
+function sparksAt(u) { if (puWorld(u, _pw)) sparks(_pw.x, _pw.y + 1, _pw.z, PU_TYPES[u.type].color, 16, 3, 0.5, 0.06); }
+
+// guests: mirror the host's list
+function syncPowerups(arr) {
+  if (!Array.isArray(arr)) return;
+  const seen = new Set();
+  for (const e of arr) {
+    if (!Array.isArray(e) || !PU_TYPES[e[1]]) continue; const id = num(e[0]); seen.add(id);
+    let u = PU.list.find(x => x.id === id);
+    if (!u) { if (PU.taken.has(id)) continue; addPowerup({ id, type: e[1], st: num(e[2]), pad: num(e[3]), ox: num(e[4]), oz: num(e[5]), age: num(e[6]) }); }
+    else u.age = Math.max(u.age, num(e[6]));
+  }
+  for (const u of PU.list.slice()) if (!seen.has(u.id)) removePowerup(u.id);
+}
+const encPowerups = () => PU.list.map(u => [u.id, u.type, u.st, u.pad, r2(u.ox), r2(u.oz), r2(u.age)]);
+
+// CPUs: is there one on my podium worth walking to?
+function puGoalFor(p, sk) {
+  if (!PU.enabled || !PU.list.length) return null;
+  let best = null, bd = 1e9;
+  for (const u of PU.list) {
+    if (PU.taken.has(u.id) || u.st !== p.slot || !puWorld(u, _pw)) continue;
+    const d = Math.hypot(_pw.x - p.x, _pw.z - p.z); if (d < bd) { bd = d; best = { x: _pw.x, z: _pw.z }; }
+  }
+  return best;
+}
+
+// HUD chip text for a runner's active power-ups
+function puChip(p) {
+  const out = [];
+  if (p.weapon) out.push([PU_TYPES[p.weapon.type].name + ' ×' + p.weapon.n, PU_TYPES[p.weapon.type].color]);
+  if (p.anchorT > 0) out.push(['ANCHOR ' + Math.ceil(p.anchorT) + 's', PU_TYPES.anchor.color]);
+  return out;
+}
+
+/* ---------- 10-main.js ---------- */
 /* ================= DOM + device input ================= */
 function isTyping(e) { const t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); }
 const GAME_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Slash', 'Tab', 'Backquote', 'Period', 'Quote']);
@@ -3355,7 +3659,7 @@ $('#bResume').onclick = () => setPaused(false);
 $('#bHow').onclick = () => { audioInit(); showHow(true); };
 $('#howClose').onclick = () => showHow(false);
 $('#howNext').onclick = () => { if (howPage === document.querySelectorAll('.howpage').length - 1) showHow(false); else setHowPage(howPage + 1); };
-document.querySelectorAll('#howTabs button').forEach(b => b.onclick = () => setHowPage(+b.dataset.t));
+document.querySelectorAll('#howTabs button').forEach((b, k) => b.onclick = () => setHowPage(k));
 $('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHow(false); });
 $('#bQuit').onclick = () => { setPaused(false); quitToLobby(); };
 $('#bAgain').onclick = () => rematch();
@@ -3504,6 +3808,7 @@ function tick(dt, doRender) {
     for (const d of DISCS) updateDisc(d, sdt);
     for (const d of DISCS) updateDiscVisual(d, sdt);
     for (const p of players) { poseRunner(p, sdt); p.rig.root.position.set(p.x, p.y, p.z); p.rig.root.rotation.y = p.yaw; if (p.guide) updateGuide(p, sdt); }
+    updatePowerups(sdt);
     updateSparks(sdt); updateRings(sdt); updateShards(sdt);
     for (const f of anim) f(uTime.value, sdt);
     if (state === 'lobby' && Math.floor(uTime.value / 8) !== Math.floor((uTime.value - sdt) / 8)) renderLobby();
@@ -3521,7 +3826,7 @@ function frame(now) {
 }
 
 // debug/test hook
-window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, MUSIC, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
+window.__hd = { step(n, dt, r) { for (let i = 0; i < n; i++) tick(dt || 1 / 60, r !== false && i === n - 1); return state; }, press(c) { K[c] = true; KP.add(c); }, release(c) { K[c] = false; }, get state() { return state; }, get players() { return players; }, get matchT() { return matchT; }, get views() { return views; }, STATIONS, DISCS, WALLFW, S, FALLS, MUSIC, PU, grantPowerup, spawnPowerup, addPowerup, startLocal, lobbyJoin, toLobby, startMatch, changeOpt, applyHit, throwDisc, LOBBY, NET, netHost, netEnter, netStartMatch };
 
 resize();
 toLobby();

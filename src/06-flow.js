@@ -65,7 +65,7 @@ function renderLobby() {
   const ar = ARENAS[S.arena];
   $('#vArena').textContent = ar.name; $('#arenaDesc').textContent = ar.desc;
   $('#vLives').textContent = S.lives; $('#vCpus').textContent = S.cpus; $('#vSkill').textContent = SKILLS[S.skill].name;
-  $('#vQuality').textContent = QUALS[S.quality].name;
+  $('#vPu').textContent = S.pu ? 'ON' : 'OFF'; $('#vQuality').textContent = QUALS[S.quality].name;
   const canStart = online ? (NET.room && NET.role === 'host') : true;
   const st = $('#start'); st.disabled = !canStart;
   $('#startSub').textContent = online ? (NET.room ? (NET.role === 'host' ? 'PRESS ENTER OR START' : 'WAITING FOR HOST') : 'HOST OR JOIN A ROOM') : (LOBBY.humans.length ? 'PRESS ENTER OR START' : 'OR WATCH CPUS FIGHT');
@@ -80,7 +80,9 @@ const TIPS = [
   'Knocked to the edge? Push back toward your podium to save yourself.',
   'You get 7 deflects a life. Knock a rival out to refill them.',
   'Your disc can smash theirs out of the air, and you get it straight back.',
-  'To jump to another platform, hold toward it at the edge for half a second. Nobody can hit you mid-leap.'
+  'Power-ups appear on the podiums. Walk over one to grab it before it vanishes.',
+  'A blinking, beeping disc is a SEEKER coming for you. Get your shield up.',
+  'To jump to another platform, hold toward it at the edge for a quarter second. Nobody can hit you mid-leap.'
 ];
 function renderOnlineBox() {
   const box = $('#onlineBox');
@@ -106,10 +108,11 @@ function changeOpt(o, d) {
   if (o === 'cpus') S.cpus = clamp(S.cpus + d, 0, LOBBY.mode === 'local' ? 4 - Math.max(0, LOBBY.humans.length) : 3);
   if (o === 'skill') S.skill = clamp(S.skill + d, 0, SKILLS.length - 1);
   if (o === 'guide') S.guide = !S.guide;
+  if (o === 'pu') S.pu = !S.pu;
   if (o === 'quality') { S.quality = clamp(S.quality + d, 0, QUALS.length - 1); resize(); toast('GRAPHICS: ' + QUALS[S.quality].name + (S.quality !== store.get('quality', -1) ? ' · city density applies on reload' : '')); }
-  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality']) store.set(k, S[k]);
+  for (const k of ['arena', 'lives', 'cpus', 'skill', 'guide', 'quality', 'pu']) store.set(k, S[k]);
   SFX.tick(); renderLobby();
-  if (o === 'arena' && state === 'lobby') startDemo();
+  if ((o === 'arena' || o === 'pu') && state === 'lobby') startDemo();
 }
 
 /* ================= match flow ================= */
@@ -118,7 +121,7 @@ function teardownPlayers() {
   players = []; DISCS.length = 0;
 }
 function startDemo() {
-  teardownPlayers(); DEMO = true;
+  teardownPlayers(); DEMO = true; clearPowerups(); PU.enabled = S.pu;
   const ar = ARENAS[S.arena].id === 'random' ? ARENAS[1] : ARENAS[S.arena];
   players = [makePlayer(0, 'cpu', null, 'DEMO-A'), makePlayer(1, 'cpu', null, 'DEMO-B')];
   players.forEach(p => { p.skill = 2; p.lives = 99; });
@@ -138,7 +141,7 @@ function toLobby() {
 // cfg: { ro: [[peer, 'h'|'c', name]], ar, lv, sk, rid }
 let lastCfg = null;
 function startMatch(cfg) {
-  lastCfg = cfg; teardownPlayers(); DEMO = false;
+  lastCfg = cfg; teardownPlayers(); DEMO = false; clearPowerups(); PU.enabled = cfg.pu !== false;
   const arena = ARENAS[cfg.ar];
   const online = !!NET.room;
   players = cfg.ro.map((r, i) => {
@@ -212,7 +215,7 @@ function startLocal() {
   if (LOBBY.mode === 'online') { if (NET.room && NET.role === 'host') netStartMatch(); return; }
   const ro = localRoster();
   const ar = ARENAS[S.arena].id === 'random' ? Math.floor(Math.random() * (ARENAS.length - 1)) : S.arena;
-  startMatch({ ro: ro.map(r => ['', r.kind === 'human' ? 'h' : 'c', r.name]), ctls: ro.map(r => r.ctl), ar, lv: S.lives, sk: S.skill });
+  startMatch({ ro: ro.map(r => ['', r.kind === 'human' ? 'h' : 'c', r.name]), ctls: ro.map(r => r.ctl), ar, lv: S.lives, sk: S.skill, pu: S.pu });
 }
 function setPaused(on) {
   if (state === 'lobby' || state === 'boot') return;
@@ -241,8 +244,9 @@ function countTick() {
 let howPage = 0;
 function showHow(on) { show('#howto', on); if (on) { setHowPage(0); SFX.tick(); } }
 function setHowPage(i) {
-  const pages = document.querySelectorAll('.howpage'); howPage = (i + pages.length) % pages.length;
-  pages.forEach((e, k) => e.hidden = k !== howPage);
-  document.querySelectorAll('#howTabs button').forEach((b, k) => b.classList.toggle('on', k === howPage));
-  $('#howNext').textContent = howPage === pages.length - 1 ? 'DONE' : 'NEXT ›';
+  // pages go in tab order (the tabs carry each page's number)
+  const tabs = [...document.querySelectorAll('#howTabs button')], order = tabs.map(b => +b.dataset.t); howPage = (i + order.length) % order.length;
+  document.querySelectorAll('.howpage').forEach(e => e.hidden = +e.dataset.p !== order[howPage]);
+  tabs.forEach((b, k) => b.classList.toggle('on', k === howPage));
+  $('#howNext').textContent = howPage === order.length - 1 ? 'DONE' : 'NEXT ›';
 }
