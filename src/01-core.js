@@ -362,11 +362,11 @@ function makeTickerTexture() {
 // Neon billboards for the skyline, all fictional brands.
 const ADS = [
   { bg: ['#1a0004', '#45000c'], t1: 'KAIJU', t2: 'COLA', c1: '#ff1414', c2: '#ffffff', jp: 'カイジュウ', s: 'TASTE THE MONSTER' },
-  { bg: ['#00061e', '#001650'], t1: 'SYNAPSE+', t2: '', c1: '#1650ff', c2: '#ffffff', jp: 'シナプス', s: 'UPGRADE YOUR MIND' },
+  { bg: ['#0a0018', '#22004a'], t1: 'SYNAPSE+', t2: '', c1: '#a020ff', c2: '#ffffff', jp: 'シナプス', s: 'UPGRADE YOUR MIND' },
   { bg: ['#160200', '#3a0700'], t1: 'VOLTAIC', t2: 'MOTORS', c1: '#ff2a0a', c2: '#ff6a00', jp: 'ボルテック', s: 'GRAVITY IS OPTIONAL' },
   { bg: ['#000418', '#04104a'], t1: 'HYPER', t2: 'DISC', c1: '#1650ff', c2: '#ff1414', jp: 'ハイパー', s: 'LIVE TONIGHT · SECTOR 9' },
-  { bg: ['#1a0003', '#33000a'], t1: 'NEO', t2: 'NOODLE', c1: '#ff1414', c2: '#ff6a00', jp: 'ラーメン', s: '24H · FLOOR 88' },
-  { bg: ['#000514', '#000c38'], t1: 'ZEN-9', t2: '', c1: '#3d7bff', c2: '#ffffff', jp: 'ゼン', s: 'SLEEP IS A SUBSCRIPTION' },
+  { bg: ['#1a0a00', '#3a1800'], t1: 'NEO', t2: 'NOODLE', c1: '#ffa000', c2: '#ff1414', jp: 'ラーメン', s: '24H · FLOOR 88' },
+  { bg: ['#00100e', '#002a26'], t1: 'ZEN-9', t2: '', c1: '#00e0c0', c2: '#ffffff', jp: 'ゼン', s: 'SLEEP IS A SUBSCRIPTION' },
   { bg: ['#1a0004', '#40000c'], t1: 'MIRAI', t2: 'BANK', c1: '#ff0a2a', c2: '#ffffff', jp: 'ミライ', s: 'YOUR FUTURE · OUR TERMS' }
 ];
 function makeAdTexture(ad, vertical) {
