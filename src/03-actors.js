@@ -192,7 +192,7 @@ const WALLFW = {
   init() {
     const n = this.cols * this.rows;
     const geo = new THREE.BoxGeometry(TAU * RB / this.cols - 0.22, this.half * 2 - 0.08, 0.55);
-    const mat = new THREE.MeshBasicMaterial({ map: BLOCKT, color: new THREE.Color(0xff4a10).multiplyScalar(1.25), transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const mat = new THREE.MeshBasicMaterial({ map: BLOCKT, color: new THREE.Color(0xff2200).multiplyScalar(1.25), transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const gmat = new THREE.MeshStandardMaterial({ color: 0x220a04, metalness: 0.4, roughness: 0.1, transparent: true, opacity: 0.35 });
     this.im = new THREE.InstancedMesh(geo, mat, n); this.glass = new THREE.InstancedMesh(geo, gmat, n);
     this.im.frustumCulled = this.glass.frustumCulled = false; this.im.renderOrder = 3;
@@ -200,7 +200,7 @@ const WALLFW = {
     scene.add(this.glass, this.im);
     // hub + ring rails that carry the blocks
     this.rails = new THREE.Group();
-    for (const y of [0.1, 5.1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff5a1f, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
+    for (const y of [0.1, 5.1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff2a0a, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
     scene.add(this.rails);
     this.setOn(false);
   },

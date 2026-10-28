@@ -8,11 +8,11 @@ function makeGuide(p) {
   const dots = new THREE.InstancedMesh(guideDotGeo, new THREE.MeshBasicMaterial({ color: col.clone().multiplyScalar(1.6), transparent: true, opacity: 0.6, depthWrite: false }), GUIDE_N);
   dots.frustumCulled = false; dots.layers.set(layer); dots.count = 0;
   // the aim line: four glowing bars that run round the court at the aimed height (or across the ceiling)
-  const lineMat = new THREE.MeshBasicMaterial({ color: col.clone().lerp(new THREE.Color(0x9ff4ff), 0.5).multiplyScalar(3.2), transparent: true, opacity: 0.95, depthWrite: false });
+  const lineMat = new THREE.MeshBasicMaterial({ color: col.clone().lerp(new THREE.Color(0x5aa8ff), 0.5).multiplyScalar(3.2), transparent: true, opacity: 0.95, depthWrite: false });
   const line = new THREE.Group(), bars = [];
   for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 0.09, 0.09), lineMat); m.frustumCulled = false; line.add(m); bars.push(m); }
   // crosshair: two arrowheads pointing at the aim spot, plus a ring
-  const xm = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x3c8bff).multiplyScalar(3), side: THREE.DoubleSide, transparent: true, depthWrite: false, depthTest: false });
+  const xm = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x2f7dff).multiplyScalar(3), side: THREE.DoubleSide, transparent: true, depthWrite: false, depthTest: false });
   const ret = new THREE.Group();
   const arrow = new THREE.Shape(); arrow.moveTo(0, 0); arrow.lineTo(-0.26, 0.42); arrow.lineTo(0, 0.3); arrow.lineTo(0.26, 0.42); arrow.closePath();
   const ag = new THREE.ShapeGeometry(arrow);
@@ -61,7 +61,7 @@ function updateGuide(p, dt) {
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);
-  g.mat.color.copy(new THREE.Color(lock ? 0xffffff : 0x3c8bff).multiplyScalar(lock ? 3.2 : 3));
+  g.mat.color.copy(new THREE.Color(lock ? 0xffffff : 0x2f7dff).multiplyScalar(lock ? 3.2 : 3));
   g.ring.visible = lock;
 }
 

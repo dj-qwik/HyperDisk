@@ -23,8 +23,8 @@ const store = {
 const IS_TOUCH = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
 
 /* ================= constants ================= */
-const PCOL = [0x19e6ff, 0xff2fa8, 0xffc21a, 0x7cff4f];
-const PCSS = ['#19e6ff', '#ff2fa8', '#ffc21a', '#7cff4f'];
+const PCOL = [0x1650ff, 0xff1414, 0xff6a00, 0xa020ff];
+const PCSS = ['#1650ff', '#ff1414', '#ff6a00', '#a020ff'];
 const PNAME = ['NOVA', 'VEX', 'KAIRO', 'JINX'];
 const CPU_NAMES = ['RAZOR', 'HALCYON', 'GHOSTWIRE', 'MANTIS', 'SPECTRE', 'OKAMI', 'NULLSET', 'VANTA', 'ZERO-9', 'KESTREL', 'SABLE', 'ONYX'];
 const SKILLS = [
@@ -120,8 +120,11 @@ finalMat = new THREE.ShaderMaterial({
       // hue-preserving tone map so neon stays saturated instead of bleaching to white
       float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
       vec3 keep = col * (aces(vec3(lum)).x / max(lum, 1e-4));
-      col = mix(aces(col), clamp(keep, 0., 1.), 0.55);
-      col = col * col * (3.0 - 2.0 * col) * 0.35 + col * 0.65;
+      col = mix(aces(col), clamp(keep, 0., 1.), 0.85);   // mostly hue-preserving, so bright red stays red and blue stays blue
+      col = col * col * (3.0 - 2.0 * col) * 0.45 + col * 0.55;
+      // push saturation: electric, not pastel
+      float gl = dot(col, vec3(0.2126, 0.7152, 0.0722)); col = clamp(mix(vec3(gl), col, 1.35), 0., 1.);
+      col = max(col - 0.012, 0.) * 1.012;
       col *= mix(0.55, 1.0, smoothstep(0.62, 0.12, r2));
       col += fl.rgb * fl.w * smoothstep(0.08, 0.5, r2) * 0.55;
       col = toSRGB(col);
@@ -329,7 +332,7 @@ function makeTickerTexture() {
   x.fillStyle = '#05040c'; x.fillRect(0, 0, W, Hh);
   const msg = ['HYPER DISC', 'SEASON 07', 'NEON DISTRICT ARENA', 'KEEP YOUR FEET', 'THREE DISCS · NO MERCY', 'ハイパー・ディスク', 'LIVE FROM SECTOR 9', 'BANK IT OFF THE CEILING'];
   x.font = `900 64px ${FONT_D}`; x.textBaseline = 'middle';
-  let px = 30, i = 0; const cols = ['#19e6ff', '#ff2fa8', '#ffc21a', '#ffffff'];
+  let px = 30, i = 0; const cols = ['#1650ff', '#ff1414', '#ff6a00', '#ffffff'];
   while (px < W - 200) { const t = msg[i % msg.length]; x.fillStyle = cols[i % cols.length]; x.fillText(t, px, Hh / 2 + 4); px += x.measureText(t).width + 50; x.fillStyle = '#ffffff'; x.fillText('◆', px, Hh / 2); px += 110; i++; }
   // LED dot mask
   x.globalCompositeOperation = 'destination-in'; const dot = cnv(8, 8), d = dot.getContext('2d'); d.fillStyle = '#fff'; d.beginPath(); d.arc(4, 4, 3.2, 0, TAU); d.fill();
@@ -339,13 +342,13 @@ function makeTickerTexture() {
 
 // Neon billboards for the skyline, all fictional brands.
 const ADS = [
-  { bg: ['#12001c', '#3b0050'], t1: 'KAIJU', t2: 'COLA', c1: '#ff2fa8', c2: '#ffd34d', jp: 'カイジュウ', s: 'TASTE THE MONSTER' },
-  { bg: ['#001a24', '#003a48'], t1: 'SYNAPSE+', t2: '', c1: '#19e6ff', c2: '#ffffff', jp: 'シナプス', s: 'UPGRADE YOUR MIND' },
-  { bg: ['#1c0a00', '#3a1600'], t1: 'VOLTAIC', t2: 'MOTORS', c1: '#ffc21a', c2: '#ff5a1f', jp: 'ボルテック', s: 'GRAVITY IS OPTIONAL' },
-  { bg: ['#000a1a', '#0a1a3a'], t1: 'HYPER', t2: 'DISC', c1: '#7cff4f', c2: '#19e6ff', jp: 'ハイパー', s: 'LIVE TONIGHT · SECTOR 9' },
-  { bg: ['#14001a', '#230032'], t1: 'NEO', t2: 'NOODLE', c1: '#ff7a2f', c2: '#ff2fa8', jp: 'ラーメン', s: '24H · FLOOR 88' },
-  { bg: ['#00140e', '#003022'], t1: 'ZEN-9', t2: '', c1: '#4fffc8', c2: '#ffffff', jp: 'ゼン', s: 'SLEEP IS A SUBSCRIPTION' },
-  { bg: ['#1a0010', '#40001f'], t1: 'MIRAI', t2: 'BANK', c1: '#ff3a5c', c2: '#ffd1dc', jp: 'ミライ', s: 'YOUR FUTURE · OUR TERMS' }
+  { bg: ['#1a0004', '#45000c'], t1: 'KAIJU', t2: 'COLA', c1: '#ff1414', c2: '#ffffff', jp: 'カイジュウ', s: 'TASTE THE MONSTER' },
+  { bg: ['#00061e', '#001650'], t1: 'SYNAPSE+', t2: '', c1: '#1650ff', c2: '#ffffff', jp: 'シナプス', s: 'UPGRADE YOUR MIND' },
+  { bg: ['#160200', '#3a0700'], t1: 'VOLTAIC', t2: 'MOTORS', c1: '#ff2a0a', c2: '#ff6a00', jp: 'ボルテック', s: 'GRAVITY IS OPTIONAL' },
+  { bg: ['#000418', '#04104a'], t1: 'HYPER', t2: 'DISC', c1: '#1650ff', c2: '#ff1414', jp: 'ハイパー', s: 'LIVE TONIGHT · SECTOR 9' },
+  { bg: ['#1a0003', '#33000a'], t1: 'NEO', t2: 'NOODLE', c1: '#ff1414', c2: '#ff6a00', jp: 'ラーメン', s: '24H · FLOOR 88' },
+  { bg: ['#000514', '#000c38'], t1: 'ZEN-9', t2: '', c1: '#3d7bff', c2: '#ffffff', jp: 'ゼン', s: 'SLEEP IS A SUBSCRIPTION' },
+  { bg: ['#1a0004', '#40000c'], t1: 'MIRAI', t2: 'BANK', c1: '#ff0a2a', c2: '#ffffff', jp: 'ミライ', s: 'YOUR FUTURE · OUR TERMS' }
 ];
 function makeAdTexture(ad, vertical) {
   const W = vertical ? 512 : 1024, Hh = vertical ? 1024 : 512, cv = cnv(W, Hh), x = cv.getContext('2d');

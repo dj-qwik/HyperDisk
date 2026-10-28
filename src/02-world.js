@@ -17,16 +17,16 @@ const uTime = { value: 0 };
                    mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z); }
       void main(){
         vec3 d = normalize(vD); float y = d.y;
-        vec3 zen = vec3(0.004,0.004,0.016), mid = vec3(0.03,0.012,0.07), hor = vec3(0.32,0.06,0.28), low = vec3(0.10,0.02,0.10);
+        vec3 zen = vec3(0.002,0.003,0.014), mid = vec3(0.006,0.01,0.06), hor = vec3(0.34,0.01,0.03), low = vec3(0.07,0.0,0.015);
         vec3 c = mix(mid, zen, smoothstep(0.05, 0.75, y));
         c = mix(hor, c, smoothstep(-0.02, 0.22, y));
         c = mix(low, c, smoothstep(-0.25, -0.02, y));
         // city glow bleeding into the horizon, warmer on one side
-        c += vec3(0.25,0.05,0.18) * exp(-abs(y)*9.) * (0.6 + 0.4*sin(atan(d.z,d.x)*2.+1.));
-        c += vec3(0.02,0.12,0.18) * exp(-abs(y-0.02)*14.) * (0.5+0.5*sin(atan(d.z,d.x)*3.-0.7));
+        c += vec3(0.30,0.0,0.03) * exp(-abs(y)*9.) * (0.6 + 0.4*sin(atan(d.z,d.x)*2.+1.));
+        c += vec3(0.0,0.04,0.30) * exp(-abs(y-0.02)*14.) * (0.5+0.5*sin(atan(d.z,d.x)*3.-0.7));
         // smog layers
         float s = n3(d*4. + vec3(uTime*0.01,0.,0.)) * 0.6 + n3(d*9. - vec3(0.,0.,uTime*0.02)) * 0.4;
-        c += vec3(0.16,0.04,0.14) * smoothstep(0.45, 0.85, s) * smoothstep(0.55, 0.05, y) * smoothstep(-0.05, 0.08, y);
+        c += vec3(0.12,0.0,0.02) * smoothstep(0.45, 0.85, s) * smoothstep(0.55, 0.05, y) * smoothstep(-0.05, 0.08, y);
         // stars above the smog
         vec3 sp = d*420.; float st = h(floor(sp)); st = pow(st, 60.) * smoothstep(0.15, 0.5, y);
         c += vec3(0.9,0.95,1.) * st * (0.6 + 0.4*sin(uTime*3. + h(floor(sp))*60.));
@@ -43,7 +43,7 @@ const CITY = {};
   const geo = new THREE.BoxGeometry(1, 1, 1);
   const seeds = new Float32Array(count), neon = new Float32Array(count * 3);
   const mat = new THREE.ShaderMaterial({
-    uniforms: { uTime, uFog: { value: new THREE.Color(0x0d0620) }, uFogD: { value: 0.0072 } },
+    uniforms: { uTime, uFog: { value: new THREE.Color(0x05040f) }, uFogD: { value: 0.0072 } },
     vertexShader: `
       attribute float aSeed; attribute vec3 aNeon;
       varying vec3 vWP, vN, vLN, vNeon, vLocal, vScale; varying float vSeed;
@@ -67,7 +67,7 @@ const CITY = {};
           float win = step(0.16, f.x) * step(f.x, 0.84) * step(0.2, f.y) * step(f.y, 0.8);
           float r = h21(id + vSeed * 17.31 + (n.x + n.z * 3.));
           float lit = step(0.6 + 0.3 * fract(vSeed * 7.3), r);
-          vec3 wc = r > 0.96 ? vec3(0.2, 0.95, 1.1) : r > 0.92 ? vec3(1.1, 0.25, 0.75) : vec3(1.0, 0.62, 0.32);
+          vec3 wc = r > 0.93 ? vec3(1.4, 0.04, 0.08) : r > 0.8 ? vec3(0.12, 0.35, 1.5) : vec3(0.55, 0.65, 1.0);
           float fl = 0.88 + 0.12 * sin(uTime * (1.5 + r * 4.) + r * 50.);
           col += win * lit * wc * (0.12 + 0.45 * h21(id * 1.7 + 3.)) * fl;
           // a soft glow line every few floors
@@ -87,7 +87,7 @@ const CITY = {};
   });
   const inst = new THREE.InstancedMesh(geo, mat, count);
   const m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  const neonCols = [[0.1, 0.9, 1], [1, 0.18, 0.66], [1, 0.76, 0.1], [0.5, 1, 0.3], [0.6, 0.3, 1]];
+  const neonCols = [[0.08, 0.35, 1.6], [1.6, 0.03, 0.1], [0.08, 0.35, 1.6], [1.6, 0.03, 0.1], [1.0, 0.95, 1.2]];
   CITY.spots = [];
   for (let i = 0; i < count; i++) {
     const ring = rnd(); const r = 66 + Math.pow(ring, 1.3) * 150, a = rnd() * TAU;
@@ -132,13 +132,13 @@ anim.push((t) => {
 const HOLO = new THREE.Group();
 {
   const mk = (r, t, c, o) => new THREE.Mesh(new THREE.TorusGeometry(r, t, 12, 160), glowMat(c, 1.6, o));
-  const a = mk(22, 0.45, 0x19e6ff, 0.9), b = mk(17, 0.25, 0xff2fa8, 0.9), c = mk(9, 0.7, 0xffffff, 0.6);
-  const dash = new THREE.Mesh(new THREE.TorusGeometry(19.5, 0.16, 6, 200, Math.PI * 1.5), glowMat(0x19e6ff, 2, 0.8));
+  const a = mk(22, 0.45, 0x1650ff, 0.9), b = mk(17, 0.25, 0xff1414, 0.9), c = mk(9, 0.7, 0xffffff, 0.6);
+  const dash = new THREE.Mesh(new THREE.TorusGeometry(19.5, 0.16, 6, 200, Math.PI * 1.5), glowMat(0x1650ff, 2, 0.8));
   HOLO.add(a, b, c, dash);
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(3, 26, 120, 40, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
     uniforms: { uTime }, vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-    fragmentShader: 'uniform float uTime; varying vec2 vUv; void main(){ float a = pow(vUv.y,2.)*0.18*(0.7+0.3*sin(vUv.y*80.-uTime*6.)); gl_FragColor=vec4(vec3(0.1,0.7,1.)*a,1.); }'
+    fragmentShader: 'uniform float uTime; varying vec2 vUv; void main(){ float a = pow(vUv.y,2.)*0.18*(0.7+0.3*sin(vUv.y*80.-uTime*6.)); gl_FragColor=vec4(vec3(0.1,0.3,1.)*a,1.); }'
   }));
   beam.position.y = -70; HOLO.add(beam);
   HOLO.position.set(-60, 92, -230); HOLO.rotation.x = 0.3; world.add(HOLO);
@@ -202,7 +202,7 @@ const HOLO = new THREE.Group();
 
 /* ================= the arena shell ================= */
 const ARENA = new THREE.Group(); scene.add(ARENA);
-const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0.85, roughness: 0.32, map: WALLT.map, normalMap: WALLT.nrm, emissiveMap: WALLT.em, emissive: new THREE.Color(0x19e6ff).multiplyScalar(0.9) });
+const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0.85, roughness: 0.32, map: WALLT.map, normalMap: WALLT.nrm, emissiveMap: WALLT.em, emissive: new THREE.Color(0x1650ff).multiplyScalar(0.9) });
 
 // shaft below the stations: tall panelled cylinder falling away into the glow
 {
@@ -210,11 +210,11 @@ const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0
   mat.map = WALLT.map.clone(); mat.map.needsUpdate = true; mat.map.repeat.set(10, 4);
   mat.normalMap = WALLT.nrm.clone(); mat.normalMap.needsUpdate = true; mat.normalMap.repeat.set(10, 4);
   mat.emissiveMap = WALLT.em.clone(); mat.emissiveMap.needsUpdate = true; mat.emissiveMap.repeat.set(10, 4);
-  mat.emissive = new THREE.Color(0x6a3dff).multiplyScalar(0.7);
+  mat.emissive = new THREE.Color(0x1424ff).multiplyScalar(0.7);
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(RA + 0.6, RA + 0.6, 80, 96, 1, true), mat); shaft.position.y = -45; ARENA.add(shaft);
   // light rings falling away
   for (let i = 0; i < 10; i++) {
-    const y = -7 - i * 7.5, c = i % 2 ? 0xff2fa8 : 0x19e6ff;
+    const y = -7 - i * 7.5, c = i % 2 ? 0xff1414 : 0x1650ff;
     const ring = new THREE.Mesh(new THREE.TorusGeometry(RA + 0.1, 0.14, 8, 160), emissiveMat(c, 2.2 - i * 0.15)); ring.rotation.x = Math.PI / 2; ring.position.y = y; ARENA.add(ring);
   }
   // reactor glow at the bottom
@@ -224,7 +224,7 @@ const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0
     fragmentShader: `uniform float uTime; varying vec2 vUv; void main(){ vec2 p = vUv-0.5; float r = length(p)*2.; float a = atan(p.y,p.x);
       float rings = smoothstep(0.08,0.,abs(fract(r*6. - uTime*0.4)-0.5)-0.4);
       float spokes = smoothstep(0.1,0.,abs(fract(a*12./6.2832 + uTime*0.05)-0.5)-0.45)*step(0.3,r);
-      vec3 c = vec3(0.35,0.12,0.9)*(1.-r)*1.6 + vec3(0.1,0.8,1.)*rings*(1.-r)*1.4 + vec3(1.,0.2,0.7)*spokes*0.5*(1.-r);
+      vec3 c = vec3(0.05,0.1,0.9)*(1.-r)*1.6 + vec3(0.1,0.35,1.)*rings*(1.-r)*1.4 + vec3(1.,0.03,0.08)*spokes*0.6*(1.-r);
       gl_FragColor = vec4(c,1.); }`
   }));
   core.rotation.x = -Math.PI / 2; core.position.y = -84; ARENA.add(core);
@@ -235,8 +235,8 @@ const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0
   const prof = [[RA + 0.6, -2.4], [RA - 1.8, -2.4], [RA - 2.2, -2.9], [RA - 2.2, -3.6], [RA - 1.4, -4.4], [RA + 0.6, -4.6]].map(p => new THREE.Vector2(p[0], p[1]));
   const m = new THREE.MeshStandardMaterial({ color: 0x232733, metalness: 0.8, roughness: 0.35, normalMap: HULLT.nrm });
   const ledge = new THREE.Mesh(new THREE.LatheGeometry(prof, 160), m); ARENA.add(ledge);
-  const strip = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.2, 0.06, 6, 200), emissiveMat(0x19e6ff, 2.6)); strip.rotation.x = Math.PI / 2; strip.position.y = -2.45; ARENA.add(strip);
-  const strip2 = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.25, 0.05, 6, 200), emissiveMat(0xff2fa8, 2.2)); strip2.rotation.x = Math.PI / 2; strip2.position.y = -3.3; ARENA.add(strip2);
+  const strip = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.2, 0.06, 6, 200), emissiveMat(0x1650ff, 2.6)); strip.rotation.x = Math.PI / 2; strip.position.y = -2.45; ARENA.add(strip);
+  const strip2 = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.25, 0.05, 6, 200), emissiveMat(0xff1414, 2.2)); strip2.rotation.x = Math.PI / 2; strip2.position.y = -3.3; ARENA.add(strip2);
 }
 
 // ribs: tall structural fins holding the energy membrane
@@ -254,7 +254,7 @@ const RIBS = 48;
       const k = i * 2 + (side > 0 ? 1 : 0), off = 0.28 * side, ta = a + Math.PI / 2;
       p.set(Math.cos(a) * (RA - 0.58) + Math.cos(ta) * off, -2.4 + h / 2, Math.sin(a) * (RA - 0.58) + Math.sin(ta) * off);
       m4.compose(p, q, one); strips.setMatrixAt(k, m4);
-      const c = i % 4 === 0 ? new THREE.Color(0xff2fa8).multiplyScalar(3.2) : new THREE.Color(0x19e6ff).multiplyScalar(i % 2 ? 1.2 : 2.4);
+      const c = i % 4 === 0 ? new THREE.Color(0xff1414).multiplyScalar(3.2) : new THREE.Color(0x1650ff).multiplyScalar(i % 2 ? 1.2 : 2.4);
       strips.setColorAt(k, c);
     }
   }
@@ -267,7 +267,7 @@ const WALL_HIT_COL = []; for (let i = 0; i < 10; i++) WALL_HIT_COL.push(new THRE
 let wallHitIdx = 0;
 const membraneMat = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-  uniforms: { uTime, uHits: { value: WALL_HITS }, uHitCol: { value: WALL_HIT_COL }, uAxis: { value: 0 }, uTint: { value: new THREE.Color(0x19e6ff) } },
+  uniforms: { uTime, uHits: { value: WALL_HITS }, uHitCol: { value: WALL_HIT_COL }, uAxis: { value: 0 }, uTint: { value: new THREE.Color(0x1650ff) } },
   vertexShader: 'varying vec3 vWP; varying vec2 vUv; void main(){ vUv=uv; vec4 w = modelMatrix*vec4(position,1.); vWP = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }',
   fragmentShader: `
     uniform float uTime, uAxis; uniform vec3 uTint; uniform vec4 uHits[10]; uniform vec3 uHitCol[10]; varying vec3 vWP; varying vec2 vUv;
@@ -277,7 +277,7 @@ const membraneMat = new THREE.ShaderMaterial({
       vec4 hx = hexCoords(p);
       float edge = smoothstep(0.06, 0.0, hx.z);
       float yy = (vWP.y + 2.4) / ${(YC + 2.4).toFixed(1)};
-      vec3 base = mix(uTint, vec3(0.75,0.15,1.0), yy * 0.7);
+      vec3 base = mix(uTint, vec3(0.1,0.25,1.0), yy * 0.6);
       float scan = smoothstep(0.08, 0., abs(fract(yy*1.5 - uTime*0.12) - 0.5) - 0.42);
       // the original arena's horizontal wall lines
       float lines = smoothstep(0.06, 0.0, abs(fract((vWP.y + 2.4) / 1.9) - 0.5) - 0.44);
@@ -304,12 +304,12 @@ function buildCourt() {
     const m = membraneMat.clone(); m.uniforms = Object.assign({}, membraneMat.uniforms, { uAxis: { value: axis }, uTint: { value: new THREE.Color(tint) } });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, H, 1, 1), m); mesh.position.set(x, yMid, z); mesh.rotation.y = ry; mesh.renderOrder = 2; g.add(mesh);
   };
-  wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0xff2fa8); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0xff2fa8);
-  wall(2 * hx, 0, hz, Math.PI, 1, 0x19e6ff); wall(2 * hx, 0, -hz, 0, 1, 0x19e6ff);
+  wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0xff1414); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0xff1414);
+  wall(2 * hx, 0, hz, Math.PI, 1, 0x1650ff); wall(2 * hx, 0, -hz, 0, 1, 0x1650ff);
   // frame beams along every edge of the box
   const beam = (len, x, y, z, axis, color, k) => { const s = [0.14, 0.14, 0.14]; s[axis] = len; const m = new THREE.Mesh(new THREE.BoxGeometry(s[0], s[1], s[2]), emissiveMat(color, k)); m.position.set(x, y, z); g.add(m); };
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x19e6ff, 3);
-  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x19e6ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0xff2fa8, 2.6); }
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x1650ff, 3);
+  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x1650ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0xff1414, 2.6); }
   ARENA.add(g); COURT.g = g;
   for (let i = 0; i < RIMS.length; i++) { const sx = i === 0 || i === 3 ? 1 : -1, sz = i < 2 ? 1 : -1; RIMS[i].position.set(sx * (hx - 1.5), 7, sz * (hz - 1.5)); }
   buildCeiling();
@@ -330,7 +330,7 @@ function wallFlash(x, y, z, colorHex) {
   const tick = new THREE.Mesh(new THREE.CylinderGeometry(RA - 0.9, RA - 0.9, 1.5, 128, 1, true), new THREE.MeshBasicMaterial({ map: TICKT, side: THREE.BackSide, color: new THREE.Color(1.8, 1.8, 1.8) }));
   TICKT.repeat.set(-3, 1); tick.position.y = YC - 2.3; ARENA.add(tick);
   anim.push((t) => { TICKT.offset.x = (t * 0.018) % 1; });
-  for (const y of [YC - 3.15, YC - 1.45]) { const r = new THREE.Mesh(new THREE.TorusGeometry(RA - 0.95, 0.05, 6, 200), emissiveMat(0x19e6ff, 3)); r.rotation.x = Math.PI / 2; r.position.y = y; ARENA.add(r); }
+  for (const y of [YC - 3.15, YC - 1.45]) { const r = new THREE.Mesh(new THREE.TorusGeometry(RA - 0.95, 0.05, 6, 200), emissiveMat(0x1650ff, 3)); r.rotation.x = Math.PI / 2; r.position.y = y; ARENA.add(r); }
 }
 
 // ceiling: smoked-glass hex plates with light seams over the court, open oculus in the middle
@@ -354,12 +354,12 @@ function buildCeiling() {
 }
 {
   const rOcc = 7.5;
-  const occ = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 0.4, 0.22, 10, 120), emissiveMat(0xff2fa8, 3.5)); occ.rotation.x = Math.PI / 2; occ.position.y = YC; ARENA.add(occ);
-  const occ2 = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 1.1, 0.06, 6, 120), emissiveMat(0x19e6ff, 3.5)); occ2.rotation.x = Math.PI / 2; occ2.position.y = YC - 0.1; ARENA.add(occ2);
+  const occ = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 0.4, 0.22, 10, 120), emissiveMat(0xff1414, 3.5)); occ.rotation.x = Math.PI / 2; occ.position.y = YC; ARENA.add(occ);
+  const occ2 = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 1.1, 0.06, 6, 120), emissiveMat(0x1650ff, 3.5)); occ2.rotation.x = Math.PI / 2; occ2.position.y = YC - 0.1; ARENA.add(occ2);
   // hanging emblem under the oculus
   const emb = new THREE.Group(); emb.position.y = YC + 2;
-  const e1 = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.12, 8, 120), emissiveMat(0x19e6ff, 3)); e1.rotation.x = Math.PI / 2;
-  const e2 = new THREE.Mesh(new THREE.TorusGeometry(3.3, 0.07, 8, 120, Math.PI * 1.6), emissiveMat(0xff2fa8, 3));
+  const e1 = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.12, 8, 120), emissiveMat(0x1650ff, 3)); e1.rotation.x = Math.PI / 2;
+  const e2 = new THREE.Mesh(new THREE.TorusGeometry(3.3, 0.07, 8, 120, Math.PI * 1.6), emissiveMat(0xff1414, 3));
   const e3 = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.07, 8, 120, Math.PI * 1.2), emissiveMat(0xffffff, 2.5));
   emb.add(e1, e2, e3); ARENA.add(emb);
   anim.push((t) => { e2.rotation.x = t * 0.6; e2.rotation.y = t * 0.3; e3.rotation.y = -t * 0.9; e3.rotation.z = t * 0.4; emb.rotation.y = t * 0.15; });
@@ -367,7 +367,7 @@ function buildCeiling() {
   const shaftMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uTime },
     vertexShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }',
-    fragmentShader: 'uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 3.); float a = f * smoothstep(0.,0.6,vUv.y) * 0.022 * (0.85+0.15*sin(vUv.y*30.+uTime)); gl_FragColor = vec4(vec3(0.6,0.5,1.)*a,1.); }'
+    fragmentShader: 'uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 3.); float a = f * smoothstep(0.,0.6,vUv.y) * 0.022 * (0.85+0.15*sin(vUv.y*30.+uTime)); gl_FragColor = vec4(vec3(0.3,0.4,1.)*a,1.); }'
   });
   const ls = new THREE.Mesh(new THREE.CylinderGeometry(rOcc, rOcc + 3, 40, 48, 1, true), shaftMat); ls.position.y = YC - 20; ARENA.add(ls);
 }
@@ -381,7 +381,7 @@ function ceilFlash(x, z, colorHex) { CEIL.pulses.push({ x, z, t: uTime.value, c:
     for (let i = 0; i < plates.length; i++) {
       const [x, z, d] = plates[i];
       const wave = 0.5 + 0.5 * Math.sin(d * 0.35 - t * 1.4);
-      base.setRGB(0.02 + 0.14 * wave * wave, 0.08 + 0.3 * wave * wave, 0.2 + 0.55 * wave * wave);
+      base.setRGB(0.01 + 0.05 * wave * wave, 0.03 + 0.16 * wave * wave, 0.18 + 0.9 * wave * wave);
       col.copy(base);
       for (const p of pulses) { const age = t - p.t; if (age < 0 || age > 1.4) continue; const dd = Math.hypot(x - p.x, z - p.z); const w = Math.max(0, 1 - Math.abs(dd - age * 14) / 2.2) * (1 - age / 1.4) * 5; if (w > 0) col.r += p.c.r * w, col.g += p.c.g * w, col.b += p.c.b * w; }
       seams.setColorAt(i, col);
@@ -398,32 +398,32 @@ function ceilFlash(x, z, colorHex) { CEIL.pulses.push({ x, z, t: uTime.value, c:
   const m = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uTime, uPR: { value: 1 } },
     vertexShader: 'uniform float uTime, uPR; varying float vA; void main(){ vec3 p = position; p.y += sin(uTime*0.3 + p.x)*0.6; p.x += sin(uTime*0.2+p.z)*0.5; vec4 mv = modelViewMatrix*vec4(p,1.); gl_PointSize = uPR*60./-mv.z; vA = clamp(1.-(-mv.z)/40.,0.,1.); gl_Position = projectionMatrix*mv; }',
-    fragmentShader: 'varying float vA; void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.,d)*vA*0.35; gl_FragColor = vec4(vec3(0.6,0.8,1.)*a,1.); }'
+    fragmentShader: 'varying float vA; void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.,d)*vA*0.25; gl_FragColor = vec4(vec3(0.4,0.55,1.)*a,1.); }'
   });
   const pts = new THREE.Points(g, m); pts.frustumCulled = false; ARENA.add(pts); CITY.dust = m;
 }
 
 /* ================= lights ================= */
-const hemi = new THREE.HemisphereLight(0x5a6aa8, 0x2a0b30, 0.22); scene.add(hemi);
+const hemi = new THREE.HemisphereLight(0x2a3cc0, 0x3a0408, 0.24); scene.add(hemi);
 const sunLight = new THREE.SpotLight(0xd8e6ff, 1.25, 70, 0.95, 0.6, 1.2);
 sunLight.position.set(0, YC + 4, 0); sunLight.target.position.set(0, -2, 0); sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(QUALS[S.quality].shadow, QUALS[S.quality].shadow); sunLight.shadow.bias = -0.0004; sunLight.shadow.normalBias = 0.03; sunLight.shadow.radius = 3;
 sunLight.shadow.camera.near = 4; sunLight.shadow.camera.far = 40;
 scene.add(sunLight, sunLight.target);
 const RIMS = [];
-[[0x19e6ff, 0], [0xff2fa8, 1], [0x19e6ff, 2], [0xff2fa8, 3]].forEach(([c, i]) => {
+[[0x1650ff, 0], [0xff1414, 1], [0x1650ff, 2], [0xff1414, 3]].forEach(([c, i]) => {
   const l = new THREE.PointLight(c, 1.2, 46, 1.6); const a = i / 4 * TAU + Math.PI / 4; l.position.set(Math.cos(a) * 25, 7, Math.sin(a) * 25); scene.add(l); RIMS.push(l);
 });
-const under = new THREE.PointLight(0x6a3dff, 2.2, 60, 1.4); under.position.set(0, -14, 0); scene.add(under);
+const under = new THREE.PointLight(0x1424ff, 2.2, 60, 1.4); under.position.set(0, -14, 0); scene.add(under);
 
 // image-based lighting: a small neon "studio" so metal and glass pick up cyan/magenta reflections
 {
   const env = new THREE.Scene();
   env.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.MeshBasicMaterial({ color: 0x07060f, side: THREE.BackSide })));
   const strip = (c, i, x, y, z, w, h, d) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(i) })); m.position.set(x, y, z); env.add(m); };
-  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; strip(i % 2 ? 0xff2fa8 : 0x19e6ff, 1.5, Math.cos(a) * 30, 2, Math.sin(a) * 30, 1.5, 22, 1.5); }
-  strip(0xffffff, 0.55, 0, 34, 0, 26, 1, 26); strip(0x6a3dff, 1, 0, -30, 0, 40, 1, 40);
-  strip(0xff8a3d, 1.4, 25, -8, 0, 4, 2, 40);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; strip(i % 2 ? 0xff1414 : 0x1650ff, 1.5, Math.cos(a) * 30, 2, Math.sin(a) * 30, 1.5, 22, 1.5); }
+  strip(0xffffff, 0.55, 0, 34, 0, 26, 1, 26); strip(0x1424ff, 1, 0, -30, 0, 40, 1, 40);
+  strip(0xff1a0a, 1.4, 25, -8, 0, 4, 2, 40);
   const pm = new THREE.PMREMGenerator(renderer);
   scene.environment = pm.fromScene(env, 0.02).texture; pm.dispose();
 }

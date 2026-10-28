@@ -17,8 +17,8 @@
 /* Hyper Disc: neon noir. Deep night glass panels, hairline neon edges, angled corners. */
 :root {
   --bg: #04030b; --panel: rgba(9, 8, 22, .74); --panel-2: rgba(16, 13, 38, .82);
-  --line: rgba(120, 236, 255, .28); --ink: #e8f7ff; --dim: #8b9cc4; --faint: #4c5878;
-  --cyan: #19e6ff; --mag: #ff2fa8; --amber: #ffc21a; --lime: #7cff4f; --hot: #ff5a1f;
+  --line: rgba(120, 236, 255, .28); --ink: #eef3ff; --dim: #8d99c8; --faint: #4c5878;
+  --cyan: #1650ff; --mag: #ff1414; --amber: #ff6a00; --lime: #a020ff; --hot: #ff2a0a;
   --cut: 14px; color-scheme: dark;
 }
 [hidden] { display: none !important; }
@@ -34,7 +34,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .panel { position: relative; background: var(--panel); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
   clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
 .panel::before { content: ''; position: absolute; inset: 0; padding: 1px; pointer-events: none;
-  background: linear-gradient(135deg, var(--cyan), rgba(25,230,255,.15) 30%, rgba(255,47,168,.15) 70%, var(--mag));
+  background: linear-gradient(135deg, var(--cyan), rgba(22,80,255,.15) 30%, rgba(255,20,20,.15) 70%, var(--mag));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
   clip-path: inherit; }
 .label { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: .28em; color: var(--dim); text-transform: uppercase; }
@@ -45,18 +45,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: linear-gradient(90deg, rgba(4,3,12,.92) 0%, rgba(4,3,12,.78) 70%, rgba(4,3,12,0) 100%); }
 #lobby::-webkit-scrollbar { width: 6px; } #lobby::-webkit-scrollbar-thumb { background: var(--faint); }
 .logo { position: relative; margin: 2px 0 0; line-height: .86; font-family: 'Orbitron', sans-serif; font-weight: 900; font-style: italic; letter-spacing: .04em; }
-.logo .w { display: block; font-size: 58px; background: linear-gradient(100deg, #b9fbff 0%, var(--cyan) 30%, #8a5bff 62%, var(--mag) 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 14px rgba(25,230,255,.45)); position: relative; }
-.logo .w.b { font-size: 76px; margin-left: 46px; background: linear-gradient(100deg, var(--mag) 0%, #ff7ad0 35%, #ffd0f0 50%, var(--cyan) 100%);
-  -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 16px rgba(255,47,168,.5)); }
-.logo .w::after { content: attr(data-t); position: absolute; left: 0; top: 0; color: transparent; -webkit-text-stroke: 1px rgba(25,230,255,.55);
+.logo .w { display: block; font-size: 58px; background: linear-gradient(100deg, #8fb8ff 0%, var(--cyan) 30%, #3d3dff 62%, var(--mag) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 14px rgba(22,80,255,.45)); position: relative; }
+.logo .w.b { font-size: 76px; margin-left: 46px; background: linear-gradient(100deg, var(--mag) 0%, #ff3a4f 35%, #ffd3d8 50%, var(--cyan) 100%);
+  -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 16px rgba(255,20,20,.5)); }
+.logo .w::after { content: attr(data-t); position: absolute; left: 0; top: 0; color: transparent; -webkit-text-stroke: 1px rgba(22,80,255,.55);
   transform: translate(3px, 2px); clip-path: inset(0 0 0 0); animation: glitch 6s infinite steps(1); background: none; }
 @keyframes glitch { 0%, 90%, 100% { clip-path: inset(0 0 100% 0); transform: none; }
   91% { clip-path: inset(10% 0 55% 0); transform: translate(-6px, 0); } 93% { clip-path: inset(60% 0 8% 0); transform: translate(5px, 1px); }
   95% { clip-path: inset(30% 0 40% 0); transform: translate(-3px, -1px); } }
 .logo .disc { position: absolute; right: 4px; top: 4px; width: 74px; height: 74px; border-radius: 50%;
   border: 3px solid var(--cyan); box-shadow: 0 0 18px var(--cyan), inset 0 0 18px var(--cyan); animation: spin 2.4s linear infinite; }
-.logo .disc::before { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 2px dashed rgba(255,47,168,.9); }
+.logo .disc::before { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 2px dashed rgba(255,20,20,.9); }
 .logo .disc::after { content: ''; position: absolute; inset: 31px; border-radius: 50%; background: #fff; box-shadow: 0 0 12px #fff; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .tag { display: flex; align-items: center; gap: 10px; font-family: 'Orbitron'; font-size: 10.5px; letter-spacing: .3em; color: var(--cyan); }
@@ -65,19 +65,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
 .seg button { padding: 9px 6px; background: rgba(255,255,255,.04); border: 1px solid var(--line); font-family: 'Orbitron'; font-weight: 700; font-size: 11px;
   letter-spacing: .2em; color: var(--dim); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); transition: .15s; }
-.seg button.on { color: #04030b; background: linear-gradient(90deg, var(--cyan), #7ef3ff); border-color: transparent; box-shadow: 0 0 18px rgba(25,230,255,.5); }
-.seg button:hover:not(.on) { color: var(--ink); background: rgba(25,230,255,.1); }
+.seg button.on { color: #04030b; background: linear-gradient(90deg, var(--cyan), #4d8dff); border-color: transparent; box-shadow: 0 0 18px rgba(22,80,255,.5); }
+.seg button:hover:not(.on) { color: var(--ink); background: rgba(22,80,255,.1); }
 
 .online { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
 .online .row { display: flex; gap: 8px; align-items: center; }
 .online input { flex: 1; min-width: 0; padding: 9px 10px; background: rgba(0,0,0,.4); border: 1px solid var(--line); color: var(--ink);
   font-family: 'Orbitron'; font-size: 16px; letter-spacing: .4em; text-transform: uppercase; outline: none; }
-.online input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(25,230,255,.35); }
-.code { font-family: 'Orbitron'; font-weight: 900; font-size: 30px; letter-spacing: .35em; color: var(--amber); text-shadow: 0 0 14px rgba(255,194,26,.6); }
-.btn { padding: 9px 14px; background: rgba(25,230,255,.08); border: 1px solid var(--cyan); color: var(--cyan); font-family: 'Orbitron'; font-weight: 700;
+.online input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(22,80,255,.35); }
+.code { font-family: 'Orbitron'; font-weight: 900; font-size: 30px; letter-spacing: .35em; color: var(--amber); text-shadow: 0 0 14px rgba(255,106,0,.6); }
+.btn { padding: 9px 14px; background: rgba(22,80,255,.08); border: 1px solid var(--cyan); color: var(--cyan); font-family: 'Orbitron'; font-weight: 700;
   font-size: 11px; letter-spacing: .2em; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); white-space: nowrap; }
-.btn:hover { background: rgba(25,230,255,.22); box-shadow: 0 0 14px rgba(25,230,255,.4); }
-.btn.mag { border-color: var(--mag); color: var(--mag); background: rgba(255,47,168,.08); }
+.btn:hover { background: rgba(22,80,255,.22); box-shadow: 0 0 14px rgba(22,80,255,.4); }
+.btn.mag { border-color: var(--mag); color: var(--mag); background: rgba(255,20,20,.08); }
 .small { font-size: 13px; color: var(--dim); line-height: 1.35; }
 
 .slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -100,13 +100,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .opt .k { font-family: 'Orbitron'; font-size: 10.5px; font-weight: 700; letter-spacing: .2em; color: var(--dim); }
 .pick { display: flex; align-items: center; gap: 6px; }
 .pick button { width: 26px; height: 26px; padding: 0; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--cyan); font-size: 12px; }
-.pick button:hover { background: rgba(25,230,255,.18); }
+.pick button:hover { background: rgba(22,80,255,.18); }
 .pick .v { min-width: 112px; text-align: center; font-family: 'Orbitron'; font-weight: 700; font-size: 12.5px; letter-spacing: .14em; color: var(--ink); }
 .arena-desc { font-size: 13px; color: var(--dim); padding: 0 0 4px; min-height: 18px; }
 
 #start { position: relative; margin-top: 2px; padding: 16px 10px; border: 0; font-family: 'Orbitron'; font-weight: 900; font-size: 22px; letter-spacing: .38em; color: #05030c;
-  background: linear-gradient(95deg, var(--cyan), #9a7bff 50%, var(--mag)); clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
-  box-shadow: 0 0 30px rgba(25,230,255,.35); overflow: hidden; }
+  background: linear-gradient(95deg, var(--cyan), #7a10ff 50%, var(--mag)); clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+  box-shadow: 0 0 30px rgba(22,80,255,.35); overflow: hidden; }
 #start::after { content: ''; position: absolute; top: 0; bottom: 0; width: 60px; left: -80px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
   transform: skewX(-20deg); animation: sheen 2.6s infinite; }
 @keyframes sheen { 60%, 100% { left: 110%; } }
@@ -127,7 +127,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 #corner { position: absolute; right: 14px; top: 14px; display: flex; gap: 8px; }
 #corner button { width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); background: rgba(6,5,16,.6); color: var(--cyan); font-size: 17px;
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); backdrop-filter: blur(6px); }
-#corner button:hover { background: rgba(25,230,255,.2); }
+#corner button:hover { background: rgba(22,80,255,.2); }
 #corner button.off { color: var(--faint); }
 
 /* ---------- match banner + countdown ---------- */
@@ -162,13 +162,13 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .meter { width: 120px; } .meter .t { font-family: 'Orbitron'; font-size: 8.5px; letter-spacing: .26em; color: var(--dim); margin-bottom: 3px; display: flex; justify-content: space-between; }
 .meter .bar { height: 6px; background: rgba(255,255,255,.08); clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%); }
 .meter .fill { height: 100%; width: 50%; background: var(--c); box-shadow: 0 0 10px var(--c); transition: width .08s linear; }
-.meter.heat .fill { background: linear-gradient(90deg, var(--amber), var(--hot), #ff2040); }
+.meter.heat .fill { background: linear-gradient(90deg, var(--amber), var(--hot), #ff0a1e); }
 .elev { display: flex; align-items: center; gap: 7px; }
 .elev .eg { position: relative; width: 8px; height: 46px; border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); background: rgba(255,255,255,.04); }
 .elev .eg u { position: absolute; left: -3px; right: -3px; bottom: calc(2.32 / 17.3 * 100%); height: 1px; background: rgba(255,255,255,.35); }
-.elev .eg b { position: absolute; left: -4px; right: -4px; height: 4px; margin-bottom: -2px; background: #9ff4ff; box-shadow: 0 0 8px #3c8bff; }
-.elev .eg.ceil { border-top: 3px solid #9ff4ff; }
-.elev i { font-style: normal; font-family: 'Orbitron'; font-weight: 700; font-size: 9px; letter-spacing: .18em; color: #9ff4ff; min-width: 58px; }
+.elev .eg b { position: absolute; left: -4px; right: -4px; height: 4px; margin-bottom: -2px; background: #5aa8ff; box-shadow: 0 0 8px #2f7dff; }
+.elev .eg.ceil { border-top: 3px solid #5aa8ff; }
+.elev i { font-style: normal; font-family: 'Orbitron'; font-weight: 700; font-size: 9px; letter-spacing: .18em; color: #5aa8ff; min-width: 58px; }
 .view .msg { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-family: 'Orbitron'; font-weight: 900; font-style: italic; letter-spacing: .14em; color: #fff; }
 .view .msg .big { font-size: clamp(26px, 5vw, 60px); text-shadow: 0 0 20px var(--c), 0 0 44px var(--c); }
 .view .msg .sm { font-size: 12px; letter-spacing: .4em; margin-top: 8px; color: var(--c); font-style: normal; }
@@ -212,12 +212,12 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 
 /* ---------- touch ---------- */
 #touch { position: absolute; inset: 0; }
-#touch .stick { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(25,230,255,.4); background: rgba(25,230,255,.06); }
-#touch .stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(25,230,255,.35); box-shadow: 0 0 14px var(--cyan); }
+#touch .stick { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 2px solid rgba(22,80,255,.4); background: rgba(22,80,255,.06); }
+#touch .stick i { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(22,80,255,.35); box-shadow: 0 0 14px var(--cyan); }
 #touch .tb { position: absolute; width: 66px; height: 66px; border-radius: 50%; border: 2px solid var(--line); background: rgba(6,5,16,.55); font-family: 'Orbitron'; font-weight: 700;
   font-size: 10px; letter-spacing: .12em; color: var(--ink); display: grid; place-items: center; }
 #touch .tb.big { width: 88px; height: 88px; border-color: var(--cyan); color: var(--cyan); font-size: 12px; }
-#touch .tb.on { background: rgba(25,230,255,.3); }
+#touch .tb.on { background: rgba(22,80,255,.3); }
 
 @media (max-width: 640px) {
   #lobby { width: 100vw; padding: 14px; background: rgba(4,3,12,.86); }
@@ -326,8 +326,8 @@ const store = {
 const IS_TOUCH = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
 
 /* ================= constants ================= */
-const PCOL = [0x19e6ff, 0xff2fa8, 0xffc21a, 0x7cff4f];
-const PCSS = ['#19e6ff', '#ff2fa8', '#ffc21a', '#7cff4f'];
+const PCOL = [0x1650ff, 0xff1414, 0xff6a00, 0xa020ff];
+const PCSS = ['#1650ff', '#ff1414', '#ff6a00', '#a020ff'];
 const PNAME = ['NOVA', 'VEX', 'KAIRO', 'JINX'];
 const CPU_NAMES = ['RAZOR', 'HALCYON', 'GHOSTWIRE', 'MANTIS', 'SPECTRE', 'OKAMI', 'NULLSET', 'VANTA', 'ZERO-9', 'KESTREL', 'SABLE', 'ONYX'];
 const SKILLS = [
@@ -423,8 +423,11 @@ finalMat = new THREE.ShaderMaterial({
       // hue-preserving tone map so neon stays saturated instead of bleaching to white
       float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
       vec3 keep = col * (aces(vec3(lum)).x / max(lum, 1e-4));
-      col = mix(aces(col), clamp(keep, 0., 1.), 0.55);
-      col = col * col * (3.0 - 2.0 * col) * 0.35 + col * 0.65;
+      col = mix(aces(col), clamp(keep, 0., 1.), 0.85);   // mostly hue-preserving, so bright red stays red and blue stays blue
+      col = col * col * (3.0 - 2.0 * col) * 0.45 + col * 0.55;
+      // push saturation: electric, not pastel
+      float gl = dot(col, vec3(0.2126, 0.7152, 0.0722)); col = clamp(mix(vec3(gl), col, 1.35), 0., 1.);
+      col = max(col - 0.012, 0.) * 1.012;
       col *= mix(0.55, 1.0, smoothstep(0.62, 0.12, r2));
       col += fl.rgb * fl.w * smoothstep(0.08, 0.5, r2) * 0.55;
       col = toSRGB(col);
@@ -632,7 +635,7 @@ function makeTickerTexture() {
   x.fillStyle = '#05040c'; x.fillRect(0, 0, W, Hh);
   const msg = ['HYPER DISC', 'SEASON 07', 'NEON DISTRICT ARENA', 'KEEP YOUR FEET', 'THREE DISCS · NO MERCY', 'ハイパー・ディスク', 'LIVE FROM SECTOR 9', 'BANK IT OFF THE CEILING'];
   x.font = `900 64px ${FONT_D}`; x.textBaseline = 'middle';
-  let px = 30, i = 0; const cols = ['#19e6ff', '#ff2fa8', '#ffc21a', '#ffffff'];
+  let px = 30, i = 0; const cols = ['#1650ff', '#ff1414', '#ff6a00', '#ffffff'];
   while (px < W - 200) { const t = msg[i % msg.length]; x.fillStyle = cols[i % cols.length]; x.fillText(t, px, Hh / 2 + 4); px += x.measureText(t).width + 50; x.fillStyle = '#ffffff'; x.fillText('◆', px, Hh / 2); px += 110; i++; }
   // LED dot mask
   x.globalCompositeOperation = 'destination-in'; const dot = cnv(8, 8), d = dot.getContext('2d'); d.fillStyle = '#fff'; d.beginPath(); d.arc(4, 4, 3.2, 0, TAU); d.fill();
@@ -642,13 +645,13 @@ function makeTickerTexture() {
 
 // Neon billboards for the skyline, all fictional brands.
 const ADS = [
-  { bg: ['#12001c', '#3b0050'], t1: 'KAIJU', t2: 'COLA', c1: '#ff2fa8', c2: '#ffd34d', jp: 'カイジュウ', s: 'TASTE THE MONSTER' },
-  { bg: ['#001a24', '#003a48'], t1: 'SYNAPSE+', t2: '', c1: '#19e6ff', c2: '#ffffff', jp: 'シナプス', s: 'UPGRADE YOUR MIND' },
-  { bg: ['#1c0a00', '#3a1600'], t1: 'VOLTAIC', t2: 'MOTORS', c1: '#ffc21a', c2: '#ff5a1f', jp: 'ボルテック', s: 'GRAVITY IS OPTIONAL' },
-  { bg: ['#000a1a', '#0a1a3a'], t1: 'HYPER', t2: 'DISC', c1: '#7cff4f', c2: '#19e6ff', jp: 'ハイパー', s: 'LIVE TONIGHT · SECTOR 9' },
-  { bg: ['#14001a', '#230032'], t1: 'NEO', t2: 'NOODLE', c1: '#ff7a2f', c2: '#ff2fa8', jp: 'ラーメン', s: '24H · FLOOR 88' },
-  { bg: ['#00140e', '#003022'], t1: 'ZEN-9', t2: '', c1: '#4fffc8', c2: '#ffffff', jp: 'ゼン', s: 'SLEEP IS A SUBSCRIPTION' },
-  { bg: ['#1a0010', '#40001f'], t1: 'MIRAI', t2: 'BANK', c1: '#ff3a5c', c2: '#ffd1dc', jp: 'ミライ', s: 'YOUR FUTURE · OUR TERMS' }
+  { bg: ['#1a0004', '#45000c'], t1: 'KAIJU', t2: 'COLA', c1: '#ff1414', c2: '#ffffff', jp: 'カイジュウ', s: 'TASTE THE MONSTER' },
+  { bg: ['#00061e', '#001650'], t1: 'SYNAPSE+', t2: '', c1: '#1650ff', c2: '#ffffff', jp: 'シナプス', s: 'UPGRADE YOUR MIND' },
+  { bg: ['#160200', '#3a0700'], t1: 'VOLTAIC', t2: 'MOTORS', c1: '#ff2a0a', c2: '#ff6a00', jp: 'ボルテック', s: 'GRAVITY IS OPTIONAL' },
+  { bg: ['#000418', '#04104a'], t1: 'HYPER', t2: 'DISC', c1: '#1650ff', c2: '#ff1414', jp: 'ハイパー', s: 'LIVE TONIGHT · SECTOR 9' },
+  { bg: ['#1a0003', '#33000a'], t1: 'NEO', t2: 'NOODLE', c1: '#ff1414', c2: '#ff6a00', jp: 'ラーメン', s: '24H · FLOOR 88' },
+  { bg: ['#000514', '#000c38'], t1: 'ZEN-9', t2: '', c1: '#3d7bff', c2: '#ffffff', jp: 'ゼン', s: 'SLEEP IS A SUBSCRIPTION' },
+  { bg: ['#1a0004', '#40000c'], t1: 'MIRAI', t2: 'BANK', c1: '#ff0a2a', c2: '#ffffff', jp: 'ミライ', s: 'YOUR FUTURE · OUR TERMS' }
 ];
 function makeAdTexture(ad, vertical) {
   const W = vertical ? 512 : 1024, Hh = vertical ? 1024 : 512, cv = cnv(W, Hh), x = cv.getContext('2d');
@@ -705,16 +708,16 @@ const uTime = { value: 0 };
                    mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z); }
       void main(){
         vec3 d = normalize(vD); float y = d.y;
-        vec3 zen = vec3(0.004,0.004,0.016), mid = vec3(0.03,0.012,0.07), hor = vec3(0.32,0.06,0.28), low = vec3(0.10,0.02,0.10);
+        vec3 zen = vec3(0.002,0.003,0.014), mid = vec3(0.006,0.01,0.06), hor = vec3(0.34,0.01,0.03), low = vec3(0.07,0.0,0.015);
         vec3 c = mix(mid, zen, smoothstep(0.05, 0.75, y));
         c = mix(hor, c, smoothstep(-0.02, 0.22, y));
         c = mix(low, c, smoothstep(-0.25, -0.02, y));
         // city glow bleeding into the horizon, warmer on one side
-        c += vec3(0.25,0.05,0.18) * exp(-abs(y)*9.) * (0.6 + 0.4*sin(atan(d.z,d.x)*2.+1.));
-        c += vec3(0.02,0.12,0.18) * exp(-abs(y-0.02)*14.) * (0.5+0.5*sin(atan(d.z,d.x)*3.-0.7));
+        c += vec3(0.30,0.0,0.03) * exp(-abs(y)*9.) * (0.6 + 0.4*sin(atan(d.z,d.x)*2.+1.));
+        c += vec3(0.0,0.04,0.30) * exp(-abs(y-0.02)*14.) * (0.5+0.5*sin(atan(d.z,d.x)*3.-0.7));
         // smog layers
         float s = n3(d*4. + vec3(uTime*0.01,0.,0.)) * 0.6 + n3(d*9. - vec3(0.,0.,uTime*0.02)) * 0.4;
-        c += vec3(0.16,0.04,0.14) * smoothstep(0.45, 0.85, s) * smoothstep(0.55, 0.05, y) * smoothstep(-0.05, 0.08, y);
+        c += vec3(0.12,0.0,0.02) * smoothstep(0.45, 0.85, s) * smoothstep(0.55, 0.05, y) * smoothstep(-0.05, 0.08, y);
         // stars above the smog
         vec3 sp = d*420.; float st = h(floor(sp)); st = pow(st, 60.) * smoothstep(0.15, 0.5, y);
         c += vec3(0.9,0.95,1.) * st * (0.6 + 0.4*sin(uTime*3. + h(floor(sp))*60.));
@@ -731,7 +734,7 @@ const CITY = {};
   const geo = new THREE.BoxGeometry(1, 1, 1);
   const seeds = new Float32Array(count), neon = new Float32Array(count * 3);
   const mat = new THREE.ShaderMaterial({
-    uniforms: { uTime, uFog: { value: new THREE.Color(0x0d0620) }, uFogD: { value: 0.0072 } },
+    uniforms: { uTime, uFog: { value: new THREE.Color(0x05040f) }, uFogD: { value: 0.0072 } },
     vertexShader: `
       attribute float aSeed; attribute vec3 aNeon;
       varying vec3 vWP, vN, vLN, vNeon, vLocal, vScale; varying float vSeed;
@@ -755,7 +758,7 @@ const CITY = {};
           float win = step(0.16, f.x) * step(f.x, 0.84) * step(0.2, f.y) * step(f.y, 0.8);
           float r = h21(id + vSeed * 17.31 + (n.x + n.z * 3.));
           float lit = step(0.6 + 0.3 * fract(vSeed * 7.3), r);
-          vec3 wc = r > 0.96 ? vec3(0.2, 0.95, 1.1) : r > 0.92 ? vec3(1.1, 0.25, 0.75) : vec3(1.0, 0.62, 0.32);
+          vec3 wc = r > 0.93 ? vec3(1.4, 0.04, 0.08) : r > 0.8 ? vec3(0.12, 0.35, 1.5) : vec3(0.55, 0.65, 1.0);
           float fl = 0.88 + 0.12 * sin(uTime * (1.5 + r * 4.) + r * 50.);
           col += win * lit * wc * (0.12 + 0.45 * h21(id * 1.7 + 3.)) * fl;
           // a soft glow line every few floors
@@ -775,7 +778,7 @@ const CITY = {};
   });
   const inst = new THREE.InstancedMesh(geo, mat, count);
   const m4 = new THREE.Matrix4(), q4 = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  const neonCols = [[0.1, 0.9, 1], [1, 0.18, 0.66], [1, 0.76, 0.1], [0.5, 1, 0.3], [0.6, 0.3, 1]];
+  const neonCols = [[0.08, 0.35, 1.6], [1.6, 0.03, 0.1], [0.08, 0.35, 1.6], [1.6, 0.03, 0.1], [1.0, 0.95, 1.2]];
   CITY.spots = [];
   for (let i = 0; i < count; i++) {
     const ring = rnd(); const r = 66 + Math.pow(ring, 1.3) * 150, a = rnd() * TAU;
@@ -820,13 +823,13 @@ anim.push((t) => {
 const HOLO = new THREE.Group();
 {
   const mk = (r, t, c, o) => new THREE.Mesh(new THREE.TorusGeometry(r, t, 12, 160), glowMat(c, 1.6, o));
-  const a = mk(22, 0.45, 0x19e6ff, 0.9), b = mk(17, 0.25, 0xff2fa8, 0.9), c = mk(9, 0.7, 0xffffff, 0.6);
-  const dash = new THREE.Mesh(new THREE.TorusGeometry(19.5, 0.16, 6, 200, Math.PI * 1.5), glowMat(0x19e6ff, 2, 0.8));
+  const a = mk(22, 0.45, 0x1650ff, 0.9), b = mk(17, 0.25, 0xff1414, 0.9), c = mk(9, 0.7, 0xffffff, 0.6);
+  const dash = new THREE.Mesh(new THREE.TorusGeometry(19.5, 0.16, 6, 200, Math.PI * 1.5), glowMat(0x1650ff, 2, 0.8));
   HOLO.add(a, b, c, dash);
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(3, 26, 120, 40, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
     uniforms: { uTime }, vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-    fragmentShader: 'uniform float uTime; varying vec2 vUv; void main(){ float a = pow(vUv.y,2.)*0.18*(0.7+0.3*sin(vUv.y*80.-uTime*6.)); gl_FragColor=vec4(vec3(0.1,0.7,1.)*a,1.); }'
+    fragmentShader: 'uniform float uTime; varying vec2 vUv; void main(){ float a = pow(vUv.y,2.)*0.18*(0.7+0.3*sin(vUv.y*80.-uTime*6.)); gl_FragColor=vec4(vec3(0.1,0.3,1.)*a,1.); }'
   }));
   beam.position.y = -70; HOLO.add(beam);
   HOLO.position.set(-60, 92, -230); HOLO.rotation.x = 0.3; world.add(HOLO);
@@ -890,7 +893,7 @@ const HOLO = new THREE.Group();
 
 /* ================= the arena shell ================= */
 const ARENA = new THREE.Group(); scene.add(ARENA);
-const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0.85, roughness: 0.32, map: WALLT.map, normalMap: WALLT.nrm, emissiveMap: WALLT.em, emissive: new THREE.Color(0x19e6ff).multiplyScalar(0.9) });
+const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0.85, roughness: 0.32, map: WALLT.map, normalMap: WALLT.nrm, emissiveMap: WALLT.em, emissive: new THREE.Color(0x1650ff).multiplyScalar(0.9) });
 
 // shaft below the stations: tall panelled cylinder falling away into the glow
 {
@@ -898,11 +901,11 @@ const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0
   mat.map = WALLT.map.clone(); mat.map.needsUpdate = true; mat.map.repeat.set(10, 4);
   mat.normalMap = WALLT.nrm.clone(); mat.normalMap.needsUpdate = true; mat.normalMap.repeat.set(10, 4);
   mat.emissiveMap = WALLT.em.clone(); mat.emissiveMap.needsUpdate = true; mat.emissiveMap.repeat.set(10, 4);
-  mat.emissive = new THREE.Color(0x6a3dff).multiplyScalar(0.7);
+  mat.emissive = new THREE.Color(0x1424ff).multiplyScalar(0.7);
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(RA + 0.6, RA + 0.6, 80, 96, 1, true), mat); shaft.position.y = -45; ARENA.add(shaft);
   // light rings falling away
   for (let i = 0; i < 10; i++) {
-    const y = -7 - i * 7.5, c = i % 2 ? 0xff2fa8 : 0x19e6ff;
+    const y = -7 - i * 7.5, c = i % 2 ? 0xff1414 : 0x1650ff;
     const ring = new THREE.Mesh(new THREE.TorusGeometry(RA + 0.1, 0.14, 8, 160), emissiveMat(c, 2.2 - i * 0.15)); ring.rotation.x = Math.PI / 2; ring.position.y = y; ARENA.add(ring);
   }
   // reactor glow at the bottom
@@ -912,7 +915,7 @@ const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0
     fragmentShader: `uniform float uTime; varying vec2 vUv; void main(){ vec2 p = vUv-0.5; float r = length(p)*2.; float a = atan(p.y,p.x);
       float rings = smoothstep(0.08,0.,abs(fract(r*6. - uTime*0.4)-0.5)-0.4);
       float spokes = smoothstep(0.1,0.,abs(fract(a*12./6.2832 + uTime*0.05)-0.5)-0.45)*step(0.3,r);
-      vec3 c = vec3(0.35,0.12,0.9)*(1.-r)*1.6 + vec3(0.1,0.8,1.)*rings*(1.-r)*1.4 + vec3(1.,0.2,0.7)*spokes*0.5*(1.-r);
+      vec3 c = vec3(0.05,0.1,0.9)*(1.-r)*1.6 + vec3(0.1,0.35,1.)*rings*(1.-r)*1.4 + vec3(1.,0.03,0.08)*spokes*0.6*(1.-r);
       gl_FragColor = vec4(c,1.); }`
   }));
   core.rotation.x = -Math.PI / 2; core.position.y = -84; ARENA.add(core);
@@ -923,8 +926,8 @@ const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a1d27, metalness: 0
   const prof = [[RA + 0.6, -2.4], [RA - 1.8, -2.4], [RA - 2.2, -2.9], [RA - 2.2, -3.6], [RA - 1.4, -4.4], [RA + 0.6, -4.6]].map(p => new THREE.Vector2(p[0], p[1]));
   const m = new THREE.MeshStandardMaterial({ color: 0x232733, metalness: 0.8, roughness: 0.35, normalMap: HULLT.nrm });
   const ledge = new THREE.Mesh(new THREE.LatheGeometry(prof, 160), m); ARENA.add(ledge);
-  const strip = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.2, 0.06, 6, 200), emissiveMat(0x19e6ff, 2.6)); strip.rotation.x = Math.PI / 2; strip.position.y = -2.45; ARENA.add(strip);
-  const strip2 = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.25, 0.05, 6, 200), emissiveMat(0xff2fa8, 2.2)); strip2.rotation.x = Math.PI / 2; strip2.position.y = -3.3; ARENA.add(strip2);
+  const strip = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.2, 0.06, 6, 200), emissiveMat(0x1650ff, 2.6)); strip.rotation.x = Math.PI / 2; strip.position.y = -2.45; ARENA.add(strip);
+  const strip2 = new THREE.Mesh(new THREE.TorusGeometry(RA - 2.25, 0.05, 6, 200), emissiveMat(0xff1414, 2.2)); strip2.rotation.x = Math.PI / 2; strip2.position.y = -3.3; ARENA.add(strip2);
 }
 
 // ribs: tall structural fins holding the energy membrane
@@ -942,7 +945,7 @@ const RIBS = 48;
       const k = i * 2 + (side > 0 ? 1 : 0), off = 0.28 * side, ta = a + Math.PI / 2;
       p.set(Math.cos(a) * (RA - 0.58) + Math.cos(ta) * off, -2.4 + h / 2, Math.sin(a) * (RA - 0.58) + Math.sin(ta) * off);
       m4.compose(p, q, one); strips.setMatrixAt(k, m4);
-      const c = i % 4 === 0 ? new THREE.Color(0xff2fa8).multiplyScalar(3.2) : new THREE.Color(0x19e6ff).multiplyScalar(i % 2 ? 1.2 : 2.4);
+      const c = i % 4 === 0 ? new THREE.Color(0xff1414).multiplyScalar(3.2) : new THREE.Color(0x1650ff).multiplyScalar(i % 2 ? 1.2 : 2.4);
       strips.setColorAt(k, c);
     }
   }
@@ -955,7 +958,7 @@ const WALL_HIT_COL = []; for (let i = 0; i < 10; i++) WALL_HIT_COL.push(new THRE
 let wallHitIdx = 0;
 const membraneMat = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-  uniforms: { uTime, uHits: { value: WALL_HITS }, uHitCol: { value: WALL_HIT_COL }, uAxis: { value: 0 }, uTint: { value: new THREE.Color(0x19e6ff) } },
+  uniforms: { uTime, uHits: { value: WALL_HITS }, uHitCol: { value: WALL_HIT_COL }, uAxis: { value: 0 }, uTint: { value: new THREE.Color(0x1650ff) } },
   vertexShader: 'varying vec3 vWP; varying vec2 vUv; void main(){ vUv=uv; vec4 w = modelMatrix*vec4(position,1.); vWP = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }',
   fragmentShader: `
     uniform float uTime, uAxis; uniform vec3 uTint; uniform vec4 uHits[10]; uniform vec3 uHitCol[10]; varying vec3 vWP; varying vec2 vUv;
@@ -965,7 +968,7 @@ const membraneMat = new THREE.ShaderMaterial({
       vec4 hx = hexCoords(p);
       float edge = smoothstep(0.06, 0.0, hx.z);
       float yy = (vWP.y + 2.4) / ${(YC + 2.4).toFixed(1)};
-      vec3 base = mix(uTint, vec3(0.75,0.15,1.0), yy * 0.7);
+      vec3 base = mix(uTint, vec3(0.1,0.25,1.0), yy * 0.6);
       float scan = smoothstep(0.08, 0., abs(fract(yy*1.5 - uTime*0.12) - 0.5) - 0.42);
       // the original arena's horizontal wall lines
       float lines = smoothstep(0.06, 0.0, abs(fract((vWP.y + 2.4) / 1.9) - 0.5) - 0.44);
@@ -992,12 +995,12 @@ function buildCourt() {
     const m = membraneMat.clone(); m.uniforms = Object.assign({}, membraneMat.uniforms, { uAxis: { value: axis }, uTint: { value: new THREE.Color(tint) } });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, H, 1, 1), m); mesh.position.set(x, yMid, z); mesh.rotation.y = ry; mesh.renderOrder = 2; g.add(mesh);
   };
-  wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0xff2fa8); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0xff2fa8);
-  wall(2 * hx, 0, hz, Math.PI, 1, 0x19e6ff); wall(2 * hx, 0, -hz, 0, 1, 0x19e6ff);
+  wall(2 * hz, hx, 0, -Math.PI / 2, 0, 0xff1414); wall(2 * hz, -hx, 0, Math.PI / 2, 0, 0xff1414);
+  wall(2 * hx, 0, hz, Math.PI, 1, 0x1650ff); wall(2 * hx, 0, -hz, 0, 1, 0x1650ff);
   // frame beams along every edge of the box
   const beam = (len, x, y, z, axis, color, k) => { const s = [0.14, 0.14, 0.14]; s[axis] = len; const m = new THREE.Mesh(new THREE.BoxGeometry(s[0], s[1], s[2]), emissiveMat(color, k)); m.position.set(x, y, z); g.add(m); };
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x19e6ff, 3);
-  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x19e6ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0xff2fa8, 2.6); }
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) beam(H, sx * hx, yMid, sz * hz, 1, 0x1650ff, 3);
+  for (const y of [-2.4, YC]) for (const s of [-1, 1]) { beam(2 * hx, 0, y, s * hz, 0, 0x1650ff, 2.6); beam(2 * hz, s * hx, y, 0, 2, 0xff1414, 2.6); }
   ARENA.add(g); COURT.g = g;
   for (let i = 0; i < RIMS.length; i++) { const sx = i === 0 || i === 3 ? 1 : -1, sz = i < 2 ? 1 : -1; RIMS[i].position.set(sx * (hx - 1.5), 7, sz * (hz - 1.5)); }
   buildCeiling();
@@ -1018,7 +1021,7 @@ function wallFlash(x, y, z, colorHex) {
   const tick = new THREE.Mesh(new THREE.CylinderGeometry(RA - 0.9, RA - 0.9, 1.5, 128, 1, true), new THREE.MeshBasicMaterial({ map: TICKT, side: THREE.BackSide, color: new THREE.Color(1.8, 1.8, 1.8) }));
   TICKT.repeat.set(-3, 1); tick.position.y = YC - 2.3; ARENA.add(tick);
   anim.push((t) => { TICKT.offset.x = (t * 0.018) % 1; });
-  for (const y of [YC - 3.15, YC - 1.45]) { const r = new THREE.Mesh(new THREE.TorusGeometry(RA - 0.95, 0.05, 6, 200), emissiveMat(0x19e6ff, 3)); r.rotation.x = Math.PI / 2; r.position.y = y; ARENA.add(r); }
+  for (const y of [YC - 3.15, YC - 1.45]) { const r = new THREE.Mesh(new THREE.TorusGeometry(RA - 0.95, 0.05, 6, 200), emissiveMat(0x1650ff, 3)); r.rotation.x = Math.PI / 2; r.position.y = y; ARENA.add(r); }
 }
 
 // ceiling: smoked-glass hex plates with light seams over the court, open oculus in the middle
@@ -1042,12 +1045,12 @@ function buildCeiling() {
 }
 {
   const rOcc = 7.5;
-  const occ = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 0.4, 0.22, 10, 120), emissiveMat(0xff2fa8, 3.5)); occ.rotation.x = Math.PI / 2; occ.position.y = YC; ARENA.add(occ);
-  const occ2 = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 1.1, 0.06, 6, 120), emissiveMat(0x19e6ff, 3.5)); occ2.rotation.x = Math.PI / 2; occ2.position.y = YC - 0.1; ARENA.add(occ2);
+  const occ = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 0.4, 0.22, 10, 120), emissiveMat(0xff1414, 3.5)); occ.rotation.x = Math.PI / 2; occ.position.y = YC; ARENA.add(occ);
+  const occ2 = new THREE.Mesh(new THREE.TorusGeometry(rOcc + 1.1, 0.06, 6, 120), emissiveMat(0x1650ff, 3.5)); occ2.rotation.x = Math.PI / 2; occ2.position.y = YC - 0.1; ARENA.add(occ2);
   // hanging emblem under the oculus
   const emb = new THREE.Group(); emb.position.y = YC + 2;
-  const e1 = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.12, 8, 120), emissiveMat(0x19e6ff, 3)); e1.rotation.x = Math.PI / 2;
-  const e2 = new THREE.Mesh(new THREE.TorusGeometry(3.3, 0.07, 8, 120, Math.PI * 1.6), emissiveMat(0xff2fa8, 3));
+  const e1 = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.12, 8, 120), emissiveMat(0x1650ff, 3)); e1.rotation.x = Math.PI / 2;
+  const e2 = new THREE.Mesh(new THREE.TorusGeometry(3.3, 0.07, 8, 120, Math.PI * 1.6), emissiveMat(0xff1414, 3));
   const e3 = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.07, 8, 120, Math.PI * 1.2), emissiveMat(0xffffff, 2.5));
   emb.add(e1, e2, e3); ARENA.add(emb);
   anim.push((t) => { e2.rotation.x = t * 0.6; e2.rotation.y = t * 0.3; e3.rotation.y = -t * 0.9; e3.rotation.z = t * 0.4; emb.rotation.y = t * 0.15; });
@@ -1055,7 +1058,7 @@ function buildCeiling() {
   const shaftMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uTime },
     vertexShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }',
-    fragmentShader: 'uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 3.); float a = f * smoothstep(0.,0.6,vUv.y) * 0.022 * (0.85+0.15*sin(vUv.y*30.+uTime)); gl_FragColor = vec4(vec3(0.6,0.5,1.)*a,1.); }'
+    fragmentShader: 'uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 3.); float a = f * smoothstep(0.,0.6,vUv.y) * 0.022 * (0.85+0.15*sin(vUv.y*30.+uTime)); gl_FragColor = vec4(vec3(0.3,0.4,1.)*a,1.); }'
   });
   const ls = new THREE.Mesh(new THREE.CylinderGeometry(rOcc, rOcc + 3, 40, 48, 1, true), shaftMat); ls.position.y = YC - 20; ARENA.add(ls);
 }
@@ -1069,7 +1072,7 @@ function ceilFlash(x, z, colorHex) { CEIL.pulses.push({ x, z, t: uTime.value, c:
     for (let i = 0; i < plates.length; i++) {
       const [x, z, d] = plates[i];
       const wave = 0.5 + 0.5 * Math.sin(d * 0.35 - t * 1.4);
-      base.setRGB(0.02 + 0.14 * wave * wave, 0.08 + 0.3 * wave * wave, 0.2 + 0.55 * wave * wave);
+      base.setRGB(0.01 + 0.05 * wave * wave, 0.03 + 0.16 * wave * wave, 0.18 + 0.9 * wave * wave);
       col.copy(base);
       for (const p of pulses) { const age = t - p.t; if (age < 0 || age > 1.4) continue; const dd = Math.hypot(x - p.x, z - p.z); const w = Math.max(0, 1 - Math.abs(dd - age * 14) / 2.2) * (1 - age / 1.4) * 5; if (w > 0) col.r += p.c.r * w, col.g += p.c.g * w, col.b += p.c.b * w; }
       seams.setColorAt(i, col);
@@ -1086,32 +1089,32 @@ function ceilFlash(x, z, colorHex) { CEIL.pulses.push({ x, z, t: uTime.value, c:
   const m = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uTime, uPR: { value: 1 } },
     vertexShader: 'uniform float uTime, uPR; varying float vA; void main(){ vec3 p = position; p.y += sin(uTime*0.3 + p.x)*0.6; p.x += sin(uTime*0.2+p.z)*0.5; vec4 mv = modelViewMatrix*vec4(p,1.); gl_PointSize = uPR*60./-mv.z; vA = clamp(1.-(-mv.z)/40.,0.,1.); gl_Position = projectionMatrix*mv; }',
-    fragmentShader: 'varying float vA; void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.,d)*vA*0.35; gl_FragColor = vec4(vec3(0.6,0.8,1.)*a,1.); }'
+    fragmentShader: 'varying float vA; void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.,d)*vA*0.25; gl_FragColor = vec4(vec3(0.4,0.55,1.)*a,1.); }'
   });
   const pts = new THREE.Points(g, m); pts.frustumCulled = false; ARENA.add(pts); CITY.dust = m;
 }
 
 /* ================= lights ================= */
-const hemi = new THREE.HemisphereLight(0x5a6aa8, 0x2a0b30, 0.22); scene.add(hemi);
+const hemi = new THREE.HemisphereLight(0x2a3cc0, 0x3a0408, 0.24); scene.add(hemi);
 const sunLight = new THREE.SpotLight(0xd8e6ff, 1.25, 70, 0.95, 0.6, 1.2);
 sunLight.position.set(0, YC + 4, 0); sunLight.target.position.set(0, -2, 0); sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(QUALS[S.quality].shadow, QUALS[S.quality].shadow); sunLight.shadow.bias = -0.0004; sunLight.shadow.normalBias = 0.03; sunLight.shadow.radius = 3;
 sunLight.shadow.camera.near = 4; sunLight.shadow.camera.far = 40;
 scene.add(sunLight, sunLight.target);
 const RIMS = [];
-[[0x19e6ff, 0], [0xff2fa8, 1], [0x19e6ff, 2], [0xff2fa8, 3]].forEach(([c, i]) => {
+[[0x1650ff, 0], [0xff1414, 1], [0x1650ff, 2], [0xff1414, 3]].forEach(([c, i]) => {
   const l = new THREE.PointLight(c, 1.2, 46, 1.6); const a = i / 4 * TAU + Math.PI / 4; l.position.set(Math.cos(a) * 25, 7, Math.sin(a) * 25); scene.add(l); RIMS.push(l);
 });
-const under = new THREE.PointLight(0x6a3dff, 2.2, 60, 1.4); under.position.set(0, -14, 0); scene.add(under);
+const under = new THREE.PointLight(0x1424ff, 2.2, 60, 1.4); under.position.set(0, -14, 0); scene.add(under);
 
 // image-based lighting: a small neon "studio" so metal and glass pick up cyan/magenta reflections
 {
   const env = new THREE.Scene();
   env.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.MeshBasicMaterial({ color: 0x07060f, side: THREE.BackSide })));
   const strip = (c, i, x, y, z, w, h, d) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(i) })); m.position.set(x, y, z); env.add(m); };
-  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; strip(i % 2 ? 0xff2fa8 : 0x19e6ff, 1.5, Math.cos(a) * 30, 2, Math.sin(a) * 30, 1.5, 22, 1.5); }
-  strip(0xffffff, 0.55, 0, 34, 0, 26, 1, 26); strip(0x6a3dff, 1, 0, -30, 0, 40, 1, 40);
-  strip(0xff8a3d, 1.4, 25, -8, 0, 4, 2, 40);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; strip(i % 2 ? 0xff1414 : 0x1650ff, 1.5, Math.cos(a) * 30, 2, Math.sin(a) * 30, 1.5, 22, 1.5); }
+  strip(0xffffff, 0.55, 0, 34, 0, 26, 1, 26); strip(0x1424ff, 1, 0, -30, 0, 40, 1, 40);
+  strip(0xff1a0a, 1.4, 25, -8, 0, 4, 2, 40);
   const pm = new THREE.PMREMGenerator(renderer);
   scene.environment = pm.fromScene(env, 0.02).texture; pm.dispose();
 }
@@ -1398,7 +1401,7 @@ const WALLFW = {
   init() {
     const n = this.cols * this.rows;
     const geo = new THREE.BoxGeometry(TAU * RB / this.cols - 0.22, this.half * 2 - 0.08, 0.55);
-    const mat = new THREE.MeshBasicMaterial({ map: BLOCKT, color: new THREE.Color(0xff4a10).multiplyScalar(1.25), transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const mat = new THREE.MeshBasicMaterial({ map: BLOCKT, color: new THREE.Color(0xff2200).multiplyScalar(1.25), transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     const gmat = new THREE.MeshStandardMaterial({ color: 0x220a04, metalness: 0.4, roughness: 0.1, transparent: true, opacity: 0.35 });
     this.im = new THREE.InstancedMesh(geo, mat, n); this.glass = new THREE.InstancedMesh(geo, gmat, n);
     this.im.frustumCulled = this.glass.frustumCulled = false; this.im.renderOrder = 3;
@@ -1406,7 +1409,7 @@ const WALLFW = {
     scene.add(this.glass, this.im);
     // hub + ring rails that carry the blocks
     this.rails = new THREE.Group();
-    for (const y of [0.1, 5.1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff5a1f, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
+    for (const y of [0.1, 5.1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(RB, 0.08, 8, 160), emissiveMat(0xff2a0a, 3)); t.rotation.x = Math.PI / 2; t.position.y = y; this.rails.add(t); }
     scene.add(this.rails);
     this.setOn(false);
   },
@@ -1921,7 +1924,7 @@ function onDiscEnv(d, e) {
   else if (e.kind === 'abyss') { d.state = 'ret'; d.t = 0; }
   else if (e.kind === 'block') {
     WALLFW.breakBlock(e.block); netEvent(['b', e.block]); d.state = 'ret'; d.t = 0;
-    sparks(x, y, z, 0xff5a1f, 34, 9, 0.7, 0.08); shockRing(x, y, z, e.nx, e.ny, e.nz, 0xff5a1f, 2.4, 0.4); SFX.block(d.pos);
+    sparks(x, y, z, 0xff2a0a, 34, 9, 0.7, 0.08); shockRing(x, y, z, e.nx, e.ny, e.nz, 0xff2a0a, 2.4, 0.4); SFX.block(d.pos);
   } else if (e.kind === 'ring') {
     const ok = ringBreak(e.st, e.pad, e.ring);
     if (ok) { netEvent(['r', e.st, e.pad, e.ring]); d.owner.stats.rings++; popFor(d.owner, 'RING SHATTERED'); }
@@ -1992,7 +1995,7 @@ function applyHit(o, dx, dz, power, bySlot, graze) {
   const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * (graze ? 0.5 : 1);
   o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + (graze ? 0.5 : power ? 2 : 1));
   o.stun = 0.36; o.flash = 1; o.charge = 0; o.shieldOn = false; o.lastHitBy = bySlot; o.lastHitAt = matchT; o.shake = power ? 0.55 : 0.35;
-  viewFlash(o, 0xff3050, power ? 1 : 0.7);
+  viewFlash(o, 0xff1030, power ? 1 : 0.7);
   SFX.hurt(o);
 }
 // the deflector has DEFLECTS uses per life; a power disc costs two
@@ -2346,11 +2349,11 @@ function makeGuide(p) {
   const dots = new THREE.InstancedMesh(guideDotGeo, new THREE.MeshBasicMaterial({ color: col.clone().multiplyScalar(1.6), transparent: true, opacity: 0.6, depthWrite: false }), GUIDE_N);
   dots.frustumCulled = false; dots.layers.set(layer); dots.count = 0;
   // the aim line: four glowing bars that run round the court at the aimed height (or across the ceiling)
-  const lineMat = new THREE.MeshBasicMaterial({ color: col.clone().lerp(new THREE.Color(0x9ff4ff), 0.5).multiplyScalar(3.2), transparent: true, opacity: 0.95, depthWrite: false });
+  const lineMat = new THREE.MeshBasicMaterial({ color: col.clone().lerp(new THREE.Color(0x5aa8ff), 0.5).multiplyScalar(3.2), transparent: true, opacity: 0.95, depthWrite: false });
   const line = new THREE.Group(), bars = [];
   for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 0.09, 0.09), lineMat); m.frustumCulled = false; line.add(m); bars.push(m); }
   // crosshair: two arrowheads pointing at the aim spot, plus a ring
-  const xm = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x3c8bff).multiplyScalar(3), side: THREE.DoubleSide, transparent: true, depthWrite: false, depthTest: false });
+  const xm = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x2f7dff).multiplyScalar(3), side: THREE.DoubleSide, transparent: true, depthWrite: false, depthTest: false });
   const ret = new THREE.Group();
   const arrow = new THREE.Shape(); arrow.moveTo(0, 0); arrow.lineTo(-0.26, 0.42); arrow.lineTo(0, 0.3); arrow.lineTo(0.26, 0.42); arrow.closePath();
   const ag = new THREE.ShapeGeometry(arrow);
@@ -2399,7 +2402,7 @@ function updateGuide(p, dt) {
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);
-  g.mat.color.copy(new THREE.Color(lock ? 0xffffff : 0x3c8bff).multiplyScalar(lock ? 3.2 : 3));
+  g.mat.color.copy(new THREE.Color(lock ? 0xffffff : 0x2f7dff).multiplyScalar(lock ? 3.2 : 3));
   g.ring.visible = lock;
 }
 

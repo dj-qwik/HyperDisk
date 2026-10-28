@@ -278,7 +278,7 @@ function onDiscEnv(d, e) {
   else if (e.kind === 'abyss') { d.state = 'ret'; d.t = 0; }
   else if (e.kind === 'block') {
     WALLFW.breakBlock(e.block); netEvent(['b', e.block]); d.state = 'ret'; d.t = 0;
-    sparks(x, y, z, 0xff5a1f, 34, 9, 0.7, 0.08); shockRing(x, y, z, e.nx, e.ny, e.nz, 0xff5a1f, 2.4, 0.4); SFX.block(d.pos);
+    sparks(x, y, z, 0xff2a0a, 34, 9, 0.7, 0.08); shockRing(x, y, z, e.nx, e.ny, e.nz, 0xff2a0a, 2.4, 0.4); SFX.block(d.pos);
   } else if (e.kind === 'ring') {
     const ok = ringBreak(e.st, e.pad, e.ring);
     if (ok) { netEvent(['r', e.st, e.pad, e.ring]); d.owner.stats.rings++; popFor(d.owner, 'RING SHATTERED'); }
@@ -349,7 +349,7 @@ function applyHit(o, dx, dz, power, bySlot, graze) {
   const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * (graze ? 0.5 : 1);
   o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + (graze ? 0.5 : power ? 2 : 1));
   o.stun = 0.36; o.flash = 1; o.charge = 0; o.shieldOn = false; o.lastHitBy = bySlot; o.lastHitAt = matchT; o.shake = power ? 0.55 : 0.35;
-  viewFlash(o, 0xff3050, power ? 1 : 0.7);
+  viewFlash(o, 0xff1030, power ? 1 : 0.7);
   SFX.hurt(o);
 }
 // the deflector has DEFLECTS uses per life; a power disc costs two
