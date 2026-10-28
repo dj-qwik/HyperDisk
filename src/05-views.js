@@ -203,6 +203,11 @@ function updateView(v, dt) {
   if (window.__camOverride) { const o = window.__camOverride; _cp.set(o.pos[0], o.pos[1], o.pos[2]); _cl.set(o.look[0], o.look[1], o.look[2]); v.snap = true; }
   const f = 1 - Math.exp(-k * dt);
   if (v.snap) { v.pos.copy(_cp); v.look.copy(_cl); v.snap = false; } else { v.pos.lerp(_cp, f); v.look.lerp(_cl, Math.min(1, f * 1.2)); }
+  // never let a camera pass through a podium (or the glow cones hanging under it): push it out sideways
+  for (const st of STATIONS) for (const pad of st.pads) {
+    const dx = v.pos.x - pad.x, dz = v.pos.z - pad.z, d = Math.hypot(dx, dz), R = pad.R + 0.8;
+    if (d < R && v.pos.y > pad.y - 3.4 && v.pos.y < pad.y + 0.6) { const k = d > 0.01 ? R / d : 0; if (k) { v.pos.x = pad.x + dx * k; v.pos.z = pad.z + dz * k; } else v.pos.x = pad.x + R; }
+  }
   // keep cameras inside the glass
   v.pos.x = clamp(v.pos.x, -BOX.hx + 0.4, BOX.hx - 0.4); v.pos.z = clamp(v.pos.z, -BOX.hz + 0.4, BOX.hz - 0.4); v.pos.y = Math.min(v.pos.y, YC - 0.6);
   v.cam.position.copy(v.pos);
