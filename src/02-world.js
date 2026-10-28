@@ -681,36 +681,28 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   dots.forEach((m, i) => { dotMesh.setMatrixAt(i, m); dotMesh.setColorAt(i, dotCols[i]); }); ARENA.add(dotMesh);
 
   // ---- the laser grid: crackling green beams strung across the shaft floor ----
-  const gridMat = (cell, rot, bright, speed) => new THREE.ShaderMaterial({
+  // a perfectly steady grid: solid anti-aliased beams and constant-brightness junctions (nothing animates)
+  const gridMat = (cell, rot, bright) => new THREE.ShaderMaterial({
     extensions: { derivatives: true }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
-    uniforms: { uTime, uCell: { value: cell }, uRot: { value: rot }, uB: { value: bright }, uSp: { value: speed } },
+    uniforms: { uCell: { value: cell }, uRot: { value: rot }, uB: { value: bright } },
     vertexShader: 'varying vec2 vP; void main(){ vec4 w = modelMatrix*vec4(position,1.); vP = w.xz; gl_Position = projectionMatrix*viewMatrix*w; }',
-    fragmentShader: `uniform float uTime, uCell, uRot, uB, uSp; varying vec2 vP;
-      float h1(float x){ return fract(sin(x*127.1)*43758.5453); }
-      float n1(float x){ float i=floor(x), f=fract(x); f=f*f*(3.-2.*f); return mix(h1(i), h1(i+1.), f); }
-      float beam(float across, float along, float idx){
+    fragmentShader: `uniform float uCell, uRot, uB; varying vec2 vP;
+      float beam(float across){
         float d = abs(fract(across/uCell + 0.5) - 0.5) * uCell;
-        float id = floor(across/uCell + 0.5) + idx * 17.;
-        float flick = step(0.04, h1(id + floor(uTime*8.)*0.37));                        // the odd line drops out briefly
-        float crack = 0.55 + 0.9 * n1(along*2.3 + uTime*uSp*9. + id*3.1) * n1(along*7. - uTime*uSp*17. + id);
-        float pulse = pow(max(0., 1. - abs(fract(along*0.045 - uTime*uSp*0.6 + h1(id)) - 0.5)*14.), 3.) * 2.5;  // energy running down the beam
-        float wob = (n1(along*3. + uTime*6. + id) - 0.5) * 0.008;
-        d = abs(d + wob);
-        // anti-aliased core: never thinner than about a pixel, and dimmer in proportion when it would be
-        float px = max(fwidth(across), 1e-4), w = max(0.018, px * 0.8);
-        return flick * (exp(-pow(d / w, 2.)) * (0.018 / w) * (crack + pulse) * 1.3 + exp(-d*7.) * 0.16 * crack);
+        float px = max(fwidth(across), 1e-4), w = max(0.02, px * 0.8);      // never thinner than about a pixel
+        return exp(-pow(d / w, 2.)) * (0.02 / w) * 1.9 + exp(-d*7.) * 0.13;
       }
       void main(){
         vec2 p = mat2(cos(uRot), -sin(uRot), sin(uRot), cos(uRot)) * vP;
-        float g = beam(p.x, p.y, 0.) + beam(p.y, p.x, 1.);
+        float g = beam(p.x) + beam(p.y);
+        vec2 q = abs(fract(p/uCell + 0.5) - 0.5) * uCell; float node = exp(-length(q)*14.);
         float r = length(vP) / ${(SHAFT.R).toFixed(1)};
-        float node = 0.; { vec2 q = abs(fract(p/uCell + 0.5) - 0.5) * uCell; node = exp(-length(q)*14.) * (0.85 + 0.3*h1(floor(uTime*3.) + floor(p.x/uCell)*7. + floor(p.y/uCell))); }
-        g = (g + node * 1.5) * smoothstep(1.0, 0.94, r) * uB;
+        g = (g + node * 1.4) * smoothstep(1.0, 0.94, r) * uB;
         gl_FragColor = vec4(vec3(0.18, 1.0, 0.32) * g * 2.2 + vec3(0.6,1.,0.7) * max(0., g - 1.6) * 0.5, 1.);
       }`
   });
-  [[0, 1.6, 0, 0.9, 1], [0.55, 2.3, Math.PI / 4, 0.45, -0.8]].forEach(([dy, cell, rot, b, sp]) => {
-    const m = new THREE.Mesh(new THREE.CircleGeometry(R - 0.1, 96), gridMat(cell, rot, b, sp)); m.rotation.x = -Math.PI / 2; m.position.y = SHAFT.grid + dy; m.renderOrder = 2; ARENA.add(m);
+  [[0, 1.6, 0, 0.9], [0.55, 2.3, Math.PI / 4, 0.45]].forEach(([dy, cell, rot, b]) => {
+    const m = new THREE.Mesh(new THREE.CircleGeometry(R - 0.1, 96), gridMat(cell, rot, b)); m.rotation.x = -Math.PI / 2; m.position.y = SHAFT.grid + dy; m.renderOrder = 2; ARENA.add(m);
   });
   // emitter heads round the wall where the beams are anchored
   const emit = [];
@@ -718,29 +710,82 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   inst(new THREE.BoxGeometry(0.5, 0.35, 0.6), darkSteel, emit);
   const emG = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 0.12, 0.72), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x30ff60).multiplyScalar(2.6) }), emit.length);
   emit.forEach((m, i) => emG.setMatrixAt(i, m)); ARENA.add(emG);
-  // jagged electric arcs that crackle between grid nodes
-  const ARCS = 14, SEG = 9, apos = new Float32Array(ARCS * SEG * 2 * 3), agl = new THREE.BufferGeometry();
-  agl.setAttribute('position', new THREE.BufferAttribute(apos, 3));
-  const arcs = new THREE.LineSegments(agl, new THREE.LineBasicMaterial({ color: new THREE.Color(0x7dff9a).multiplyScalar(3), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-  arcs.frustumCulled = false; ARENA.add(arcs);
-  let arcT = 0;
-  anim.push((t, dt) => {
-    arcT -= dt; if (arcT > 0) return; arcT = 0.05 + Math.random() * 0.07;
-    let o = 0;
-    for (let k = 0; k < ARCS; k++) {
-      const live = Math.random() < 0.4, cell = 1.6;
-      const x0 = Math.round((Math.random() - 0.5) * 30 / cell) * cell, z0 = Math.round((Math.random() - 0.5) * 30 / cell) * cell;
-      const dir = Math.random() * TAU, len = 0.8 + Math.random() * 2.2, x1 = x0 + Math.cos(dir) * len, z1 = z0 + Math.sin(dir) * len;
-      let px = x0, py = SHAFT.grid, pz = z0;
-      for (let s = 1; s <= SEG; s++) {
-        const f = s / SEG, j = s === SEG ? 0 : 0.28;
-        const nx = x0 + (x1 - x0) * f + (Math.random() - 0.5) * j, ny = SHAFT.grid + Math.sin(f * Math.PI) * len * 0.25 + (Math.random() - 0.5) * j, nz = z0 + (z1 - z0) * f + (Math.random() - 0.5) * j;
-        if (live) { apos.set([px, py, pz, nx, ny, nz], o); } else apos.fill(0, o, o + 6);
-        o += 6; px = nx; py = ny; pz = nz;
+  // ---- crackling electricity: dozens of thick, branching lightning bolts that strike in bursts between
+  // grid junctions, re-forking every few hundredths of a second and spitting sparks where they land ----
+  {
+    const BOLTS = 56, SEGS = 12, BRANCH = 6, MAXQ = BOLTS * (SEGS + BRANCH) * 4;   // glow + core, each two crossed quads, per segment
+    const pos = new Float32Array(MAXQ * 4 * 3), col = new Float32Array(MAXQ * 4 * 3), idx = [];
+    for (let q = 0; q < MAXQ; q++) { const o = q * 4; idx.push(o, o + 1, o + 2, o + 2, o + 1, o + 3); }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setIndex(idx);
+    const mkMat = () => new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    const core = new THREE.Mesh(geo, mkMat()); core.frustumCulled = false; core.renderOrder = 3; ARENA.add(core);
+    const cell = 1.6, G = SHAFT.grid, reach = R - 3.5;
+    const node = () => { for (;;) { const x = Math.round((Math.random() * 2 - 1) * reach / cell) * cell, z = Math.round((Math.random() * 2 - 1) * reach / cell) * cell; if (Math.hypot(x, z) < reach) return [x, z]; } };
+    const bolts = [];
+    for (let i = 0; i < BOLTS; i++) bolts.push({ on: false, t: Math.random() * 1.5, re: 0, life: 0, a: null, b: null, arc: 0, pts: [], br: [], hot: 1 });
+    // jagged path between two points: midpoint displacement, arching up off the grid
+    const jag = (ax, ay, az, bx, by, bz, n, rough, lift) => {
+      const pts = [];
+      for (let k = 0; k <= n; k++) {
+        const f = k / n, e = (k === 0 || k === n) ? 0 : 1;
+        pts.push([ax + (bx - ax) * f + (Math.random() - 0.5) * rough * e, ay + (by - ay) * f + Math.sin(f * Math.PI) * lift + (Math.random() - 0.5) * rough * 0.7 * e, az + (bz - az) * f + (Math.random() - 0.5) * rough * e]);
       }
-    }
-    agl.attributes.position.needsUpdate = true;
-  });
+      return pts;
+    };
+    let q = 0;
+    const V = new THREE.Vector3(), U = new THREE.Vector3(), Sd = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+    const quad = (p0, p1, w, c) => {
+      V.set(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]); const L = V.length() || 1; V.divideScalar(L);
+      U.crossVectors(V, UP); if (U.lengthSq() < 1e-4) U.set(1, 0, 0); U.normalize(); Sd.crossVectors(V, U).normalize();
+      for (const ax of [U, Sd]) {
+        if (q >= MAXQ) return;
+        const o = q * 12;
+        pos.set([p0[0] - ax.x * w, p0[1] - ax.y * w, p0[2] - ax.z * w, p0[0] + ax.x * w, p0[1] + ax.y * w, p0[2] + ax.z * w,
+                 p1[0] - ax.x * w, p1[1] - ax.y * w, p1[2] - ax.z * w, p1[0] + ax.x * w, p1[1] + ax.y * w, p1[2] + ax.z * w], o);
+        for (let v = 0; v < 4; v++) col.set(c, o + v * 3);
+        q++;
+      }
+    };
+    const SPARK = 0x9dffb0;
+    anim.push((t, dt) => {
+      q = 0;
+      for (const B of bolts) {
+        B.t -= dt;
+        if (!B.on) {
+          if (B.t <= 0) {   // strike: pick two nearby junctions and burst for a moment
+            B.on = true; B.life = 0.12 + Math.random() * 0.55; B.re = 0;
+            B.a = node(); const ang = Math.random() * TAU, len = cell * (1 + Math.floor(Math.random() * 3));
+            B.b = [Math.round((B.a[0] + Math.cos(ang) * len) / cell) * cell, Math.round((B.a[1] + Math.sin(ang) * len) / cell) * cell];
+            if (B.b[0] === B.a[0] && B.b[1] === B.a[1]) B.b[0] += cell;
+            B.arc = 0.35 + Math.random() * 1.3; B.hot = 0.8 + Math.random() * 0.7;
+            if (Math.random() < 0.6) sparks(B.a[0], G + 0.05, B.a[1], SPARK, 6, 3.5, 0.35, 0.05);
+          }
+          continue;
+        }
+        B.life -= dt; B.re -= dt;
+        if (B.life <= 0) { B.on = false; B.t = Math.random() * 0.45; if (Math.random() < 0.5) sparks(B.b[0], G + 0.05, B.b[1], SPARK, 8, 4, 0.4, 0.05); continue; }
+        if (B.re <= 0) {   // re-fork the path (this is the crackle)
+          B.re = 0.03 + Math.random() * 0.05;
+          const d = Math.hypot(B.b[0] - B.a[0], B.b[1] - B.a[1]);
+          B.pts = jag(B.a[0], G, B.a[1], B.b[0], G, B.b[1], SEGS, 0.16 + d * 0.06, B.arc * (0.6 + Math.random() * 0.8));
+          B.br = [];
+          if (Math.random() < 0.55) {   // a side fork from somewhere along the bolt, fizzling out over the grid
+            const s0 = B.pts[2 + Math.floor(Math.random() * (SEGS - 4))], ang = Math.random() * TAU, bl = 0.5 + Math.random() * 1.2;
+            B.br = jag(s0[0], s0[1], s0[2], s0[0] + Math.cos(ang) * bl, Math.max(G + 0.02, s0[1] - 0.2 - Math.random() * 0.4), s0[2] + Math.sin(ang) * bl, BRANCH, 0.14, 0.1);
+          }
+          if (Math.random() < 0.08) sparks(B.b[0], G + 0.05, B.b[1], SPARK, 4, 3, 0.3, 0.045);
+        }
+        const flick = 0.55 + Math.random() * 0.45, hot = B.hot * flick;
+        const cc = [2.4 * hot, 3.2 * hot, 2.6 * hot], cg = [0.12 * hot, 1.3 * hot, 0.45 * hot];   // white-hot core, green corona
+        for (let k = 0; k < B.pts.length - 1; k++) { quad(B.pts[k], B.pts[k + 1], 0.2, cg); quad(B.pts[k], B.pts[k + 1], 0.045, cc); }
+        for (let k = 0; k < B.br.length - 1; k++) { const f = 1 - k / B.br.length; quad(B.br[k], B.br[k + 1], 0.12 * f, cg.map(v => v * 0.8)); quad(B.br[k], B.br[k + 1], 0.028 * f, cc.map(v => v * f)); }
+      }
+      // collapse unused quads
+      geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true;
+      geo.setDrawRange(0, q * 6);
+    });
+  }
   // dark machinery floor far beneath the beams
   const floor = new THREE.Mesh(new THREE.CircleGeometry(R, 64), new THREE.MeshStandardMaterial({ color: 0x0c0d10, metalness: 0.8, roughness: 0.5, normalMap: tex(HULLT.nrm, 8, 8) }));
   floor.rotation.x = -Math.PI / 2; floor.position.y = SHAFT.bottom + 0.5; ARENA.add(floor);
