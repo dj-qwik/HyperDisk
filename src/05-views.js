@@ -40,7 +40,22 @@ function updateGuide(p, dt) {
   const show = p.mode === 'play' && (state === 'play' || state === 'count');
   g.ret.visible = show; g.line.visible = show; if (!show) { g.dots.visible = false; g.land.visible = false; return; }
   const ap = aimPoint(p, p.aimYaw, p.aimElev, _ga);
-  const dots = ap.ceil;   // ceiling shots show where they'll come down; wall shots never do
+  // trajectory dots for any bank shot: off the ceiling, or off a side/back wall rather than straight down the court
+  // at a rival. Never for straight shots.
+  let dots = ap.ceil;
+  if (!dots) {
+    const st = stationOf(p), fx = Math.sin(st.yaw), fz = Math.cos(st.yaw);
+    const facing = ap.nx * fx + ap.nz * fz;          // the far wall's normal points back at me
+    if (facing > -0.7) {
+      dots = true;
+      // with 3-4 runners a "side" wall can sit right behind a rival: aiming straight at them isn't a bank
+      const ax = ap.x - p.x, az = ap.z - p.z, aa = Math.atan2(ax, az);
+      for (const o of players) if (o !== p && o.mode === 'play' && players.length > 2) {
+        let d = Math.atan2(o.x - p.x, o.z - p.z) - aa; d = Math.atan2(Math.sin(d), Math.cos(d));
+        if (Math.abs(d) < 0.22) { dots = false; break; }
+      }
+    }
+  }
   g.dots.visible = dots;
   // the line: round the walls at the aimed height, or a rectangle across the ceiling through the crosshair
   if (!ap.ceil) setLine(g, BOX.hx - 0.06, BOX.hz - 0.06, ap.y);
@@ -65,7 +80,7 @@ function updateGuide(p, dt) {
   }
   g.dots.count = n; g.dots.instanceMatrix.needsUpdate = true;
   // where a ceiling shot comes down: a ring on the floor/podium (or on the rival it will hit)
-  g.land.visible = dots; if (dots) { g.land.position.set(_gp.x, _gp.y + 0.05, _gp.z); const s = 1 + Math.sin(uTime.value * 8) * 0.12; g.land.scale.set(s, s, s); g.land.material.color.copy(new THREE.Color(lock ? 0xffffff : 0x5aa8ff).multiplyScalar(3)); }
+  g.land.visible = ap.ceil; if (ap.ceil) { g.land.position.set(_gp.x, _gp.y + 0.05, _gp.z); const s = 1 + Math.sin(uTime.value * 8) * 0.12; g.land.scale.set(s, s, s); g.land.material.color.copy(new THREE.Color(lock ? 0xffffff : 0x5aa8ff).multiplyScalar(3)); }
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);

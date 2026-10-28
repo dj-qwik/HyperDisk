@@ -214,6 +214,36 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .pulist li.pu i { flex: 0 0 22px; height: 24px; margin-top: 1px; background: var(--pc); box-shadow: 0 0 10px var(--pc); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
 .howfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
 
+/* ---------- controls + debug ---------- */
+.howrow { display: flex; gap: 8px; }
+.ctlpanel .howpage { padding-bottom: 6px; }
+table.ctl { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.ctl th { font-family: 'Orbitron'; font-size: 9px; letter-spacing: .18em; color: var(--dim); text-align: left; padding: 4px 6px; font-weight: 700; }
+table.ctl td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.06); font-weight: 600; letter-spacing: .04em; }
+.cbtn { min-width: 120px; padding: 6px 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: #fff; font-family: 'Orbitron'; font-size: 10px; font-weight: 700; letter-spacing: .12em; cursor: pointer; }
+.cbtn:hover, .cbtn.focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,213,255,.35) inset; }
+.cbtn.wait { color: #fff; background: var(--cyan); border-color: var(--cyan); animation: blinkw .7s infinite; }
+.cbtn.sm { min-width: 34px; }
+.cbtn.mag { border-color: var(--mag); color: var(--mag); }
+@keyframes blinkw { 50% { opacity: .55; } }
+.ctlopts { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.optrow { display: flex; align-items: center; gap: 10px; font-family: 'Orbitron'; font-size: 10px; letter-spacing: .14em; color: var(--dim); }
+.optrow > span { flex: 0 0 210px; }
+.optrow .sensv { min-width: 48px; text-align: center; color: #fff; }
+.ctlhint { margin-top: 8px; }
+.btn.ghost { background: transparent; }
+#debug { position: absolute; top: 60px; right: 12px; width: min(380px, 92vw); max-height: calc(100vh - 80px); overflow-y: auto; padding: 10px 12px 12px; z-index: 9; background: rgba(4,3,14,.88); }
+#debug .dhead { display: flex; align-items: center; gap: 8px; font-family: 'Orbitron'; letter-spacing: .2em; font-size: 12px; }
+#debug .dhead span { color: var(--dim); font-size: 9px; flex: 1; }
+#debug .dhead .x { width: 26px; height: 26px; border: 1px solid var(--line); background: transparent; color: var(--dim); padding: 0; }
+.dsec { margin: 10px 0 5px; font-family: 'Orbitron'; font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+.dgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.dbtn { padding: 6px 6px; border: 1px solid var(--line); border-left: 3px solid var(--pc, var(--line)); background: rgba(255,255,255,.04); color: #fff; font-family: 'Orbitron'; font-size: 9px; font-weight: 700; letter-spacing: .1em; cursor: pointer; text-align: left; }
+.dbtn:hover { border-color: var(--cyan); }
+.dbtn.on { background: var(--cyan); color: #fff; border-color: var(--cyan); }
+.dread { margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--ink); font-family: Rajdhani, sans-serif; }
+.dread > div { border-top: 1px solid rgba(255,255,255,.06); padding-top: 3px; }
+
 /* ---------- modals ---------- */
 .modal { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2,1,8,.45); }
 .modal .panel { width: min(440px, 92vw); padding: 24px 24px 20px; text-align: center; }
@@ -282,7 +312,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
     <button id="start" class="live">START<span class="sub" id="startSub">PRESS ENTER OR START</span></button>
     <div class="tip" id="tip"></div>
 
-    <button id="bHow" class="btn live howbtn">HOW TO PLAY · H</button>
+    <div class="howrow"><button id="bHow" class="btn live howbtn">HOW TO PLAY · H</button><button id="bCtl" class="btn live howbtn">CONTROLS · C</button></div>
   </div>
 
   <div id="banner" class="panel" hidden><span class="dot"></span><span id="bannerText"></span></div>
@@ -380,14 +410,29 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>
+        <tr><td>Debug menu</td><td>X in the pause menu</td><td colspan="2"><kbd>F2</kbd></td></tr>
       </table>
+      <p class="small" style="margin-top:8px">These are the defaults. Rebind anything under <b>CONTROLS</b> in the lobby (<kbd>C</kbd>) or the pause menu.</p>
       </div>
       <div class="howfoot"><span class="small">← → or LB / RB to change page · Esc or B to close</span><button class="btn live" id="howNext">NEXT ›</button></div>
     </div>
   </div>
+  <div id="controls" class="modal live" hidden>
+    <div class="panel how ctlpanel">
+      <div class="howhead"><h2>CONTROLS</h2><button class="x live" id="ctlClose" title="Close (Esc / B)">×</button></div>
+      <div class="howtabs" id="ctlTabs"><button data-s="kb1" class="on">KEYBOARD 1</button><button data-s="kb2">KEYBOARD 2</button><button data-s="pad">CONTROLLER</button></div>
+      <div class="howpage" id="ctlBody"></div>
+      <div class="small ctlhint">Click a slot, then press the new key or button. Esc cancels, Delete clears. Controller: d-pad to move, A to pick, LB/RB to switch tab, B to close. Settings are saved on this device.</div>
+    </div>
+  </div>
+  <div id="debug" class="panel live" hidden>
+    <div class="dhead"><b>DEBUG</b><span>F2</span><button class="x" id="dbgClose">×</button></div>
+    <div id="dbgBody"></div>
+  </div>
   <div id="pause" class="modal live" hidden>
     <div class="panel"><h2>PAUSED</h2><div class="small">Press Start, Esc or P to resume.</div>
-      <div class="row"><button class="btn" id="bResume">RESUME</button><button class="btn mag" id="bQuit">QUIT TO LOBBY</button></div></div>
+      <div class="row"><button class="btn" id="bResume">RESUME</button><button class="btn mag" id="bQuit">QUIT TO LOBBY</button></div>
+      <div class="row"><button class="btn ghost" id="bPCtl">CONTROLS · Y</button><button class="btn ghost" id="bPDbg">DEBUG · X / F2</button></div></div>
   </div>
   <div id="results" class="modal live" hidden>
     <div class="panel"><div class="label">MATCH OVER</div><div class="win" id="winName"></div><div class="small" id="winSub"></div>

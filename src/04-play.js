@@ -32,6 +32,10 @@ const KEYS = {
   kb2: { up: ['KeyI'], down: ['KeyK'], left: ['KeyJ'], right: ['KeyL'], aimL: ['ArrowLeft'], aimR: ['ArrowRight'], lvlUp: ['ArrowUp'], lvlDn: ['ArrowDown'],
     fire: ['Slash', 'Enter', 'NumpadEnter', 'Numpad0', 'ControlRight'], shield: ['Period', 'ShiftRight'], hop: ['KeyU'], recall: ['KeyO'], level: ['Semicolon'] }
 };
+// controller buttons per action (standard gamepad numbering; 100/101 = right stick flicked up/down)
+const PADMAP = { fire: [7], shield: [6, 1], lvlUp: [5, 12], lvlDn: [4, 13], level: [11], aimL: [14], aimR: [15], recall: [2, 3] };
+// stick layout, aim-height inversion and aim speed (shared by keyboard, mouse and controllers)
+const CTRL = { swap: false, invY: false, sens: 1 };
 const held = list => list.some(k => K[k]);
 const hit = list => list.some(k => KP.has(k));
 function readHuman(p, dt) {
@@ -41,24 +45,26 @@ function readHuman(p, dt) {
   if (c.type === 'kb1' || c.type === 'kb2') {
     const m = KEYS[c.type];
     i.mx = (held(m.right) ? 1 : 0) - (held(m.left) ? 1 : 0); i.mz = (held(m.up) ? 1 : 0) - (held(m.down) ? 1 : 0);
-    i.aim = (held(m.aimR) ? 1 : 0) - (held(m.aimL) ? 1 : 0);
+    i.aim = ((held(m.aimR) ? 1 : 0) - (held(m.aimL) ? 1 : 0)) * CTRL.sens;
     i.elev = ((held(m.lvlUp) ? 1 : 0) - (held(m.lvlDn) ? 1 : 0)) * ER; i.level = hit(m.level);
     i.fire = held(m.fire); i.shield = held(m.shield); i.recall = hit(m.recall);
     if (c.type === 'kb1') {
-      if (MOUSE.locked) { i.aimAbs = MOUSE.dx * 0.0026; i.fire = i.fire || MOUSE.l; i.shield = i.shield || MOUSE.r; }
+      if (MOUSE.locked) { i.aimAbs = MOUSE.dx * 0.0026 * CTRL.sens; i.fire = i.fire || MOUSE.l; i.shield = i.shield || MOUSE.r; }
       if (MOUSE.wheel) { i.elevAbs += (MOUSE.wheel < 0 ? 1 : -1) * 0.8; }
       if (MOUSE.locked && MOUSE.dy) i.elevAbs -= MOUSE.dy * 0.03;
     }
   } else if (c.type === 'pad') {
     const gp = pads[c.idx];
     if (gp) {
-      i.mx = axis(gp, 0); i.mz = -axis(gp, 1);
-      const rx = axis(gp, 2); i.aim = Math.sign(rx) * Math.pow(Math.abs(rx), 1.6); i.analog = true;
-      // right stick up/down raises and lowers the aim line; RB/LB and the d-pad nudge it; click the right stick to level it
-      i.elev = -axis(gp, 3) * ER * 1.15 + ((btn(gp, 5) || btn(gp, 12) ? 1 : 0) - (btn(gp, 4) || btn(gp, 13) ? 1 : 0)) * ER * 0.6; i.level = padHit(c.idx, 11);
-      i.fire = btn(gp, 7); i.shield = btn(gp, 6) || btn(gp, 1); i.recall = padHit(c.idx, 2) || padHit(c.idx, 3);
-      // d-pad left/right fine aim
-      i.aim += (btn(gp, 15) ? 0.5 : 0) - (btn(gp, 14) ? 0.5 : 0);
+      const pb = l => l.some(b => b >= 100 ? (b === 100 ? (gp.axes[CTRL.swap ? 1 : 3] || 0) < -0.65 : (gp.axes[CTRL.swap ? 1 : 3] || 0) > 0.65) : btn(gp, b)), ph = l => l.some(b => padHit(c.idx, b));
+      const MX_ = CTRL.swap ? 2 : 0, MY_ = CTRL.swap ? 3 : 1, AX_ = CTRL.swap ? 0 : 2, AY_ = CTRL.swap ? 1 : 3;
+      i.mx = axis(gp, MX_); i.mz = -axis(gp, MY_);
+      const rx = axis(gp, AX_); i.aim = Math.sign(rx) * Math.pow(Math.abs(rx), 1.6) * CTRL.sens; i.analog = true;
+      // aim stick up/down raises and lowers the aim line; the mapped buttons nudge it or level it
+      const stickElev = PADMAP.lvlUp.includes(100) || PADMAP.lvlDn.includes(101) ? 0 : axis(gp, AY_);
+      i.elev = (CTRL.invY ? 1 : -1) * stickElev * ER * 1.15 * CTRL.sens + ((pb(PADMAP.lvlUp) ? 1 : 0) - (pb(PADMAP.lvlDn) ? 1 : 0)) * ER * 0.6; i.level = ph(PADMAP.level);
+      i.fire = pb(PADMAP.fire); i.shield = pb(PADMAP.shield); i.recall = ph(PADMAP.recall);
+      i.aim += ((pb(PADMAP.aimR) ? 0.5 : 0) - (pb(PADMAP.aimL) ? 0.5 : 0)) * CTRL.sens;
     }
   } else if (c.type === 'touch') {
     i.mx = TOUCH.mx; i.mz = TOUCH.mz; i.aimAbs = TOUCH.dx * 0.006; TOUCH.dx = 0; i.fire = TOUCH.fire; i.shield = TOUCH.shield;
@@ -443,6 +449,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 /* ================= getting hit ================= */
 function applyHit(o, dx, dz, power, bySlot, zone, mul, blocked) {
   if (o.mode !== 'play' || o.invuln > 0) return;
+  if (DEBUG.god && o.kind === 'human' && o.local) return;
   const Z = ZONES[zone == null ? 1 : zone] || ZONES[1], m = (mul == null ? 1 : mul) * (o.anchorT > 0 ? ANCHOR_MUL : 1);
   const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * Z.kb * m;
   o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + Z.heat * (power ? 2 : 1) * m);
@@ -615,6 +622,7 @@ function followPad(p) { if (!STATIONS.length) return; const sup = supportAt(p.x,
 const FALLS = [];
 function startFall(p, fromAir) {
   if (p.mode !== 'play') return;
+  if (DEBUG.god && p.kind === 'human' && p.local) { const pad = homePad(p); restoreStation(stationOf(p)); p.x = pad.x; p.z = pad.z; p.y = pad.y; p.vy = 0; p.kbx = p.kbz = 0; p.onGround = true; p.leaping = false; return; }
   { const pad = padUnder(p.x, p.z, 0.3), kb = Math.hypot(p.kbx, p.kbz); let ring = null;
     if (pad) { const d = Math.hypot(p.x - pad.x, p.z - pad.z); ring = pad.rings.find(r => d >= r.rIn - 0.1 && d <= r.rOut + 0.1); }
     FALLS.push({ who: p.name, kind: p.kind, air: !!fromAir, kb: +kb.toFixed(1), mv: +Math.hypot(p.mvx, p.mvz).toFixed(1), stun: +p.stun.toFixed(2), d: pad ? +Math.hypot(p.x - pad.x, p.z - pad.z).toFixed(2) : -1, rs: pad ? pad.rings.map(r => r.state + ':' + r.t.toFixed(1)).join(' ') : '', goal: p.bot && p.bot.lastGoal, reason: fromAir ? 'air' : !pad ? (kb > 1 ? 'knocked-off' : 'edge') : ring && ring.state === 2 ? 'ring-gone' : 'gap', t: +matchT.toFixed(1) }); }

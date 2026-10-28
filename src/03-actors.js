@@ -111,6 +111,7 @@ function buildBulwarks(on) {
     bulwarkGroup.add(g);
   }
 }
+const TRIAD_RINGS = [[0, 0.8], [0.85, 1.65], [1.7, 2.5]];   // bullseye: centre plate plus two breakable rings
 function buildStations(n, arena, colors) {
   clearStations(); LAYOUT = arena;
   // two runners face off down a long court; three or four share a square one
@@ -122,11 +123,13 @@ function buildStations(n, arena, colors) {
     const st = { i, x: L.x, z: L.z, yaw: L.yaw, pads: [], g: new THREE.Group(), color: colors[i] };
     const rx = Math.cos(L.yaw), rz = -Math.sin(L.yaw);   // the station's "right" (perpendicular to its facing)
     const specs = arena.triad
-      ? [[-5.3, 0.9, [[0, 1.1], [1.15, 2.3]]], [0, 0, [[0, 1.1], [1.15, 2.3]]], [5.3, -0.9, [[0, 1.1], [1.15, 2.3]]]]
-      : [[0, 0, [[0, 1.3], [1.35, 2.5], [2.55, 3.7]]]];
-    specs.forEach(([lx, ph, rings], k) => {
+      // a lazy triangle: the middle podium pushed forward toward the rivals, the two flank podiums held back
+      ? [[-5.0, -1.2, 0.9, TRIAD_RINGS], [0, 1.6, 0, TRIAD_RINGS], [5.0, -1.2, -0.9, TRIAD_RINGS]]
+      : [[0, 0, 0, [[0, 1.3], [1.35, 2.5], [2.55, 3.7]]]];
+    const fx = Math.sin(L.yaw), fz = Math.cos(L.yaw);
+    specs.forEach(([lx, lf, ph, rings], k) => {
       const pad = buildPad(st, k, lx, ph + i * 0.7, rings, colors[i]);
-      pad.x = L.x + rx * lx; pad.z = L.z + rz * lx; pad.baseY = 0; pad.y = 0;
+      pad.x = L.x + rx * lx + fx * lf; pad.z = L.z + rz * lx + fz * lf; pad.baseY = 0; pad.y = 0;
       pad.g.position.set(pad.x, 0, pad.z); pad.g.rotation.y = L.yaw;
       st.g.add(pad.g); st.pads.push(pad);
     });

@@ -214,6 +214,36 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .pulist li.pu i { flex: 0 0 22px; height: 24px; margin-top: 1px; background: var(--pc); box-shadow: 0 0 10px var(--pc); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
 .howfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
 
+/* ---------- controls + debug ---------- */
+.howrow { display: flex; gap: 8px; }
+.ctlpanel .howpage { padding-bottom: 6px; }
+table.ctl { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.ctl th { font-family: 'Orbitron'; font-size: 9px; letter-spacing: .18em; color: var(--dim); text-align: left; padding: 4px 6px; font-weight: 700; }
+table.ctl td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.06); font-weight: 600; letter-spacing: .04em; }
+.cbtn { min-width: 120px; padding: 6px 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: #fff; font-family: 'Orbitron'; font-size: 10px; font-weight: 700; letter-spacing: .12em; cursor: pointer; }
+.cbtn:hover, .cbtn.focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,213,255,.35) inset; }
+.cbtn.wait { color: #fff; background: var(--cyan); border-color: var(--cyan); animation: blinkw .7s infinite; }
+.cbtn.sm { min-width: 34px; }
+.cbtn.mag { border-color: var(--mag); color: var(--mag); }
+@keyframes blinkw { 50% { opacity: .55; } }
+.ctlopts { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.optrow { display: flex; align-items: center; gap: 10px; font-family: 'Orbitron'; font-size: 10px; letter-spacing: .14em; color: var(--dim); }
+.optrow > span { flex: 0 0 210px; }
+.optrow .sensv { min-width: 48px; text-align: center; color: #fff; }
+.ctlhint { margin-top: 8px; }
+.btn.ghost { background: transparent; }
+#debug { position: absolute; top: 60px; right: 12px; width: min(380px, 92vw); max-height: calc(100vh - 80px); overflow-y: auto; padding: 10px 12px 12px; z-index: 9; background: rgba(4,3,14,.88); }
+#debug .dhead { display: flex; align-items: center; gap: 8px; font-family: 'Orbitron'; letter-spacing: .2em; font-size: 12px; }
+#debug .dhead span { color: var(--dim); font-size: 9px; flex: 1; }
+#debug .dhead .x { width: 26px; height: 26px; border: 1px solid var(--line); background: transparent; color: var(--dim); padding: 0; }
+.dsec { margin: 10px 0 5px; font-family: 'Orbitron'; font-size: 9px; letter-spacing: .2em; color: var(--dim); }
+.dgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.dbtn { padding: 6px 6px; border: 1px solid var(--line); border-left: 3px solid var(--pc, var(--line)); background: rgba(255,255,255,.04); color: #fff; font-family: 'Orbitron'; font-size: 9px; font-weight: 700; letter-spacing: .1em; cursor: pointer; text-align: left; }
+.dbtn:hover { border-color: var(--cyan); }
+.dbtn.on { background: var(--cyan); color: #fff; border-color: var(--cyan); }
+.dread { margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--ink); font-family: Rajdhani, sans-serif; }
+.dread > div { border-top: 1px solid rgba(255,255,255,.06); padding-top: 3px; }
+
 /* ---------- modals ---------- */
 .modal { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2,1,8,.45); }
 .modal .panel { width: min(440px, 92vw); padding: 24px 24px 20px; text-align: center; }
@@ -282,7 +312,7 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
     <button id="start" class="live">START<span class="sub" id="startSub">PRESS ENTER OR START</span></button>
     <div class="tip" id="tip"></div>
 
-    <button id="bHow" class="btn live howbtn">HOW TO PLAY · H</button>
+    <div class="howrow"><button id="bHow" class="btn live howbtn">HOW TO PLAY · H</button><button id="bCtl" class="btn live howbtn">CONTROLS · C</button></div>
   </div>
 
   <div id="banner" class="panel" hidden><span class="dot"></span><span id="bannerText"></span></div>
@@ -380,14 +410,29 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
         <tr><td>Recall discs</td><td>X / Y</td><td><kbd>X</kbd></td><td><kbd>O</kbd></td></tr>
         <tr><td>Pause</td><td>Start</td><td colspan="2"><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
         <tr><td>Fullscreen</td><td>View / Back</td><td colspan="2"><kbd>`</kbd> or the ⛶ button</td></tr>
+        <tr><td>Debug menu</td><td>X in the pause menu</td><td colspan="2"><kbd>F2</kbd></td></tr>
       </table>
+      <p class="small" style="margin-top:8px">These are the defaults. Rebind anything under <b>CONTROLS</b> in the lobby (<kbd>C</kbd>) or the pause menu.</p>
       </div>
       <div class="howfoot"><span class="small">← → or LB / RB to change page · Esc or B to close</span><button class="btn live" id="howNext">NEXT ›</button></div>
     </div>
   </div>
+  <div id="controls" class="modal live" hidden>
+    <div class="panel how ctlpanel">
+      <div class="howhead"><h2>CONTROLS</h2><button class="x live" id="ctlClose" title="Close (Esc / B)">×</button></div>
+      <div class="howtabs" id="ctlTabs"><button data-s="kb1" class="on">KEYBOARD 1</button><button data-s="kb2">KEYBOARD 2</button><button data-s="pad">CONTROLLER</button></div>
+      <div class="howpage" id="ctlBody"></div>
+      <div class="small ctlhint">Click a slot, then press the new key or button. Esc cancels, Delete clears. Controller: d-pad to move, A to pick, LB/RB to switch tab, B to close. Settings are saved on this device.</div>
+    </div>
+  </div>
+  <div id="debug" class="panel live" hidden>
+    <div class="dhead"><b>DEBUG</b><span>F2</span><button class="x" id="dbgClose">×</button></div>
+    <div id="dbgBody"></div>
+  </div>
   <div id="pause" class="modal live" hidden>
     <div class="panel"><h2>PAUSED</h2><div class="small">Press Start, Esc or P to resume.</div>
-      <div class="row"><button class="btn" id="bResume">RESUME</button><button class="btn mag" id="bQuit">QUIT TO LOBBY</button></div></div>
+      <div class="row"><button class="btn" id="bResume">RESUME</button><button class="btn mag" id="bQuit">QUIT TO LOBBY</button></div>
+      <div class="row"><button class="btn ghost" id="bPCtl">CONTROLS · Y</button><button class="btn ghost" id="bPDbg">DEBUG · X / F2</button></div></div>
   </div>
   <div id="results" class="modal live" hidden>
     <div class="panel"><div class="label">MATCH OVER</div><div class="win" id="winName"></div><div class="small" id="winSub"></div>
@@ -1218,7 +1263,7 @@ const HOLO = new THREE.Group();
   // lanes: ring lanes in altitude bands round the arena, and straight skyways between towers
   const lanes = [], cars = [];
   const typePick = () => { const k = rnd(); return k < 0.42 ? 'car' : k < 0.56 ? 'cab' : k < 0.74 ? 'hauler' : k < 0.8 ? 'patrol' : 'bike'; };
-  const nRing = Math.round(20 * qty), nLine = Math.round(14 * qty);
+  const nRing = Math.round(10 * qty), nLine = Math.round(7 * qty);   // halved for performance
   for (let i = 0; i < nRing; i++) {
     const inner = i < nRing * 0.45;
     let r = inner ? 37 + rnd() * 14 : 70 + rnd() * 120, y = inner ? -10 + rnd() * 30 : -12 + rnd() * 70;
@@ -1982,6 +2027,7 @@ function buildBulwarks(on) {
     bulwarkGroup.add(g);
   }
 }
+const TRIAD_RINGS = [[0, 0.8], [0.85, 1.65], [1.7, 2.5]];   // bullseye: centre plate plus two breakable rings
 function buildStations(n, arena, colors) {
   clearStations(); LAYOUT = arena;
   // two runners face off down a long court; three or four share a square one
@@ -1993,11 +2039,13 @@ function buildStations(n, arena, colors) {
     const st = { i, x: L.x, z: L.z, yaw: L.yaw, pads: [], g: new THREE.Group(), color: colors[i] };
     const rx = Math.cos(L.yaw), rz = -Math.sin(L.yaw);   // the station's "right" (perpendicular to its facing)
     const specs = arena.triad
-      ? [[-5.3, 0.9, [[0, 1.1], [1.15, 2.3]]], [0, 0, [[0, 1.1], [1.15, 2.3]]], [5.3, -0.9, [[0, 1.1], [1.15, 2.3]]]]
-      : [[0, 0, [[0, 1.3], [1.35, 2.5], [2.55, 3.7]]]];
-    specs.forEach(([lx, ph, rings], k) => {
+      // a lazy triangle: the middle podium pushed forward toward the rivals, the two flank podiums held back
+      ? [[-5.0, -1.2, 0.9, TRIAD_RINGS], [0, 1.6, 0, TRIAD_RINGS], [5.0, -1.2, -0.9, TRIAD_RINGS]]
+      : [[0, 0, 0, [[0, 1.3], [1.35, 2.5], [2.55, 3.7]]]];
+    const fx = Math.sin(L.yaw), fz = Math.cos(L.yaw);
+    specs.forEach(([lx, lf, ph, rings], k) => {
       const pad = buildPad(st, k, lx, ph + i * 0.7, rings, colors[i]);
-      pad.x = L.x + rx * lx; pad.z = L.z + rz * lx; pad.baseY = 0; pad.y = 0;
+      pad.x = L.x + rx * lx + fx * lf; pad.z = L.z + rz * lx + fz * lf; pad.baseY = 0; pad.y = 0;
       pad.g.position.set(pad.x, 0, pad.z); pad.g.rotation.y = L.yaw;
       st.g.add(pad.g); st.pads.push(pad);
     });
@@ -2351,6 +2399,10 @@ const KEYS = {
   kb2: { up: ['KeyI'], down: ['KeyK'], left: ['KeyJ'], right: ['KeyL'], aimL: ['ArrowLeft'], aimR: ['ArrowRight'], lvlUp: ['ArrowUp'], lvlDn: ['ArrowDown'],
     fire: ['Slash', 'Enter', 'NumpadEnter', 'Numpad0', 'ControlRight'], shield: ['Period', 'ShiftRight'], hop: ['KeyU'], recall: ['KeyO'], level: ['Semicolon'] }
 };
+// controller buttons per action (standard gamepad numbering; 100/101 = right stick flicked up/down)
+const PADMAP = { fire: [7], shield: [6, 1], lvlUp: [5, 12], lvlDn: [4, 13], level: [11], aimL: [14], aimR: [15], recall: [2, 3] };
+// stick layout, aim-height inversion and aim speed (shared by keyboard, mouse and controllers)
+const CTRL = { swap: false, invY: false, sens: 1 };
 const held = list => list.some(k => K[k]);
 const hit = list => list.some(k => KP.has(k));
 function readHuman(p, dt) {
@@ -2360,24 +2412,26 @@ function readHuman(p, dt) {
   if (c.type === 'kb1' || c.type === 'kb2') {
     const m = KEYS[c.type];
     i.mx = (held(m.right) ? 1 : 0) - (held(m.left) ? 1 : 0); i.mz = (held(m.up) ? 1 : 0) - (held(m.down) ? 1 : 0);
-    i.aim = (held(m.aimR) ? 1 : 0) - (held(m.aimL) ? 1 : 0);
+    i.aim = ((held(m.aimR) ? 1 : 0) - (held(m.aimL) ? 1 : 0)) * CTRL.sens;
     i.elev = ((held(m.lvlUp) ? 1 : 0) - (held(m.lvlDn) ? 1 : 0)) * ER; i.level = hit(m.level);
     i.fire = held(m.fire); i.shield = held(m.shield); i.recall = hit(m.recall);
     if (c.type === 'kb1') {
-      if (MOUSE.locked) { i.aimAbs = MOUSE.dx * 0.0026; i.fire = i.fire || MOUSE.l; i.shield = i.shield || MOUSE.r; }
+      if (MOUSE.locked) { i.aimAbs = MOUSE.dx * 0.0026 * CTRL.sens; i.fire = i.fire || MOUSE.l; i.shield = i.shield || MOUSE.r; }
       if (MOUSE.wheel) { i.elevAbs += (MOUSE.wheel < 0 ? 1 : -1) * 0.8; }
       if (MOUSE.locked && MOUSE.dy) i.elevAbs -= MOUSE.dy * 0.03;
     }
   } else if (c.type === 'pad') {
     const gp = pads[c.idx];
     if (gp) {
-      i.mx = axis(gp, 0); i.mz = -axis(gp, 1);
-      const rx = axis(gp, 2); i.aim = Math.sign(rx) * Math.pow(Math.abs(rx), 1.6); i.analog = true;
-      // right stick up/down raises and lowers the aim line; RB/LB and the d-pad nudge it; click the right stick to level it
-      i.elev = -axis(gp, 3) * ER * 1.15 + ((btn(gp, 5) || btn(gp, 12) ? 1 : 0) - (btn(gp, 4) || btn(gp, 13) ? 1 : 0)) * ER * 0.6; i.level = padHit(c.idx, 11);
-      i.fire = btn(gp, 7); i.shield = btn(gp, 6) || btn(gp, 1); i.recall = padHit(c.idx, 2) || padHit(c.idx, 3);
-      // d-pad left/right fine aim
-      i.aim += (btn(gp, 15) ? 0.5 : 0) - (btn(gp, 14) ? 0.5 : 0);
+      const pb = l => l.some(b => b >= 100 ? (b === 100 ? (gp.axes[CTRL.swap ? 1 : 3] || 0) < -0.65 : (gp.axes[CTRL.swap ? 1 : 3] || 0) > 0.65) : btn(gp, b)), ph = l => l.some(b => padHit(c.idx, b));
+      const MX_ = CTRL.swap ? 2 : 0, MY_ = CTRL.swap ? 3 : 1, AX_ = CTRL.swap ? 0 : 2, AY_ = CTRL.swap ? 1 : 3;
+      i.mx = axis(gp, MX_); i.mz = -axis(gp, MY_);
+      const rx = axis(gp, AX_); i.aim = Math.sign(rx) * Math.pow(Math.abs(rx), 1.6) * CTRL.sens; i.analog = true;
+      // aim stick up/down raises and lowers the aim line; the mapped buttons nudge it or level it
+      const stickElev = PADMAP.lvlUp.includes(100) || PADMAP.lvlDn.includes(101) ? 0 : axis(gp, AY_);
+      i.elev = (CTRL.invY ? 1 : -1) * stickElev * ER * 1.15 * CTRL.sens + ((pb(PADMAP.lvlUp) ? 1 : 0) - (pb(PADMAP.lvlDn) ? 1 : 0)) * ER * 0.6; i.level = ph(PADMAP.level);
+      i.fire = pb(PADMAP.fire); i.shield = pb(PADMAP.shield); i.recall = ph(PADMAP.recall);
+      i.aim += ((pb(PADMAP.aimR) ? 0.5 : 0) - (pb(PADMAP.aimL) ? 0.5 : 0)) * CTRL.sens;
     }
   } else if (c.type === 'touch') {
     i.mx = TOUCH.mx; i.mz = TOUCH.mz; i.aimAbs = TOUCH.dx * 0.006; TOUCH.dx = 0; i.fire = TOUCH.fire; i.shield = TOUCH.shield;
@@ -2762,6 +2816,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 /* ================= getting hit ================= */
 function applyHit(o, dx, dz, power, bySlot, zone, mul, blocked) {
   if (o.mode !== 'play' || o.invuln > 0) return;
+  if (DEBUG.god && o.kind === 'human' && o.local) return;
   const Z = ZONES[zone == null ? 1 : zone] || ZONES[1], m = (mul == null ? 1 : mul) * (o.anchorT > 0 ? ANCHOR_MUL : 1);
   const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * Z.kb * m;
   o.kbx += dx * kb; o.kbz += dz * kb; o.heat = Math.min(8, o.heat + Z.heat * (power ? 2 : 1) * m);
@@ -2934,6 +2989,7 @@ function followPad(p) { if (!STATIONS.length) return; const sup = supportAt(p.x,
 const FALLS = [];
 function startFall(p, fromAir) {
   if (p.mode !== 'play') return;
+  if (DEBUG.god && p.kind === 'human' && p.local) { const pad = homePad(p); restoreStation(stationOf(p)); p.x = pad.x; p.z = pad.z; p.y = pad.y; p.vy = 0; p.kbx = p.kbz = 0; p.onGround = true; p.leaping = false; return; }
   { const pad = padUnder(p.x, p.z, 0.3), kb = Math.hypot(p.kbx, p.kbz); let ring = null;
     if (pad) { const d = Math.hypot(p.x - pad.x, p.z - pad.z); ring = pad.rings.find(r => d >= r.rIn - 0.1 && d <= r.rOut + 0.1); }
     FALLS.push({ who: p.name, kind: p.kind, air: !!fromAir, kb: +kb.toFixed(1), mv: +Math.hypot(p.mvx, p.mvz).toFixed(1), stun: +p.stun.toFixed(2), d: pad ? +Math.hypot(p.x - pad.x, p.z - pad.z).toFixed(2) : -1, rs: pad ? pad.rings.map(r => r.state + ':' + r.t.toFixed(1)).join(' ') : '', goal: p.bot && p.bot.lastGoal, reason: fromAir ? 'air' : !pad ? (kb > 1 ? 'knocked-off' : 'edge') : ring && ring.state === 2 ? 'ring-gone' : 'gap', t: +matchT.toFixed(1) }); }
@@ -3170,7 +3226,22 @@ function updateGuide(p, dt) {
   const show = p.mode === 'play' && (state === 'play' || state === 'count');
   g.ret.visible = show; g.line.visible = show; if (!show) { g.dots.visible = false; g.land.visible = false; return; }
   const ap = aimPoint(p, p.aimYaw, p.aimElev, _ga);
-  const dots = ap.ceil;   // ceiling shots show where they'll come down; wall shots never do
+  // trajectory dots for any bank shot: off the ceiling, or off a side/back wall rather than straight down the court
+  // at a rival. Never for straight shots.
+  let dots = ap.ceil;
+  if (!dots) {
+    const st = stationOf(p), fx = Math.sin(st.yaw), fz = Math.cos(st.yaw);
+    const facing = ap.nx * fx + ap.nz * fz;          // the far wall's normal points back at me
+    if (facing > -0.7) {
+      dots = true;
+      // with 3-4 runners a "side" wall can sit right behind a rival: aiming straight at them isn't a bank
+      const ax = ap.x - p.x, az = ap.z - p.z, aa = Math.atan2(ax, az);
+      for (const o of players) if (o !== p && o.mode === 'play' && players.length > 2) {
+        let d = Math.atan2(o.x - p.x, o.z - p.z) - aa; d = Math.atan2(Math.sin(d), Math.cos(d));
+        if (Math.abs(d) < 0.22) { dots = false; break; }
+      }
+    }
+  }
   g.dots.visible = dots;
   // the line: round the walls at the aimed height, or a rectangle across the ceiling through the crosshair
   if (!ap.ceil) setLine(g, BOX.hx - 0.06, BOX.hz - 0.06, ap.y);
@@ -3195,7 +3266,7 @@ function updateGuide(p, dt) {
   }
   g.dots.count = n; g.dots.instanceMatrix.needsUpdate = true;
   // where a ceiling shot comes down: a ring on the floor/podium (or on the rival it will hit)
-  g.land.visible = dots; if (dots) { g.land.position.set(_gp.x, _gp.y + 0.05, _gp.z); const s = 1 + Math.sin(uTime.value * 8) * 0.12; g.land.scale.set(s, s, s); g.land.material.color.copy(new THREE.Color(lock ? 0xffffff : 0x5aa8ff).multiplyScalar(3)); }
+  g.land.visible = ap.ceil; if (ap.ceil) { g.land.position.set(_gp.x, _gp.y + 0.05, _gp.z); const s = 1 + Math.sin(uTime.value * 8) * 0.12; g.land.scale.set(s, s, s); g.land.material.color.copy(new THREE.Color(lock ? 0xffffff : 0x5aa8ff).multiplyScalar(3)); }
   const pulse = lock ? 1 + Math.sin(uTime.value * 18) * 0.12 : 1;
   g.arrows[0].position.y = 0.12 * pulse + (lock ? 0 : 0.05); g.arrows[1].position.y = -g.arrows[0].position.y;
   g.ret.scale.setScalar(ap.ceil ? 2.0 : 1.7);
@@ -4228,6 +4299,183 @@ function puChip(p) {
   return out;
 }
 
+/* ---------- 09-settings.js ---------- */
+/* ================= remappable controls + debug menu ================= */
+// Keyboard schemes (KEYS.kb1 / kb2) and the controller map (PADMAP) live in 04-play; here they are
+// loaded from and saved to local storage, and edited in the CONTROLS screen. Rebinding is done in the
+// game loop (ctlInput), so keys and controller buttons are captured the same way.
+const BIND_DEF = JSON.parse(JSON.stringify({ kb1: KEYS.kb1, kb2: KEYS.kb2, pad: PADMAP, opt: CTRL }));
+(function loadBinds() {
+  const sv = store.get('binds', null); if (!sv) return;
+  for (const s of ['kb1', 'kb2', 'pad']) if (sv[s]) for (const a in sv[s]) if (a in (s === 'pad' ? PADMAP : KEYS[s]) && Array.isArray(sv[s][a])) (s === 'pad' ? PADMAP : KEYS[s])[a] = sv[s][a].slice(0, 3);
+  if (sv.opt) Object.assign(CTRL, sv.opt);
+})();
+function saveBinds() { store.set('binds', { kb1: KEYS.kb1, kb2: KEYS.kb2, pad: PADMAP, opt: CTRL }); }
+
+const KB_ACTIONS = [['up', 'MOVE FORWARD'], ['down', 'MOVE BACK'], ['left', 'MOVE LEFT'], ['right', 'MOVE RIGHT'], ['aimL', 'AIM LEFT'], ['aimR', 'AIM RIGHT'],
+  ['lvlUp', 'AIM HIGHER'], ['lvlDn', 'AIM LOWER'], ['level', 'LEVEL THE AIM'], ['fire', 'THROW · HOLD TO SHIELD'], ['shield', 'SHIELD'], ['recall', 'RECALL DISCS']];
+const PAD_ACTIONS = [['fire', 'THROW · HOLD TO SHIELD'], ['shield', 'SHIELD'], ['lvlUp', 'AIM HIGHER'], ['lvlDn', 'AIM LOWER'], ['level', 'LEVEL THE AIM'], ['aimL', 'FINE AIM LEFT'], ['aimR', 'FINE AIM RIGHT'], ['recall', 'RECALL DISCS']];
+const PAD_NAMES = { 0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT', 8: 'VIEW', 9: 'MENU', 10: 'L-STICK', 11: 'R-STICK', 12: 'D-PAD ▲', 13: 'D-PAD ▼', 14: 'D-PAD ◀', 15: 'D-PAD ▶', 16: 'HOME', 100: 'R-STICK ▲', 101: 'R-STICK ▼' };
+function keyName(c) {
+  if (!c) return '—';
+  const sp = { Space: 'SPACE', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', ShiftLeft: 'L-SHIFT', ShiftRight: 'R-SHIFT', ControlLeft: 'L-CTRL', ControlRight: 'R-CTRL',
+    AltLeft: 'L-ALT', AltRight: 'R-ALT', Enter: 'ENTER', NumpadEnter: 'NUM ENTER', Slash: '/', Period: '.', Comma: ',', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']', Backslash: '\\', Minus: '-', Equal: '=', Tab: 'TAB', CapsLock: 'CAPS', Backspace: 'BKSP' };
+  if (sp[c]) return sp[c];
+  if (c.startsWith('Key')) return c.slice(3); if (c.startsWith('Digit')) return c.slice(5); if (c.startsWith('Numpad')) return 'NUM ' + c.slice(6);
+  return c.toUpperCase();
+}
+const CTLUI = { tab: 'kb1', listen: null, focus: 0 };   // listen: { scheme, action, slot }
+function ctlOpen(on) {
+  show('#controls', on); CTLUI.listen = null; CTLUI.focus = 0;
+  if (on) { renderControls(); SFX.tick(); }
+}
+function renderControls() {
+  document.querySelectorAll('#ctlTabs button').forEach(b => b.classList.toggle('on', b.dataset.s === CTLUI.tab));
+  const s = CTLUI.tab, isPad = s === 'pad', acts = isPad ? PAD_ACTIONS : KB_ACTIONS, map = isPad ? PADMAP : KEYS[s];
+  const L = CTLUI.listen;
+  let h = '<table class="ctl"><tr><th>ACTION</th><th>PRIMARY</th><th>ALTERNATE</th></tr>';
+  for (const [a, label] of acts) {
+    h += `<tr><td>${label}</td>`;
+    for (let k = 0; k < 2; k++) {
+      const v = (map[a] || [])[k], wait = L && L.scheme === s && L.action === a && L.slot === k;
+      h += `<td><button class="cbtn${wait ? ' wait' : ''}" data-a="${a}" data-k="${k}">${wait ? (isPad ? 'PRESS A BUTTON…' : 'PRESS A KEY…') : v == null ? '—' : isPad ? (PAD_NAMES[v] || 'BTN ' + v) : keyName(v)}</button></td>`;
+    }
+    h += '</tr>';
+  }
+  h += '</table>';
+  if (isPad) {
+    h += `<div class="ctlopts">
+      <div class="optrow"><span>STICKS</span><button class="cbtn" data-opt="swap">${CTRL.swap ? 'AIM LEFT · MOVE RIGHT' : 'MOVE LEFT · AIM RIGHT'}</button></div>
+      <div class="optrow"><span>AIM HEIGHT ON RIGHT STICK</span><button class="cbtn" data-opt="invY">${CTRL.invY ? 'INVERTED' : 'NORMAL'}</button></div>`;
+  } else h += '<div class="ctlopts">';
+  h += `<div class="optrow"><span>AIM SPEED</span><button class="cbtn sm" data-opt="sens-">−</button><b class="sensv">${Math.round(CTRL.sens * 100)}%</b><button class="cbtn sm" data-opt="sens+">+</button></div>
+    <div class="optrow"><span></span><button class="cbtn mag" data-opt="reset">RESET ${isPad ? 'CONTROLLER' : s === 'kb1' ? 'KEYBOARD 1' : 'KEYBOARD 2'} TO DEFAULTS</button></div></div>`;
+  $('#ctlBody').innerHTML = h;
+  const f = ctlFocusables(); f.forEach((b, i) => b.classList.toggle('focus', i === CTLUI.focus && CTLUI.padNav));
+}
+function ctlFocusables() { return [...document.querySelectorAll('#ctlBody .cbtn')]; }
+function ctlClick(b) {
+  if (b.dataset.opt) {
+    const o = b.dataset.opt;
+    if (o === 'swap') CTRL.swap = !CTRL.swap;
+    if (o === 'invY') CTRL.invY = !CTRL.invY;
+    if (o === 'sens-') CTRL.sens = Math.max(0.4, +(CTRL.sens - 0.1).toFixed(2));
+    if (o === 'sens+') CTRL.sens = Math.min(2.5, +(CTRL.sens + 0.1).toFixed(2));
+    if (o === 'reset') {
+      const s = CTLUI.tab, src = JSON.parse(JSON.stringify(BIND_DEF[s]));
+      const dst = s === 'pad' ? PADMAP : KEYS[s]; for (const a in dst) delete dst[a]; Object.assign(dst, src);
+      if (s === 'pad') { CTRL.swap = BIND_DEF.opt.swap; CTRL.invY = BIND_DEF.opt.invY; }
+      toast('DEFAULTS RESTORED', 1400);
+    }
+    saveBinds(); SFX.tick(); renderControls(); return;
+  }
+  CTLUI.listen = { scheme: CTLUI.tab, action: b.dataset.a, slot: +b.dataset.k, t: uTime.value }; SFX.tick(); renderControls();
+}
+function ctlAssign(v) {
+  const L = CTLUI.listen, isPad = L.scheme === 'pad', map = isPad ? PADMAP : KEYS[L.scheme];
+  // a key or button can only do one thing in a scheme: take it off anything else first
+  if (v != null) for (const a in map) map[a] = map[a].filter(x => x !== v);
+  const list = (map[L.action] || []).slice();
+  if (v == null) list.splice(L.slot, 1); else { while (list.length < L.slot) list.push(list[list.length - 1]); list[Math.min(L.slot, list.length)] = v; }
+  map[L.action] = list.filter((x, i, a) => x != null && a.indexOf(x) === i);
+  CTLUI.listen = null; saveBinds(); SFX.tick(); renderControls();
+}
+// called from handleSystemInput every frame; returns true when it ate the input
+function ctlInput() {
+  if ($('#controls').hidden) return false;
+  const L = CTLUI.listen;
+  if (L) {
+    if (uTime.value - L.t < 0.12) return true;    // ignore the press that started the rebind
+    if (L.scheme === 'pad') {
+      if (KP.has('Escape')) { CTLUI.listen = null; renderControls(); return true; }
+      if (KP.has('Delete') || KP.has('Backspace')) { ctlAssign(null); return true; }
+      for (let i = 0; i < padEdges.length; i++) if (padEdges[i] && padEdges[i].length) { ctlAssign(padEdges[i][0]); return true; }
+    } else {
+      for (const c of KP) {
+        if (c === 'Escape') { CTLUI.listen = null; renderControls(); return true; }
+        if (c === 'Delete' || c === 'Backspace') { ctlAssign(null); return true; }
+        if (c === 'Backquote' || c === 'F2') continue;
+        ctlAssign(c); return true;
+      }
+    }
+    return true;
+  }
+  // controller navigation of the screen: d-pad / left stick to move, A to pick, LB/RB to switch tab, B to close
+  const f = ctlFocusables(), anyPad = padEdges.some(e => e && e.length);
+  if (anyPad) CTLUI.padNav = true;
+  if (KP.has('Escape') || anyPadHit(1) >= 0 || anyPadHit(9) >= 0) { ctlOpen(false); return true; }
+  const tabs = ['kb1', 'kb2', 'pad'];
+  const tabStep = d => { CTLUI.tab = tabs[(tabs.indexOf(CTLUI.tab) + d + 3) % 3]; CTLUI.focus = 0; renderControls(); SFX.tick(); };
+  if (anyPadHit(5) >= 0) tabStep(1); if (anyPadHit(4) >= 0) tabStep(-1);
+  const mv = (anyPadHit(13) >= 0 ? 1 : 0) - (anyPadHit(12) >= 0 ? 1 : 0), side = (anyPadHit(15) >= 0 ? 1 : 0) - (anyPadHit(14) >= 0 ? 1 : 0);
+  if (mv || side) { CTLUI.focus = clamp(CTLUI.focus + mv * 2 + side, 0, f.length - 1); renderControls(); }
+  if (anyPadHit(0) >= 0 && f[CTLUI.focus]) ctlClick(f[CTLUI.focus]);
+  return true;
+}
+
+/* ---------------- debug menu (F2, or Debug in the pause menu) ---------------- */
+const DEBUG = { on: false, god: false, cpuFreeze: false, cpuHold: false, ts: 1, hud: true, fps: 60, _acc: 0, _n: 0 };
+function dbgMe() { return players.find(p => p.local && p.kind === 'human') || players[0]; }
+function dbgRivals() { const me = dbgMe(); return players.filter(p => p !== me); }
+function dbgOpen(on) {
+  DEBUG.on = on == null ? !DEBUG.on : on; show('#debug', DEBUG.on);
+  if (DEBUG.on) renderDebug();
+}
+function renderDebug() {
+  const tg = (k, l) => `<button class="dbtn${DEBUG[k] ? ' on' : ''}" data-tg="${k}">${l}</button>`;
+  const act = (k, l) => `<button class="dbtn" data-act="${k}">${l}</button>`;
+  $('#dbgBody').innerHTML = `
+    <div class="dsec">TOGGLES</div>
+    <div class="dgrid">${tg('god', 'GOD MODE')}${tg('cpuFreeze', 'FREEZE CPUs')}${tg('cpuHold', 'CPUs HOLD FIRE')}${tg('hud', 'LIVE READOUT')}</div>
+    <div class="dsec">GAME SPEED</div>
+    <div class="dgrid">${[0.25, 0.5, 1, 2].map(v => `<button class="dbtn${DEBUG.ts === v ? ' on' : ''}" data-ts="${v}">${v}×</button>`).join('')}</div>
+    <div class="dsec">GIVE ME A POWER-UP</div>
+    <div class="dgrid">${PU_KEYS.map(k => `<button class="dbtn" data-pu="${k}" style="--pc:#${new THREE.Color(PU_TYPES[k].color).getHexString()}">${PU_TYPES[k].name}</button>`).join('')}${act('puSpawn', 'SPAWN PICKUP')}</div>
+    <div class="dsec">ME</div>
+    <div class="dgrid">${act('meFall', 'KNOCK ME OFF')}${act('meRing', 'BREAK MY RINGS')}${act('meHeat', 'MAX MY OVERLOAD')}${act('meHeal', 'HEAL + RESTORE')}${act('meLife', '+1 LIFE')}${act('meHit', 'HIT ME (CHEST)')}</div>
+    <div class="dsec">RIVALS</div>
+    <div class="dgrid">${act('rvFall', 'KNOCK THEM OFF')}${act('rvRing', 'BREAK THEIR RINGS')}${act('rvHeat', 'MAX THEIR OVERLOAD')}${act('rvHit', 'HIT THEM (HEAD)')}${act('rvLife', 'THEM TO LAST LIFE')}</div>
+    <div class="dsec">MATCH</div>
+    <div class="dgrid">${act('win', 'WIN THE MATCH')}${act('restart', 'RESTART MATCH')}${act('nextArena', 'NEXT ARENA')}${act('lobby', 'QUIT TO LOBBY')}</div>
+    <div class="dread" id="dbgRead"></div>`;
+}
+function dbgAct(k) {
+  const me = dbgMe(), rv = dbgRivals(), live = state === 'play' || state === 'count';
+  const need = () => { if (!live || !me) { toast('START A MATCH FIRST', 1400); return false; } return true; };
+  const hit = (o, zone) => { if (o && o.mode === 'play') { const a = Math.atan2(o.x, o.z) + Math.PI; applyHit(o, -Math.sin(a), -Math.cos(a), false, me === o ? (rv[0] ? rv[0].slot : -1) : me.slot, zone, 1, false); } };
+  const breakAll = p => { const st = stationOf(p); st.pads.forEach((pad, pi) => pad.rings.forEach((r, ri) => ringBreak(st.i, pi, ri))); };
+  switch (k) {
+    case 'puSpawn': if (need()) { PU.enabled = true; spawnPowerup(); } break;
+    case 'meFall': if (need() && me.mode === 'play') { const g = DEBUG.god; DEBUG.god = false; me.kbx = 2; me.kbz = 0; startFall(me); DEBUG.god = g; } break;
+    case 'meRing': if (need()) breakAll(me); break;
+    case 'meHeat': if (need()) me.heat = 8; break;
+    case 'meHeal': if (need()) { me.heat = 0; me.shieldE = 100; me.defl = DEFLECTS; restoreStation(stationOf(me)); } break;
+    case 'meLife': if (need()) me.lives++; break;
+    case 'meHit': if (need()) { const g = DEBUG.god; DEBUG.god = false; me.invuln = 0; hit(me, 1); DEBUG.god = g; } break;
+    case 'rvFall': if (need()) rv.forEach(o => { if (o.mode === 'play') { o.kbx = 2; startFall(o); } }); break;
+    case 'rvRing': if (need()) rv.forEach(breakAll); break;
+    case 'rvHeat': if (need()) rv.forEach(o => o.heat = 8); break;
+    case 'rvHit': if (need()) rv.forEach(o => { o.invuln = 0; hit(o, 0); }); break;
+    case 'rvLife': if (need()) rv.forEach(o => o.lives = Math.min(o.lives, 1)); break;
+    case 'win': if (need()) rv.forEach(o => { o.lives = 0; if (o.mode === 'play') startFall(o); else if (o.mode !== 'fall') o.mode = 'out'; }); break;
+    case 'restart': if (state !== 'lobby') rematch(); else toast('START A MATCH FIRST', 1400); break;
+    case 'nextArena': { const cur = state !== 'lobby' && lastCfg ? lastCfg.ar : S.arena; S.arena = (cur + 1) % (ARENAS.length - 1); toast(ARENAS[S.arena].name, 1400); if (state !== 'lobby' && lastCfg) { lastCfg.ar = S.arena; rematch(); } else renderLobby(); break; }
+    case 'lobby': if (state !== 'lobby') quitToLobby(); break;
+  }
+  SFX.tick();
+}
+function debugTick(dt) {
+  if (!DEBUG.on) return;
+  DEBUG._acc += dt; DEBUG._n++;
+  if (DEBUG._acc < 0.25) return;
+  DEBUG.fps = Math.round(DEBUG._n / DEBUG._acc); DEBUG._acc = 0; DEBUG._n = 0;
+  const el = $('#dbgRead'); if (!el) return;
+  if (!DEBUG.hud) { el.innerHTML = ''; return; }
+  const row = p => { const st = STATIONS[p.slot]; const rs = st ? st.pads.map(pd => pd.rings.map(r => '■▒░·'[r.state]).join('')).join(' ') : '';
+    return `<div><b style="color:${p.css}">${p.name}</b> ${p.kind === 'cpu' ? 'CPU' : ''} · ${p.mode.toUpperCase()} · lives ${p.lives} · overload ${Math.round(p.heat / 8 * 100)}% · discs ${p.discsHome} · shield ${p.defl} · ${p.weapon ? p.weapon.type + '×' + p.weapon.n : '—'} · pads ${rs}</div>`; };
+  el.innerHTML = `<div>FPS ${DEBUG.fps} · ${state.toUpperCase()} · t ${matchT.toFixed(1)}s · arena ${LAYOUT && LAYOUT.id || S.arena} · discs in flight ${DISCS.filter(d => d.state !== 'home').length} · pickups ${PU.list.length}</div>` + players.map(row).join('');
+}
+
 /* ---------- 10-main.js ---------- */
 /* ================= DOM + device input ================= */
 function isTyping(e) { const t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); }
@@ -4276,6 +4524,20 @@ $('#howClose').onclick = () => showHow(false);
 $('#howNext').onclick = () => { if (howPage === document.querySelectorAll('.howpage').length - 1) showHow(false); else setHowPage(howPage + 1); };
 document.querySelectorAll('#howTabs button').forEach((b, k) => b.onclick = () => setHowPage(k));
 $('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHow(false); });
+$('#bCtl').onclick = () => { audioInit(); ctlOpen(true); };
+$('#bPCtl').onclick = () => ctlOpen(true);
+$('#bPDbg').onclick = () => dbgOpen(true);
+$('#ctlClose').onclick = () => ctlOpen(false);
+$('#controls').addEventListener('click', e => { if (e.target.id === 'controls') { ctlOpen(false); return; } CTLUI.padNav = false; const b = e.target.closest('.cbtn'); if (b) ctlClick(b); });
+document.querySelectorAll('#ctlTabs button').forEach(b => b.onclick = () => { CTLUI.tab = b.dataset.s; CTLUI.listen = null; CTLUI.focus = 0; renderControls(); SFX.tick(); });
+$('#dbgClose').onclick = () => dbgOpen(false);
+$('#dbgBody').addEventListener('click', e => {
+  const b = e.target.closest('.dbtn'); if (!b) return;
+  if (b.dataset.tg) { DEBUG[b.dataset.tg] = !DEBUG[b.dataset.tg]; renderDebug(); SFX.tick(); }
+  else if (b.dataset.ts) { DEBUG.ts = +b.dataset.ts; renderDebug(); SFX.tick(); }
+  else if (b.dataset.pu) { const me = dbgMe(); if (me && (state === 'play' || state === 'count')) { grantPowerup(me, b.dataset.pu); SFX.powerup && SFX.powerup(); } else toast('START A MATCH FIRST', 1400); }
+  else if (b.dataset.act) dbgAct(b.dataset.act);
+});
 $('#bQuit').onclick = () => { setPaused(false); quitToLobby(); };
 $('#bAgain').onclick = () => rematch();
 $('#bLobby').onclick = () => quitToLobby();
@@ -4344,6 +4606,8 @@ readHuman = function (p, dt) {
 /* ================= menu & system input (keyboard + every controller) ================= */
 function anyPadHit(b) { for (let i = 0; i < padEdges.length; i++) if (padHit(i, b)) return i; return -1; }
 function handleSystemInput() {
+  if (ctlInput()) return;
+  if (KP.has('F2')) dbgOpen();
   if (KP.has('Backquote')) toggleFull();
   if (KP.has('KeyM') && !(state === 'lobby' && document.activeElement && document.activeElement.id === 'codeIn')) MUSIC.setOn(!MUSIC.on);
   const back = anyPadHit(8); if (back >= 0) toggleFull();
@@ -4354,6 +4618,7 @@ function handleSystemInput() {
     return;
   }
   if (state === 'lobby' && (KP.has('KeyH') || anyPadHit(2) >= 0)) { showHow(true); return; }
+  if (state === 'lobby' && KP.has('KeyC')) { ctlOpen(true); return; }
   if (state === 'lobby') {
     if (LOBBY.mode === 'local') {
       if (KP.has('Space')) lobbyJoin('kb1');
@@ -4377,7 +4642,7 @@ function handleSystemInput() {
     return;
   }
   if (KP.has('Escape') || KP.has('KeyP') || anyPadHit(9) >= 0) { if (!(KP.has('Escape') && MOUSE.locked)) setPaused($('#pause').hidden); }
-  if (!$('#pause').hidden) { if (anyPadHit(0) >= 0) setPaused(false); else if (anyPadHit(1) >= 0 && paused) { setPaused(false); quitToLobby(); } }
+  if (!$('#pause').hidden) { if (anyPadHit(0) >= 0) setPaused(false); else if (anyPadHit(1) >= 0 && paused) { setPaused(false); quitToLobby(); } else if (anyPadHit(3) >= 0) ctlOpen(true); else if (anyPadHit(2) >= 0) dbgOpen(); }
 }
 
 /* ================= render ================= */
@@ -4410,14 +4675,14 @@ const TEST = /[?&]test\b/.test(location.search || '');
 function tick(dt, doRender) {
   pollPads(); handleSystemInput();
   uTime.value += dt; finalMat.uniforms.uTime.value = uTime.value;
-  const sdt = paused ? 0 : dt;
+  const sdt = paused ? 0 : dt * DEBUG.ts;
   if (sdt > 0) {
     netRecv(sdt);
     updateFlow(sdt);
     const T = DEMO ? uTime.value : matchT;
     updateStations(T, sdt); WALLFW.update(T, sdt);
     for (const p of players) {
-      if (p.local) { const inp = p.kind === 'cpu' ? botInput(p, sdt) : readHuman(p, sdt); stepPlayer(p, inp, sdt); }
+      if (p.local) { let inp = p.kind === 'cpu' ? (DEBUG.cpuFreeze ? readHuman({ ctl: { type: 'none' } }, sdt) : botInput(p, sdt)) : readHuman(p, sdt); if (p.kind === 'cpu' && DEBUG.cpuHold) { inp.fire = false; inp.shield = inp.shield && p.shieldOn; } stepPlayer(p, inp, sdt); }
       else remoteBodyStep(p, sdt);
     }
     for (const d of DISCS) updateDisc(d, sdt);
@@ -4429,7 +4694,7 @@ function tick(dt, doRender) {
     if (state === 'lobby' && Math.floor(uTime.value / 8) !== Math.floor((uTime.value - sdt) / 8)) renderLobby();
   }
   for (const v of views) { updateView(v, dt); if (doRender) updateHud(v); }
-  netTick();
+  netTick(); debugTick(dt);
   if (doRender) render(dt);
   KP.clear(); MOUSE.dx = 0; MOUSE.dy = 0; MOUSE.wheel = 0;
   if (!booted && doRender) { booted = true; setTimeout(() => $('#boot').classList.add('gone'), 200); }

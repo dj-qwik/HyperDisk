@@ -34,6 +34,6 @@ with sync_playwright() as pw:
         if 'down' in s: pg.keyboard.down(s['down'])
         if 'up' in s: pg.keyboard.up(s['up'])
         if 'shot' in s:
-            t = time.time(); pg.screenshot(path=f"{out}-{s['shot']}.png"); print('shot', s['shot'], f'{time.time()-t:.1f}s')
+            t = time.time(); pg.screenshot(path=f"{out}-{s["shot"]}.png", timeout=90000); print('shot', s['shot'], f'{time.time()-t:.1f}s')
     print('\n'.join(logs[-40:]))
     b.close()

@@ -402,7 +402,7 @@ const HOLO = new THREE.Group();
   // lanes: ring lanes in altitude bands round the arena, and straight skyways between towers
   const lanes = [], cars = [];
   const typePick = () => { const k = rnd(); return k < 0.42 ? 'car' : k < 0.56 ? 'cab' : k < 0.74 ? 'hauler' : k < 0.8 ? 'patrol' : 'bike'; };
-  const nRing = Math.round(20 * qty), nLine = Math.round(14 * qty);
+  const nRing = Math.round(10 * qty), nLine = Math.round(7 * qty);   // halved for performance
   for (let i = 0; i < nRing; i++) {
     const inner = i < nRing * 0.45;
     let r = inner ? 37 + rnd() * 14 : 70 + rnd() * 120, y = inner ? -10 + rnd() * 30 : -12 + rnd() * 70;

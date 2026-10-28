@@ -45,6 +45,20 @@ $('#howClose').onclick = () => showHow(false);
 $('#howNext').onclick = () => { if (howPage === document.querySelectorAll('.howpage').length - 1) showHow(false); else setHowPage(howPage + 1); };
 document.querySelectorAll('#howTabs button').forEach((b, k) => b.onclick = () => setHowPage(k));
 $('#howto').addEventListener('click', e => { if (e.target.id === 'howto') showHow(false); });
+$('#bCtl').onclick = () => { audioInit(); ctlOpen(true); };
+$('#bPCtl').onclick = () => ctlOpen(true);
+$('#bPDbg').onclick = () => dbgOpen(true);
+$('#ctlClose').onclick = () => ctlOpen(false);
+$('#controls').addEventListener('click', e => { if (e.target.id === 'controls') { ctlOpen(false); return; } CTLUI.padNav = false; const b = e.target.closest('.cbtn'); if (b) ctlClick(b); });
+document.querySelectorAll('#ctlTabs button').forEach(b => b.onclick = () => { CTLUI.tab = b.dataset.s; CTLUI.listen = null; CTLUI.focus = 0; renderControls(); SFX.tick(); });
+$('#dbgClose').onclick = () => dbgOpen(false);
+$('#dbgBody').addEventListener('click', e => {
+  const b = e.target.closest('.dbtn'); if (!b) return;
+  if (b.dataset.tg) { DEBUG[b.dataset.tg] = !DEBUG[b.dataset.tg]; renderDebug(); SFX.tick(); }
+  else if (b.dataset.ts) { DEBUG.ts = +b.dataset.ts; renderDebug(); SFX.tick(); }
+  else if (b.dataset.pu) { const me = dbgMe(); if (me && (state === 'play' || state === 'count')) { grantPowerup(me, b.dataset.pu); SFX.powerup && SFX.powerup(); } else toast('START A MATCH FIRST', 1400); }
+  else if (b.dataset.act) dbgAct(b.dataset.act);
+});
 $('#bQuit').onclick = () => { setPaused(false); quitToLobby(); };
 $('#bAgain').onclick = () => rematch();
 $('#bLobby').onclick = () => quitToLobby();
@@ -113,6 +127,8 @@ readHuman = function (p, dt) {
 /* ================= menu & system input (keyboard + every controller) ================= */
 function anyPadHit(b) { for (let i = 0; i < padEdges.length; i++) if (padHit(i, b)) return i; return -1; }
 function handleSystemInput() {
+  if (ctlInput()) return;
+  if (KP.has('F2')) dbgOpen();
   if (KP.has('Backquote')) toggleFull();
   if (KP.has('KeyM') && !(state === 'lobby' && document.activeElement && document.activeElement.id === 'codeIn')) MUSIC.setOn(!MUSIC.on);
   const back = anyPadHit(8); if (back >= 0) toggleFull();
@@ -123,6 +139,7 @@ function handleSystemInput() {
     return;
   }
   if (state === 'lobby' && (KP.has('KeyH') || anyPadHit(2) >= 0)) { showHow(true); return; }
+  if (state === 'lobby' && KP.has('KeyC')) { ctlOpen(true); return; }
   if (state === 'lobby') {
     if (LOBBY.mode === 'local') {
       if (KP.has('Space')) lobbyJoin('kb1');
@@ -146,7 +163,7 @@ function handleSystemInput() {
     return;
   }
   if (KP.has('Escape') || KP.has('KeyP') || anyPadHit(9) >= 0) { if (!(KP.has('Escape') && MOUSE.locked)) setPaused($('#pause').hidden); }
-  if (!$('#pause').hidden) { if (anyPadHit(0) >= 0) setPaused(false); else if (anyPadHit(1) >= 0 && paused) { setPaused(false); quitToLobby(); } }
+  if (!$('#pause').hidden) { if (anyPadHit(0) >= 0) setPaused(false); else if (anyPadHit(1) >= 0 && paused) { setPaused(false); quitToLobby(); } else if (anyPadHit(3) >= 0) ctlOpen(true); else if (anyPadHit(2) >= 0) dbgOpen(); }
 }
 
 /* ================= render ================= */
@@ -179,14 +196,14 @@ const TEST = /[?&]test\b/.test(location.search || '');
 function tick(dt, doRender) {
   pollPads(); handleSystemInput();
   uTime.value += dt; finalMat.uniforms.uTime.value = uTime.value;
-  const sdt = paused ? 0 : dt;
+  const sdt = paused ? 0 : dt * DEBUG.ts;
   if (sdt > 0) {
     netRecv(sdt);
     updateFlow(sdt);
     const T = DEMO ? uTime.value : matchT;
     updateStations(T, sdt); WALLFW.update(T, sdt);
     for (const p of players) {
-      if (p.local) { const inp = p.kind === 'cpu' ? botInput(p, sdt) : readHuman(p, sdt); stepPlayer(p, inp, sdt); }
+      if (p.local) { let inp = p.kind === 'cpu' ? (DEBUG.cpuFreeze ? readHuman({ ctl: { type: 'none' } }, sdt) : botInput(p, sdt)) : readHuman(p, sdt); if (p.kind === 'cpu' && DEBUG.cpuHold) { inp.fire = false; inp.shield = inp.shield && p.shieldOn; } stepPlayer(p, inp, sdt); }
       else remoteBodyStep(p, sdt);
     }
     for (const d of DISCS) updateDisc(d, sdt);
@@ -198,7 +215,7 @@ function tick(dt, doRender) {
     if (state === 'lobby' && Math.floor(uTime.value / 8) !== Math.floor((uTime.value - sdt) / 8)) renderLobby();
   }
   for (const v of views) { updateView(v, dt); if (doRender) updateHud(v); }
-  netTick();
+  netTick(); debugTick(dt);
   if (doRender) render(dt);
   KP.clear(); MOUSE.dx = 0; MOUSE.dy = 0; MOUSE.wheel = 0;
   if (!booted && doRender) { booted = true; setTimeout(() => $('#boot').classList.add('gone'), 200); }
