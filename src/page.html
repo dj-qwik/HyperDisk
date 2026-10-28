@@ -204,8 +204,6 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
 .ill .t { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: .08em; fill: #c9d3ff; font-weight: 700; }
 .ill .t.r { fill: #ff6b6b; }
 .howfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; }
-.meter.heat.danger .fill { animation: blink .35s infinite; background: #ff1414; }
-.meter.heat.danger .t { color: #ff4d4d; }
 
 /* ---------- modals ---------- */
 .modal { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2,1,8,.45); }
@@ -305,26 +303,24 @@ kbd { display: inline-block; min-width: 18px; padding: 0 4px; border: 1px solid 
       </div>
       <div class="howpage" data-p="1" hidden>
         <p class="lead">Only two things put you down: <b>getting shoved off the edge</b>, or <b>the ring under your feet shattering</b>.</p>
-        <svg viewBox="0 0 340 132" class="ill" aria-hidden="true">
-          <circle cx="92" cy="66" r="60" fill="none" stroke="#1650ff" stroke-width="3"/><circle cx="92" cy="66" r="40" fill="none" stroke="#1650ff" stroke-width="1.5" opacity=".6"/><circle cx="92" cy="66" r="21" fill="none" stroke="#1650ff" stroke-width="1.5" opacity=".6"/>
-          <circle cx="92" cy="66" r="5" fill="#fff"/>
-          <path d="M92 66 H123" stroke="#5aa8ff" stroke-width="3"/><path d="M123 66 l-6 -4 v8 z" fill="#5aa8ff"/><text x="99" y="60" class="t">1st</text>
-          <circle cx="123" cy="66" r="4" fill="#5aa8ff"/>
-          <path d="M123 66 H170" stroke="#ff1414" stroke-width="3" stroke-dasharray="4 3"/><path d="M170 66 l-7 -5 v10 z" fill="#ff1414"/><text x="134" y="60" class="t r">2nd</text>
-          <text x="140" y="16" class="t">EDGE 3.7 m</text>
-          <g transform="translate(210 14)"><text x="0" y="12" class="t">SHOVE PER HIT</text>
-            <rect x="0" y="20" width="31" height="12" fill="#5aa8ff"/><text x="36" y="30" class="t">1st  1.9 m</text>
-            <rect x="0" y="38" width="44" height="12" fill="#5aa8ff"/><text x="49" y="48" class="t">2nd  2.7 m</text>
-            <rect x="0" y="56" width="58" height="12" fill="#ff6a00"/><text x="63" y="66" class="t">3rd  3.6 m</text>
-            <rect x="0" y="74" width="71" height="12" fill="#ff1414"/><text x="76" y="84" class="t r">4th  4.4 m</text></g>
+        <svg viewBox="0 0 340 120" class="ill" aria-hidden="true">
+          <circle cx="92" cy="60" r="52" fill="none" stroke="#1650ff" stroke-width="3"/><circle cx="92" cy="60" r="34" fill="none" stroke="#1650ff" stroke-width="1.5" opacity=".6"/><circle cx="92" cy="60" r="17" fill="none" stroke="#1650ff" stroke-width="1.5" opacity=".6"/>
+          <circle cx="92" cy="60" r="5" fill="#fff"/>
+          <path d="M92 60 H112" stroke="#5aa8ff" stroke-width="3"/><circle cx="112" cy="60" r="3.5" fill="#5aa8ff"/>
+          <path d="M112 60 H136" stroke="#ff6a00" stroke-width="3"/><circle cx="136" cy="60" r="3.5" fill="#ff6a00"/>
+          <path d="M136 60 H172" stroke="#ff1414" stroke-width="3" stroke-dasharray="4 3"/><path d="M172 60 l-7 -5 v10 z" fill="#ff1414"/>
+          <text x="186" y="32" class="t">EVERY HIT PUSHES HARDER</text>
+          <g transform="translate(186 42)"><rect x="0" y="0" width="120" height="10" fill="rgba(255,255,255,.08)"/><rect x="0" y="0" width="34" height="10" fill="#5aa8ff"/>
+            <rect x="0" y="18" width="120" height="10" fill="rgba(255,255,255,.08)"/><rect x="0" y="18" width="70" height="10" fill="#ff6a00"/>
+            <rect x="0" y="36" width="120" height="10" fill="rgba(255,255,255,.08)"/><rect x="0" y="36" width="112" height="10" fill="#ff1414"/>
+            <text x="0" y="62" class="t">OVERLOAD</text></g>
         </svg>
         <ul>
-          <li><b>Every hit shoves you, and each hit you've taken makes the next shove 42% bigger</b> (that's your OVERLOAD). The <b>NEXT SHOVE</b> meter on your HUD shows exactly how far the next hit will push you, and flashes red when one more hit from where you stand puts you over.</li>
-          <li><b>Halo Rings podium (3.7 m to the edge):</b> stay where the 1st hit leaves you and the <b>2nd hit</b> takes you over. Get back to the centre after every hit and you survive 3; the <b>4th</b> takes you over.</li>
-          <li><b>Triad and Pistons podiums (2.3 m):</b> the 2nd hit puts you on the edge, the 3rd takes you over. Leap to another of your podiums when one gets crowded.</li>
-          <li>A <b>power disc</b> shoves 45% harder and counts as 2 hits of OVERLOAD. A <b>graze</b> shoves half as far. OVERLOAD resets when you lose a life.</li>
-          <li>Shoved <b>just past the rim</b>, you teeter (<b>WHOA!</b>): push back toward the centre within ¾ of a second to save yourself.</li>
-          <li><b>Shattered floor:</b> a disc that hits one of your rings makes it <b>flash for 1.6 s</b>, then it's gone for 9 s. Step off a flashing ring. The centre plate never breaks.</li>
+          <li><b>Every hit wears you down.</b> It shoves you toward the edge and charges your <b>OVERLOAD</b>, so the next hit shoves you even further. The first hit staggers you; keep eating them and one sends you flying.</li>
+          <li><b>Watch your OVERLOAD bar.</b> The higher it climbs, the closer you are to going over. Get back to the middle of your podium after a hit to buy yourself room.</li>
+          <li>Losing a life resets your OVERLOAD. <b>Power discs</b> hit harder; <b>grazes</b> only nudge you.</li>
+          <li>Shoved <b>just past the rim</b>, you teeter (<b>WHOA!</b>): push back toward the centre fast to save yourself.</li>
+          <li><b>Shattered floor:</b> a disc that hits one of your rings makes it <b>flash</b> for a moment, then it drops away. Step off a flashing ring. The centre plate never breaks.</li>
         </ul>
       </div>
       <div class="howpage" data-p="2" hidden>

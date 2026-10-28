@@ -344,8 +344,6 @@ function updateDiscVisual(d, dt) {
 const UP = new THREE.Vector3(0, 1, 0);
 
 /* ================= getting hit ================= */
-// how far a normal hit would shove this runner right now (the slide after a hit is speed / friction)
-function nextShove(p) { return KB_BASE * (1 + KB_HEAT * p.heat) / FRICT * 0.965; }
 function applyHit(o, dx, dz, power, bySlot, graze) {
   if (o.mode !== 'play' || o.invuln > 0) return;
   const kb = KB_BASE * (1 + KB_HEAT * o.heat) * (power ? KB_POWER : 1) * (graze ? 0.5 : 1);
