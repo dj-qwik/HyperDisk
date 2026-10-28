@@ -1,0 +1,3 @@
+[{"wait": 2500},
+ {"js": "(() => { const out = []; for (const ar of [0,1,2,3,4]) for (const sk of [1,3]) { __hd.toLobby(); __hd.S.arena = ar; __hd.S.cpus = 2; __hd.S.lives = 3; __hd.S.skill = sk; __hd.LOBBY.humans.length = 0; __hd.startLocal(); let t = 0; while (__hd.state !== 'end' && t < 300*60) { __hd.step(60, 1/60, false); t += 60; } out.push([ar, sk, __hd.state, +__hd.matchT.toFixed(0), __hd.players.map(p => p.stats.hits+'/'+p.stats.rings+'/'+p.stats.defl).join(' ')]); } const f = {}; for (const x of __hd.FALLS) f[x.reason] = (f[x.reason]||0)+1; return [f, out]; })()"}
+]

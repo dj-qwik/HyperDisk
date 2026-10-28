@@ -1,0 +1,10 @@
+[{"wait": 2500},
+ {"js": "__hd.lobbyJoin('kb1'); __hd.S.cpus=1; __hd.S.skill=0; __hd.startLocal(); __hd.step(400,1/60,false); const p=__hd.players[0]; const o=__hd.players[1]; o.cool=999; o.discsHome=0; o.discs.forEach(d=>d.state='home'); [p.x.toFixed(2), p.z.toFixed(2), p.aimYaw.toFixed(2), p.lvl]"},
+ {"js": "const p=__hd.players[0]; __hd.press('KeyD'); __hd.step(30,1/60,false); __hd.release('KeyD'); const a=[p.x.toFixed(2),p.z.toFixed(2)]; __hd.press('KeyE'); __hd.step(20,1/60,false); __hd.release('KeyE'); const b=p.aimYaw.toFixed(2); __hd.press('KeyR'); __hd.step(2); __hd.release('KeyR'); __hd.step(10); [a, b, p.lvl]"},
+ {"shot": "high"},
+ {"js": "const p=__hd.players[0]; __hd.press('KeyQ'); __hd.step(20,1/60,false); __hd.release('KeyQ'); __hd.press('KeyF'); __hd.step(1); __hd.release('KeyF'); __hd.step(1); __hd.press('KeyF'); __hd.step(1); __hd.release('KeyF'); __hd.step(10); p.lvl"},
+ {"shot": "low"},
+ {"js": "const p=__hd.players[0]; __hd.press('Space'); __hd.step(40,1/60,false); __hd.release('Space'); __hd.step(1); const d=p.discs.find(d=>d.state==='fly'); __hd.step(20); [p.stats.thrown, d && d.power, p.discsHome]"},
+ {"shot": "powerthrow"},
+ {"js": "const p=__hd.players[0]; __hd.step(120,1/60,false); __hd.press('KeyC'); __hd.step(1); __hd.release('KeyC'); __hd.step(10); const y=p.y.toFixed(2); __hd.step(60); [y, p.y.toFixed(2), p.onGround, p.mode, __hd.players[1].stats, __hd.STATIONS[1].pads[0].rings.map(r=>r.state)]"}
+]

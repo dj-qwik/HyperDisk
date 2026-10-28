@@ -1,0 +1,7 @@
+[{"wait": 2500},
+ {"js": "window.__pad = { id: 'Fake Xbox', index: 0, connected: true, mapping: 'standard', axes: [0,0,0,0], buttons: Array.from({length: 17}, () => ({pressed:false, value:0})) }; navigator.getGamepads = () => [window.__pad]; window.padBtn = (i, on) => { __pad.buttons[i] = {pressed: on, value: on ? 1 : 0}; }; 1"},
+ {"js": "padBtn(0,true); __hd.step(1); padBtn(0,false); __hd.step(1); [__hd.LOBBY.humans.map(h=>h.ctl), document.querySelector('#slots .slot .how').textContent]"},
+ {"js": "padBtn(5,true); __hd.step(1); padBtn(5,false); __hd.step(1); padBtn(9,true); __hd.step(1); padBtn(9,false); __hd.step(400,1/60,false); [__hd.state, __hd.players.map(p=>[p.name,p.kind,p.ctl&&p.ctl.type]), __hd.S.arena]"},
+ {"js": "const p=__hd.players[0]; const x0=p.x; __pad.axes[0]=1; __hd.step(30,1/60,false); __pad.axes[0]=0; const moved=(p.x-x0).toFixed(2); const a0=p.aimYaw; __pad.axes[2]=1; __hd.step(20,1/60,false); __pad.axes[2]=0; const aimed=(p.aimYaw-a0).toFixed(2); padBtn(5,true); __hd.step(1); padBtn(5,false); __hd.step(1); const lvl=p.lvl; padBtn(6,true); __hd.step(5); const sh=p.shieldOn; padBtn(6,false); __hd.step(2); padBtn(7,true); __hd.step(3); padBtn(7,false); __hd.step(2); [moved, aimed, lvl, sh, p.stats.thrown]"},
+ {"js": "padBtn(9,true); __hd.step(1); padBtn(9,false); __hd.step(1); const paused = !document.querySelector('#pause').hidden; padBtn(0,true); __hd.step(1); padBtn(0,false); __hd.step(1); [paused, document.querySelector('#pause').hidden]"}
+]
