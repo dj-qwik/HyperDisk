@@ -127,7 +127,7 @@ finalMat = new THREE.ShaderMaterial({
     uniform sampler2D tDiffuse; uniform float uTime, uExposure, uAberr; uniform vec2 uRes;
     uniform vec4 uViews[4]; uniform vec4 uFlash[4]; uniform int uNV; varying vec2 vUv;
     vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0., 1.); }
-    vec3 toSRGB(vec3 c){ return mix(c*12.92, 1.055*pow(c, vec3(1./2.4)) - 0.055, step(0.0031308, c)); }
+    vec3 toSRGB(vec3 c){ return mix(c*12.92, 1.055*pow(max(c, vec3(0.)), vec3(1./2.4)) - 0.055, step(0.0031308, c)); }
     void main(){
       vec2 uv = vUv;
       // which split-screen view is this pixel in? vignette and hit flashes are per view

@@ -85,7 +85,7 @@ const MX = (x, y, z, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(new 
       void main(){
         float seed = floor(vSeed * 4096. + 0.5) / 4096.;
         vec3 n = normalize(vLN), wn = normalize(vN), V = normalize(cameraPosition - vWP);
-        float fres = pow(1. - abs(dot(wn, V)), 3.);
+        float fres = pow(max(0., 1. - abs(dot(wn, V))), 3.);
         bool cyl = vKind.y > 0.5; float style = floor(vKind.x + 0.5);
         vec3 col;
         bool side = abs(n.y) < 0.5;
@@ -333,7 +333,7 @@ const HOLO = new THREE.Group();
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(3, 26, 120, 40, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
     uniforms: { uTime }, vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-    fragmentShader: 'uniform float uTime; varying vec2 vUv; void main(){ float a = pow(vUv.y,2.)*0.18*(0.7+0.3*sin(vUv.y*80.-uTime*6.)); gl_FragColor=vec4(vec3(0.1,0.3,1.)*a,1.); }'
+    fragmentShader: 'uniform float uTime; varying vec2 vUv; void main(){ float a = pow(clamp(vUv.y, 0., 1.),2.)*0.18*(0.7+0.3*sin(vUv.y*80.-uTime*6.)); gl_FragColor=vec4(vec3(0.1,0.3,1.)*a,1.); }'
   }));
   beam.position.y = -70; HOLO.add(beam);
   HOLO.position.set(-60, 92, -230); HOLO.rotation.x = 0.3; world.add(HOLO);
@@ -345,7 +345,7 @@ const HOLO = new THREE.Group();
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
     uniforms: { uTime }, vertexShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }',
-    fragmentShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 2.5); float a = f * pow(vUv.y, 1.6) * 0.16; gl_FragColor = vec4(vec3(0.75,0.85,1.) * a, 1.); }'
+    fragmentShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(min(1., abs(dot(normalize(vN), normalize(vV)))), 2.5); float a = f * pow(clamp(vUv.y, 0., 1.), 1.6) * 0.16; gl_FragColor = vec4(vec3(0.75,0.85,1.) * a, 1.); }'
   });
   const geo = new THREE.CylinderGeometry(0.4, 9, 260, 24, 1, true); geo.translate(0, -130, 0);
   for (let i = 0; i < 6; i++) {
@@ -402,7 +402,7 @@ const HOLO = new THREE.Group();
   const trailMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
     vertexShader: 'varying vec2 vUv; varying float vA; void main(){ vUv = uv; vec4 mv = modelViewMatrix * instanceMatrix * vec4(position, 1.); vA = clamp(1.2 - (-mv.z) / 240., 0.15, 1.); gl_Position = projectionMatrix * mv; }',
-    fragmentShader: 'varying vec2 vUv; varying float vA; void main(){ float x = abs(vUv.x - 0.5) * 2.; float a = pow(1. - vUv.y, 3.) * (exp(-pow((x - 0.8) * 9., 2.)) + 0.25 * exp(-x * x * 6.)) * 0.22 * vA; gl_FragColor = vec4(vec3(1.0, 0.07, 0.05) * a, 1.); }'
+    fragmentShader: 'varying vec2 vUv; varying float vA; void main(){ float x = abs(vUv.x - 0.5) * 2.; float a = pow(clamp(1. - vUv.y, 0., 1.), 3.) * (exp(-pow((x - 0.8) * 9., 2.)) + 0.25 * exp(-x * x * 6.)) * 0.22 * vA; gl_FragColor = vec4(vec3(1.0, 0.07, 0.05) * a, 1.); }'
   });
   // lanes: ring lanes in altitude bands round the arena, and straight skyways between towers
   const lanes = [], cars = [];
@@ -631,7 +631,7 @@ const SHAFT = { R: RA + 0.6, top: -2.4, bottom: -54, grid: -46 };   // grid: the
   const coneMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     vertexShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }',
-    fragmentShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN), normalize(vV))), 2.); float a = f * pow(vUv.y, 2.2) * 0.07; gl_FragColor = vec4(vec3(1.0,0.86,0.68)*a, 1.); }'
+    fragmentShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(min(1., abs(dot(normalize(vN), normalize(vV)))), 2.); float a = f * pow(clamp(vUv.y, 0., 1.), 2.2) * 0.07; gl_FragColor = vec4(vec3(1.0,0.86,0.68)*a, 1.); }'
   });
   const coneGeo = new THREE.CylinderGeometry(0.2, 5, 34, 20, 1, true); coneGeo.translate(0, -17, 0);
   for (let i = 0; i < 8; i++) {

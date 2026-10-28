@@ -65,7 +65,7 @@ function buildPad(st, idx, lx, phase, rings, color) {
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 2.6, 26, 32, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uC: { value: c }, uTime },
     vertexShader: 'varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }',
-    fragmentShader: 'uniform vec3 uC; uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN),normalize(vV))),2.); float a = f*pow(vUv.y,2.2)*0.32*(0.8+0.2*sin(vUv.y*40.+uTime*9.)); gl_FragColor=vec4(uC*a,1.); }'
+    fragmentShader: 'uniform vec3 uC; uniform float uTime; varying vec2 vUv; varying vec3 vN, vV; void main(){ float f = pow(abs(dot(normalize(vN),normalize(vV))),2.); float a = f*pow(clamp(vUv.y, 0., 1.),2.2)*0.32*(0.8+0.2*sin(vUv.y*40.+uTime*9.)); gl_FragColor=vec4(uC*a,1.); }'
   }));
   beam.position.y = -2.7 - 13; pad.g.add(beam);
   for (let k = 0; k < 3; k++) {
@@ -267,7 +267,7 @@ class Trail {
     this.mat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uC: { value: new THREE.Color(color) }, uA: { value: 1 } },
       vertexShader: 'attribute float aT; varying float vT; void main(){ vT = aT; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-      fragmentShader: 'uniform vec3 uC; uniform float uA; varying float vT; void main(){ float a = pow(1.-vT, 1.6)*uA; gl_FragColor = vec4((uC*1.3 + vec3(1.)*pow(1.-vT,8.)*0.25)*a*0.5, 1.); }'
+      fragmentShader: 'uniform vec3 uC; uniform float uA; varying float vT; void main(){ float a = pow(clamp(1.-vT, 0., 1.), 1.6)*uA; gl_FragColor = vec4((uC*1.3 + vec3(1.)*pow(clamp(1.-vT, 0., 1.),8.)*0.25)*a*0.5, 1.); }'
     });
     this.mesh = new THREE.Mesh(this.geo, this.mat); this.mesh.frustumCulled = false; scene.add(this.mesh);
   }
@@ -371,7 +371,7 @@ function makeRunner(color) {
     uniforms: { uC: { value: c.clone() }, uHit: { value: 0 }, uA: { value: 0 }, uTime },
     vertexShader: 'varying vec3 vN, vV, vP; void main(){ vP = position; vN = normalize(normalMatrix*normal); vec4 mv = modelViewMatrix*vec4(position,1.); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }',
     fragmentShader: `uniform vec3 uC; uniform float uHit, uA, uTime; varying vec3 vN, vV, vP;
-      void main(){ float fr = pow(1. - abs(dot(normalize(vN), normalize(vV))), 2.2);
+      void main(){ float fr = pow(max(0., 1. - abs(dot(normalize(vN), normalize(vV)))), 2.2);
         vec2 uv = vec2(atan(vP.x, vP.z)*3.2, vP.y*3.2); vec2 r = vec2(1., 1.732); vec2 a = mod(uv, r)-r*0.5, b = mod(uv-r*0.5, r)-r*0.5; vec2 g = dot(a,a)<dot(b,b)?a:b;
         float e = smoothstep(0.08, 0., 0.5 - max(abs(g.x), dot(abs(g), normalize(r))));
         float scan = 0.5+0.5*sin(vP.y*20. - uTime*10.);
