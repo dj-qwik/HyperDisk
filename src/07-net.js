@@ -17,7 +17,8 @@ function makeWsRooms() {
     join(name) {
       return new Promise((resolve, reject) => {
         let ws;
-        try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); }
+        // builds hosted somewhere else (itch.io) set window.HD_SERVER to the game server's WebSocket address
+        try { ws = new WebSocket(window.HD_SERVER || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws')); }
         catch (e) { reject({ code: 'upstream_error' }); return; }
         const peers = new Map(), listeners = new Set();
         let myId = null, mine = {}, dirty = false, cached = null, done = false, ended = false;

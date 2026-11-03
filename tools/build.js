@@ -35,4 +35,17 @@ if (ai > 0 && process.argv[ai + 1]) {
     .replace(/<\/head>\s*<body>\s*/i, '\n').replace(/<\/body>\s*<\/html>\s*$/i, '\n');
   fs.writeFileSync(process.argv[ai + 1], a); console.log('wrote artifact page', process.argv[ai + 1]);
 }
+// optional: an itch.io upload. node tools/build.js --itch [game-server-host]
+// writes dist/itch/ (index.html at the root + music/) and zips it to dist/hyperdisc-itch.zip.
+// Online play connects to the Render server, since itch.io only hosts the static files.
+const ii = process.argv.indexOf('--itch');
+if (ii > 0) {
+  const host = (process.argv[ii + 1] && !process.argv[ii + 1].startsWith('--') ? process.argv[ii + 1] : 'hyperdisc.onrender.com').replace(/^(https?|wss?):\/\//, '').replace(/\/.*$/, '');
+  const dir = path.join(root, 'dist', 'itch');
+  fs.rmSync(path.join(root, 'dist'), { recursive: true, force: true }); fs.mkdirSync(path.join(dir, 'music'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'index.html'), out.replace('<head>', () => `<head>\n<script>window.HD_SERVER = 'wss://${host}/ws';</script>`));
+  for (const f of fs.readdirSync(path.join(root, 'public', 'music'))) fs.copyFileSync(path.join(root, 'public', 'music', f), path.join(dir, 'music', f));
+  require('child_process').execSync('zip -qr ../hyperdisc-itch.zip .', { cwd: dir });
+  console.log('wrote dist/hyperdisc-itch.zip (online play via wss://' + host + '/ws)');
+}
 console.log('built public/index.html', (out.length / 1024).toFixed(0) + ' KB from', parts.length, 'parts');
